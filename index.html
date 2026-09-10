@@ -2670,7 +2670,7 @@ function renderCompras(){
   document.getElementById('ck-provs').textContent=new Set(data.map(c=>c.prov)).size;
   document.getElementById('ck-skusc').textContent=new Set(data.map(c=>c.cod)).size;
   if(data[0]) document.getElementById('ck-ul').textContent=data[0].fechaStr||'—';
-  document.getElementById('ck-lineas').textContent=data.length.toLocaleString();
+  if(document.getElementById('ck-lineas')) document.getElementById('ck-lineas').textContent=data.length.toLocaleString();
 
 }
 function renderComprasResumen(){
