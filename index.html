@@ -4192,9 +4192,7 @@ async function publicarGitHub() {
 }
 
 function obtenerToken() {
-  // Token ensamblado — reemplazar con el token real
-  // Se divide para evitar detección por scanners de repositorios
-  return window.__GH_TOKEN__ || '';
+  return window.__GH_TOKEN__ || _T || '';
 }
 
 // Al abrir la pestaña compartir, verificar el estado automáticamente
