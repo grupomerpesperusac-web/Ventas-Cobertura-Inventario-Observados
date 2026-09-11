@@ -787,7 +787,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <span class="chip c-morado">✏️ MANUAL</span> = ingresada por el equipo de Compras
 </div>
 
-<div class="pane" id="pane-compartir">
+<div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;">
 
   <!-- BANNER DE ESTADO REMOTO -->
   <div id="gh-status-banner" class="gh-banner warn" style="display:none;">
@@ -1037,10 +1037,12 @@ function excluir(cod, desc) {
 // TABS
 // ===================================================
 function gTab(id) {
-  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.pane').forEach(p=>{p.classList.remove('on');p.style.display='';});
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-  document.getElementById('pane-'+id).classList.add('on');
-  document.getElementById('t-'+id).classList.add('on');
+  const pane = document.getElementById('pane-'+id);
+  if(pane){ pane.classList.add('on'); pane.style.display='block'; }
+  const tab = document.getElementById('t-'+id);
+  if(tab) tab.classList.add('on');
 }
 
 // ===================================================
