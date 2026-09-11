@@ -44,7 +44,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .tab:hover{color:var(--text);background:var(--bg3);border-radius:5px 5px 0 0;}
 .tab.on{color:var(--blue);border-bottom-color:var(--blue);background:#fff;}
 .pane{display:none;padding:16px;max-width:1700px;margin:0 auto;}
-.pane.on{display:block;}
+.pane.on{display:block;min-height:200px;width:100%;}
 /* ══ UPLOAD STRIP ══ */
 .ust.ok{background:var(--green-lt);color:var(--green);border:1px solid #a7f3d0;display:block;}
 .ust.err{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;display:block;}
@@ -788,7 +788,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <span class="chip c-morado">✏️ MANUAL</span> = ingresada por el equipo de Compras
 </div>
 
-<div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;">
+<div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
 
   <!-- BANNER DE ESTADO REMOTO -->
   <div id="gh-status-banner" class="gh-banner warn" style="display:none;">
