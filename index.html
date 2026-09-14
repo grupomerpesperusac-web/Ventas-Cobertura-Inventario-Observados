@@ -5116,9 +5116,10 @@ function exportarExcelConLogo(datos, nombreArchivo, cabeceras, titulo, filtrosSt
 }
 
 
-// ═══════════════════════════════════════════════════════════
-// EXPORTAR REPORTE COMPLETO — 5 pestañas en un solo Excel
-// ═══════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════
+// EXPORTAR REPORTE COMPLETO — 6 pestañas en un solo Excel (v3)
+// ═══════════════════════════════════════════════════════════════════
 function expReporteCompleto() {
   if (typeof ExcelJS === 'undefined') {
     alert('Librería ExcelJS no cargada. Verifica tu conexión a internet.'); return;
@@ -5131,153 +5132,146 @@ function expReporteCompleto() {
   wb.creator = 'Grupo Merpes Perú S.A.C.';
   const hoy = new Date();
   const fechaStr = hoy.toLocaleDateString('es-PE');
-  const AZUL = 'FF1E3A5F', AZUL_L = 'FFEBF2FA', BLANCO = 'FFFFFFFF';
-  const ROJO_L = 'FFFEE2E2', AMBER_L = 'FFFEF3C7', VERDE_L = 'FFDCFCE7';
+  const AZUL='FF1E3A5F', AZUL_M='FF2D5A8E', AZUL_L='FFEBF2FA', BLANCO='FFFFFFFF';
 
   const mkFill = c => ({type:'pattern',pattern:'solid',fgColor:{argb:c}});
   const mkFont = (bold,color,sz) => ({name:'Calibri',bold:!!bold,color:{argb:color||'FF000000'},size:sz||10});
   const mkAln  = (h,v) => ({horizontal:h||'left',vertical:v||'middle',wrapText:false});
   const mkBord = () => ({top:{style:'thin',color:{argb:'FFD1D5E8'}},bottom:{style:'thin',color:{argb:'FFD1D5E8'}},left:{style:'thin',color:{argb:'FFD1D5E8'}},right:{style:'thin',color:{argb:'FFD1D5E8'}}});
 
-  function agregarCabecera(ws, titulo, fecha) {
-    ws.mergeCells('A1:P1');
-    const c1 = ws.getCell('A1');
-    c1.value = 'GRUPO MERPES PERÚ S.A.C.  |  ' + titulo + '  |  ' + fecha;
-    c1.fill = mkFill(AZUL);
-    c1.font = mkFont(true, BLANCO, 12);
-    c1.alignment = mkAln('center','middle');
-    ws.getRow(1).height = 22;
-  }
-
-  function estilizarFila(ws, numFila, numCols, esHeader) {
-    const row = ws.getRow(numFila);
-    for (let c = 1; c <= numCols; c++) {
-      const cell = row.getCell(c);
-      if (esHeader) {
-        cell.fill = mkFill('FF2D5A8E');
-        cell.font = mkFont(true, BLANCO, 9);
-      } else {
-        cell.fill = mkFill(numFila % 2 === 0 ? AZUL_L : BLANCO);
-        cell.font = mkFont(false, 'FF1A1E2E', 9);
-      }
-      cell.border = mkBord();
-      cell.alignment = mkAln('left','middle');
-    }
-    row.height = esHeader ? 18 : 15;
-  }
-
-  function agregarHoja(wb, nombre, cabeceras, datos, titulo) {
+  function agregarHoja(nombre, cabeceras, datos, titulo, anchos) {
     const ws = wb.addWorksheet(nombre);
-    agregarCabecera(ws, titulo, fechaStr);
-
-    // Fila de cabeceras
-    ws.getRow(2).values = ['#'].concat(cabeceras);
-    estilizarFila(ws, 2, cabeceras.length + 1, true);
-
-    // Datos
-    datos.forEach((fila, idx) => {
-      ws.getRow(idx + 3).values = [idx + 1].concat(fila);
-      estilizarFila(ws, idx + 3, cabeceras.length + 1, false);
+    const ncols = cabeceras.length + 1;
+    ws.mergeCells(1,1,1,ncols);
+    const c1 = ws.getCell(1,1);
+    c1.value = 'GRUPO MERPES PERÚ S.A.C.  |  '+titulo+'  |  '+fechaStr;
+    c1.fill=mkFill(AZUL); c1.font=mkFont(true,BLANCO,12);
+    c1.alignment=mkAln('center','middle'); ws.getRow(1).height=22;
+    const hRow=ws.getRow(2);
+    hRow.values=['#'].concat(cabeceras);
+    for(let c=1;c<=ncols;c++){const cell=hRow.getCell(c);cell.fill=mkFill(AZUL_M);cell.font=mkFont(true,BLANCO,9);cell.border=mkBord();cell.alignment=mkAln('center','middle');}
+    hRow.height=18;
+    datos.forEach((fila,idx)=>{
+      const dRow=ws.getRow(idx+3);
+      dRow.values=[idx+1].concat(fila);
+      for(let c=1;c<=ncols;c++){const cell=dRow.getCell(c);cell.fill=mkFill(idx%2===0?AZUL_L:BLANCO);cell.font=mkFont(false,'FF1A1E2E',9);cell.border=mkBord();cell.alignment=mkAln('left','middle');}
+      dRow.height=15;
     });
-
-    // Anchos automáticos
-    ws.columns.forEach((col, i) => {
-      col.width = i === 0 ? 5 : (cabeceras[i-1] ? Math.min(Math.max(cabeceras[i-1].length + 4, 12), 35) : 12);
-    });
-
-    // Fila total si hay datos
-    if (datos.length > 0) {
-      const totalFila = datos.length + 3;
-      ws.getRow(totalFila).values = ['', 'TOTAL: ' + datos.length + ' registros'];
-      const cell = ws.getRow(totalFila).getCell(2);
-      cell.font = mkFont(true, 'FF1E3A5F', 9);
-    }
+    ws.getColumn(1).width=5;
+    cabeceras.forEach((cab,i)=>{ws.getColumn(i+2).width=anchos&&anchos[i]?anchos[i]:Math.min(Math.max(cab.length+4,10),30);});
+    if(datos.length>0){const tf=ws.getRow(datos.length+3);tf.getCell(2).value='Total: '+datos.length+' registros';tf.getCell(2).font=mkFont(true,'FF1E3A5F',9);}
+    return ws;
   }
+
+  const stockMap={};
+  (D.stock||[]).forEach(s=>{stockMap[s.cod]=s;});
+  const kardMap={};
+  (D.kardex||[]).forEach(k=>{kardMap[k.cod]=k;});
+  const ocMap={};
+  (D.oc||[]).forEach(o=>{if(!ocMap[o.cod])ocMap[o.cod]=0;ocMap[o.cod]+=(o.cant||0);});
 
   // ── PESTAÑA 1: PRODUCTOS OBSERVADOS ──
-  const obsData = (D.obs || []).map(o => [
-    o.cod, o.desc, o.cat, o.resp||'—',
-    o.unidObs||0, o.unidPend||0,
-    typeof o.monto === 'number' ? o.monto.toFixed(2) : '0.00',
-    o.vtaMes||0, o.accion||'—',
-    (o.ocActiva||[]).join(';')||'—',
-    o.codRem||'—', o.descRem||'—',
-    o.comentario||'', o.fechaArribo||''
-  ]);
-  agregarHoja(wb, '🚨 Obs. SIG', 
-    ['Código','Descripción','Categoría','Responsable','Unid.Obs','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Cod.Rempl.','Desc.Rempl.','Comentario','F.Arribo Est.'],
-    obsData, 'PRODUCTOS OBSERVADOS');
+  const obsData=(D.obs||[]).map(o=>{
+    const stk=(stockMap[o.cod]||{}).cant||0;
+    const ocStr=(o.ocActiva||[]).length>0?o.ocActiva.join(' / '):'—';
+    const sustStr=o.codRem?(o.codRem+(o.descRem?' — '+o.descRem:'')):'—';
+    return[o.cod,o.desc,o.cat,o.resp||'—',o.unidObs||0,stk,o.unidPend||0,
+      typeof o.monto==='number'?parseFloat(o.monto.toFixed(2)):0,
+      o.vtaMes||0,o.accion||'—',ocStr,sustStr,o.comentario||''];
+  });
+  agregarHoja('🚨 Obs. SIG',
+    ['Código','Descripción','Categoría','Responsable','Unid.Obs','Stock Act.','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Sustituto','Comentario'],
+    obsData,'PRODUCTOS OBSERVADOS',[10,30,14,14,9,9,9,10,8,10,20,25,25]);
 
-  // ── PESTAÑA 2: INVENTARIO ACTUAL (STOCK) ──
-  const stockData = (D.stock || []).map(s => [
-    s.cod, s.desc, s.linea||'', s.cat||'',
-    s.clasificacion||'', s.marca||'',
-    s.cant||0,
-    typeof s.costoUnit === 'number' ? s.costoUnit.toFixed(2) : '0.00',
-    typeof s.valorTotal === 'number' ? s.valorTotal.toFixed(2) : '0.00',
-    typeof s.vta3m === 'number' ? s.vta3m.toFixed(1) : '0.0',
-    typeof s.promMes === 'number' ? s.promMes.toFixed(1) : '0.0',
-    typeof s.cobDias === 'number' ? s.cobDias.toFixed(0) : '—',
-    s.estadoCob||'', s.activo ? 'SI' : 'NO'
-  ]);
-  agregarHoja(wb, '📦 Inventario',
-    ['Código','Descripción','Línea','Categoría','Clasificación','Marca','Cant.','Costo Unit S/','Valor Total S/','Vta 3M','Prom/Mes','Cob.Días','Estado Cob.','Activo?'],
-    stockData, 'INVENTARIO ACTUAL');
+  // ── PESTAÑA 2: INVENTARIO ACTUAL ──
+  const stockData=(D.stock||[]).map(s=>{
+    const tipo=s.tipo||'';
+    const vt=s.cant&&s.costoUnit?parseFloat((s.cant*s.costoUnit).toFixed(2)):0;
+    const prom=s.promMes||(s.vta3m?s.vta3m/3:0);
+    return[s.cod,s.desc,s.linea||'',s.cat||'',tipo,s.marca||'',
+      s.cant||0,typeof s.costoUnit==='number'?parseFloat(s.costoUnit.toFixed(2)):0,vt,
+      typeof s.vta3m==='number'?parseFloat(s.vta3m.toFixed(1)):0,
+      parseFloat(prom.toFixed(1)),
+      typeof s.cobDias==='number'?Math.round(s.cobDias):'—',s.estadoCob||''];
+  });
+  agregarHoja('📦 Inventario',
+    ['Código','Descripción','Línea','Categoría','Clasificación','Marca','Cant.','Costo Unit S/','Valor Total S/','Vta 3M','Prom/Mes','Cob.Días','Estado Cob.'],
+    stockData,'INVENTARIO ACTUAL',[10,30,14,14,14,12,7,12,14,8,8,8,10]);
 
-  // ── PESTAÑA 3: VENTAS & COBERTURA (kardex resumido) ──
-  const skusActivos = {};
-  (D.kardex || []).forEach(k => {
-    if (!skusActivos[k.cod]) skusActivos[k.cod] = {cod:k.cod, desc:k.desc, cat:k.cat||'', linea:k.linea||'', vta3m:0, vtaMes:0};
-    const d = skusActivos[k.cod];
-    if (k.tipo === '01-Venta' || k.tipo === '07-Bonif') {
-      d.vta3m += Math.abs(k.qty || 0);
-      d.vtaMes = d.vta3m / 3;
+  // ── PESTAÑA 3: VENTAS & COBERTURA ──
+  const ventasData=(D.kardex||[])
+    .filter(k=>(k.vta3m||0)>0||(k.promMes||0)>0)
+    .sort((a,b)=>(b.vta3m||0)-(a.vta3m||0))
+    .map(k=>{
+      const s=stockMap[k.cod]||{};const stk=s.cant||0;
+      const prom=k.promMes||(k.vta3m?k.vta3m/3:0);
+      const cob=prom>0?parseFloat((stk/prom).toFixed(1)):0;
+      return[k.cod,k.desc,k.cat||'',k.linea||'',k.act6m?'SI':'NO',
+        parseFloat((k.vta3m||0).toFixed(0)),parseFloat(prom.toFixed(1)),stk,cob,
+        cob<7?'🔴 CRÍTICO':cob<30?'🟡 BAJO':cob>=90?'⚫ EXCESO':'🟢 OK'];
+    });
+  agregarHoja('📈 Ventas & Cob.',
+    ['Código','Descripción','Categoría','Línea','Activo 6M','Vta 3M','Prom/Mes','Stock Act.','Cob.Días','Estado'],
+    ventasData,'VENTAS & COBERTURA',[10,30,14,14,9,10,9,9,9,12]);
+
+  // ── PESTAÑA 4: COMPRAS SUGERIDAS ──
+  const sugData=[];
+  (D.kardex||[]).forEach(k=>{
+    const s=stockMap[k.cod]||{};const stk=s.cant||0;
+    const prom=k.promMes||(k.vta3m?k.vta3m/3:0);
+    if(prom<=0) return;
+    const stkMin=Math.ceil(prom*1.5);
+    const ocCant=ocMap[k.cod]||0;
+    const neto=Math.max(0,stkMin-stk-ocCant);
+    const cob=prom>0?parseFloat((stk/prom).toFixed(1)):0;
+    if(neto>0||cob<30){
+      sugData.push([k.cod,k.desc,k.cat||'',k.linea||'',stk,stkMin,ocCant,neto,
+        parseFloat(prom.toFixed(1)),cob,
+        cob<7?'🔴 CRÍTICO':cob<30?'🟡 BAJO':'🟢 OK',
+        (D.obs||[]).some(o=>o.cod===k.cod)?'OBS':'']);
     }
   });
-  const ventasData = Object.values(skusActivos)
-    .filter(s => s.vta3m > 0)
-    .sort((a,b) => b.vta3m - a.vta3m)
-    .map(s => [s.cod, s.desc, s.cat, s.linea, s.vta3m.toFixed(0), s.vtaMes.toFixed(1)]);
-  agregarHoja(wb, '📈 Ventas',
-    ['Código','Descripción','Categoría','Línea','Unid. Vta 3M','Prom/Mes'],
-    ventasData, 'VENTAS & COBERTURA — SKUs ACTIVOS');
+  sugData.sort((a,b)=>(a[9]||0)-(b[9]||0));
+  agregarHoja('🛒 Compras Sugeridas',
+    ['Código','Descripción','Categoría','Línea','Stock Act.','Stk.Mín','OC Arribo','Compra Neta','Prom/Mes','Cob.Días','Estado','¿Obs?'],
+    sugData,'COMPRAS SUGERIDAS — REPOSICIÓN',[10,30,14,14,9,9,9,10,9,9,12,6]);
 
-  // ── PESTAÑA 4: ÚLTIMAS COMPRAS ──
-  const comprasData = (D.compras || []).map(c => [
-    c.fechaStr||'', c.cod, c.desc, c.gama||'', c.cat||'', c.prov||'',
-    typeof c.precioIgv === 'number' ? c.precioIgv.toFixed(2) : '0.00',
-    c.cant||0,
-    typeof c.total === 'number' ? c.total.toFixed(2) : '0.00',
-    typeof c.varPct === 'number' ? c.varPct.toFixed(1)+'%' : '—',
-    c.esObs ? 'OBS' : ''
-  ]);
-  agregarHoja(wb, '🛒 Compras',
+  // ── PESTAÑA 5: ÚLTIMAS COMPRAS ──
+  const prevMapC={};
+  const comprasData=(D.compras||[]).map(c=>{
+    const prev=prevMapC[c.cod];
+    let varPct='—';
+    if(prev&&prev>0&&c.costoUnit>0){const d=((c.costoUnit-prev)/prev*100);varPct=(d>0?'+':'')+d.toFixed(1)+'%';}
+    prevMapC[c.cod]=c.costoUnit;
+    return[c.fechaStr||'',c.cod,c.desc,c.gama||c.marca||'',c.cat||'',c.prov||'—',
+      typeof c.costoUnit==='number'?parseFloat(c.costoUnit.toFixed(2)):0,
+      c.cant||0,
+      typeof c.total==='number'?parseFloat(c.total.toFixed(2)):0,
+      varPct,(D.obs||[]).some(o=>o.cod===c.cod)?'OBS':''];
+  });
+  agregarHoja('📋 Últimas Compras',
     ['Fecha','Código','Descripción','Gama/Marca','Categoría','Proveedor','Precio c/IGV','Cantidad','Total S/','Var.%','¿Obs?'],
-    comprasData, 'ÚLTIMAS COMPRAS');
+    comprasData,'ÚLTIMAS COMPRAS',[12,10,30,12,14,20,12,8,12,8,6]);
 
-  // ── PESTAÑA 5: MAESTRO DE SUSTITUCIONES ──
-  const sustData = (D.sust || []).map(s => [
-    s.cod_obs, s.desc_obs, s.tipo||'', s.conf||'', s.fuente||'',
-    s.rec||0, s.cod_rem||'', s.desc_rem||'', s.cat||'',
-    s.cmt||'', s.activo ? 'SI' : 'NO'
-  ]);
-  agregarHoja(wb, '🔄 Sustituciones',
-    ['Cód.Observado','Desc.Observado','Tipo','Confianza','Fuente','Veces','Cód.Reemplazo','Desc.Reemplazo','Categoría','Comentario','Activo'],
-    sustData, 'MAESTRO DE SUSTITUCIONES');
+  // ── PESTAÑA 6: MAESTRO DE SUSTITUCIONES ──
+  const sustData=(D.sust||[]).map(s=>[
+    s.cod_obs,s.desc_obs||'',s.tipo||'',s.conf||'',s.fuente||'',s.rec||0,
+    s.cod_rem||'',s.desc_rem||'',s.cat||'',s.cmt||'',s.activo?'SI':'NO']);
+  agregarHoja('🔄 Sustituciones',
+    ['Cód.Observado','Desc.Observado','Tipo','Confianza','Fuente','Veces','Cód.Reemplazo','Desc.Reemplazo','Categoría','Comentario/Patrón','Activo'],
+    sustData,'MAESTRO DE SUSTITUCIONES',[10,30,12,10,10,6,10,30,14,30,7]);
 
   // ── GENERAR Y DESCARGAR ──
-  const nombreArchivo = 'Reporte_Merpes_' + hoy.toISOString().split('T')[0] + '.xlsx';
-  wb.xlsx.writeBuffer().then(buffer => {
-    const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = nombreArchivo; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-  }).catch(e => {
-    console.error('ExcelJS error:', e);
-    alert('Error generando el Excel: ' + e.message);
-  });
+  const nombreArchivo='Reporte_Merpes_'+hoy.toISOString().split('T')[0]+'.xlsx';
+  wb.xlsx.writeBuffer().then(buffer=>{
+    const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');
+    a.href=url;a.download=nombreArchivo;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),3000);
+    alert('✅ Reporte descargado: '+nombreArchivo);
+  }).catch(e=>{console.error('ExcelJS error:',e);alert('Error generando el Excel: '+e.message);});
 }
+
 
 </script>
 </body>
