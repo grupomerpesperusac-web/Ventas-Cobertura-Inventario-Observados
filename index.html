@@ -5117,160 +5117,192 @@ function exportarExcelConLogo(datos, nombreArchivo, cabeceras, titulo, filtrosSt
 
 
 
-// ═══════════════════════════════════════════════════════════════════
-// EXPORTAR REPORTE COMPLETO — 6 pestañas en un solo Excel (v3)
-// ═══════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORTAR REPORTE COMPLETO — consolida las 5 pestañas existentes
+// ═══════════════════════════════════════════════════════════════
+function _agregarHojaAWorkbook(wb, cfg) {
+  if (!cfg.datos || cfg.datos.length === 0) return false;
+  const AZUL='1E3A5F', AZUL_M='2D5A8E', AZUL_L='EBF2FA';
+  const GRIS_L='F8FAFC', GRIS_B='E2E8F0';
+  const ROJO='991B1B', ROJO_L='FEE2E2';
+  const AMBER='92400E', AMBER_L='FEF3C7';
+  const VERDE='166534', VERDE_L='DCFCE7';
+  const mkFill = c => ({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+c}});
+  const mkFont = (bold,color,sz) => ({name:'Calibri',bold:!!bold,color:{argb:'FF'+(color||'000000')},size:sz||10});
+  const mkAln  = (h,v,wrap) => ({horizontal:h||'left',vertical:v||'middle',wrapText:wrap!==false});
+  const mkBord = () => ({top:{style:'thin',color:{argb:'FF'+GRIS_B}},left:{style:'thin',color:{argb:'FF'+GRIS_B}},bottom:{style:'thin',color:{argb:'FF'+GRIS_B}},right:{style:'thin',color:{argb:'FF'+GRIS_B}}});
+  const fecha = new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const nCols = cfg.cabeceras.length;
+  const ws = wb.addWorksheet(cfg.sheetName||'Hoja', {views:[{showGridLines:false}],pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1}});
+  const margins = [{width:2}];
+  const defaultW = 14;
+  cfg.cabeceras.forEach((hdr,ci) => {
+    let maxLen = String(hdr||'').length;
+    if(cfg.colWidths&&cfg.colWidths[ci]) maxLen=Math.max(maxLen,cfg.colWidths[ci]);
+    cfg.datos.slice(0,200).forEach(row => {
+      let display=row[ci]===null||row[ci]===undefined?'':String(row[ci]);
+      if(cfg.colFmts&&cfg.colFmts[ci]){try{display=String(cfg.colFmts[ci](row[ci],row)||'');}catch(e){}}
+      maxLen=Math.max(maxLen,display.length);
+    });
+    margins.push({width:Math.min(50,Math.max(defaultW,maxLen+2))});
+  });
+  ws.columns = margins;
+  const logoId = wb.addImage({base64:_LOGO_B64,extension:'png'});
+  ws.addImage(logoId,{tl:{col:1,row:1},ext:{width:85,height:75}});
+  ws.getRow(2).height=50;
+  const merge=(r1,c1,r2,c2,val,font,fill,aln)=>{ws.mergeCells(r1,c1,r2,c2);const c=ws.getCell(r1,c1);if(val!==undefined)c.value=val;if(font)c.font=font;if(fill)c.fill=mkFill(fill);if(aln)c.alignment=aln;return c;};
+  merge(2,3,2,nCols+1,cfg.titulo,mkFont(true,AZUL,18),null,mkAln('left','middle'));
+  ws.getRow(3).height=16;
+  merge(3,3,3,nCols+1,'GRUPO MERPES PERÚ S.A.C.  ·  Jefatura de Administración y Logística',mkFont(false,'6B7280',10),null,mkAln('left','middle'));
+  ws.getRow(4).height=13;
+  merge(4,3,4,nCols+1,(cfg.subtitulo?cfg.subtitulo+'  ·  ':'')+' Generado el '+fecha,mkFont(false,'9CA3AF',9),null,mkAln('left','middle'));
+  ws.getRow(5).height=5;
+  for(let c=2;c<=nCols+1;c++) ws.getCell(5,c).fill=mkFill(AZUL);
+  ws.getRow(6).height=5; ws.getRow(7).height=18;
+  ws.mergeCells(7,2,7,nCols+1);
+  const fc=ws.getCell(7,2);
+  fc.value='📌  '+(cfg.filtros||'Sin filtros aplicados');
+  fc.fill=mkFill(AZUL_L);fc.font=mkFont(false,AZUL,9);fc.alignment=mkAln('left','middle');
+  fc.border={left:{style:'thick',color:{argb:'FF'+AZUL}},right:{style:'thin',color:{argb:'FF'+GRIS_B}},top:{style:'thin',color:{argb:'FF'+GRIS_B}},bottom:{style:'thin',color:{argb:'FF'+GRIS_B}}};
+  ws.getRow(8).height=8; ws.getRow(9).height=28; ws.getRow(10).height=15; ws.getRow(11).height=8;
+  const kpis=cfg.kpis||[];
+  kpis.forEach((kpi,i)=>{
+    const sc=2+i*2;if(sc+1>nCols+1) return;
+    const bgMap={red:ROJO_L,amber:AMBER_L,green:VERDE_L,blue:AZUL_L};
+    const fgMap={red:ROJO,amber:AMBER,green:VERDE,blue:AZUL_M};
+    const bg=bgMap[kpi.color]||AZUL_L,fg=fgMap[kpi.color]||AZUL;
+    for(let dc=0;dc<2;dc++) for(let dr=0;dr<2;dr++){const cell=ws.getCell(9+dr,sc+dc);cell.fill=mkFill(bg);cell.border=mkBord();}
+    ws.mergeCells(9,sc,9,sc+1);const vc=ws.getCell(9,sc);vc.value=typeof kpi.val==='number'?kpi.val:String(kpi.val);vc.font=mkFont(true,fg,18);vc.alignment=mkAln('center','middle',false);
+    ws.mergeCells(10,sc,10,sc+1);const lc=ws.getCell(10,sc);lc.value=kpi.lbl;lc.font=mkFont(false,'6B7280',8);lc.alignment=mkAln('center','middle',false);
+  });
+  ws.getRow(12).height=8; ws.getRow(13).height=30;
+  cfg.cabeceras.forEach((h,ci)=>{
+    const cell=ws.getCell(13,ci+2);cell.value=h;cell.fill=mkFill(AZUL);cell.font=mkFont(true,'FFFFFF',9);cell.alignment=mkAln('center','middle',true);cell.border=mkBord();
+  });
+  cfg.datos.forEach((row,ri)=>{
+    const r=14+ri; ws.getRow(r).height=20;
+    const rowBg=ri%2===0?GRIS_L:'FFFFFF';
+    row.forEach((val,ci)=>{
+      const cell=ws.getCell(r,ci+2);cell.border=mkBord();cell.alignment=mkAln('left','middle',true);
+      let display=val===null||val===undefined?'—':val;
+      if(cfg.colFmts&&cfg.colFmts[ci]) display=cfg.colFmts[ci](val,row);
+      let bg=rowBg,fg='000000',bold=false;
+      if(cfg.colColors&&cfg.colColors[ci]){const st=cfg.colColors[ci](val,row);if(st){bg=st.bg||rowBg;fg=st.fg||'000000';bold=!!st.bold;}}
+      cell.value=display; cell.fill=mkFill(bg); cell.font=mkFont(bold,fg,9);
+    });
+  });
+  const pieR=14+cfg.datos.length+2;
+  ws.mergeCells(pieR,2,pieR,nCols+1);
+  const pieC=ws.getCell(pieR,2);
+  pieC.value='Grupo Merpes Perú S.A.C.  ·  Reporte de Inventario Integral  ·  Uso interno';
+  pieC.font=mkFont(false,'9CA3AF',7);pieC.alignment=mkAln('center','middle',false);
+  return true;
+}
+
 function expReporteCompleto() {
-  if (typeof ExcelJS === 'undefined') {
-    alert('Librería ExcelJS no cargada. Verifica tu conexión a internet.'); return;
-  }
-  if (!D.kardex || D.kardex.length === 0) {
-    alert('Carga el Kardex primero antes de exportar el reporte completo.'); return;
-  }
+  if (typeof ExcelJS === 'undefined') { alert('Librería ExcelJS no cargada.'); return; }
+  if (!D.kardex || D.kardex.length === 0) { alert('Carga el Kardex primero.'); return; }
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Grupo Merpes Perú S.A.C.';
-  const hoy = new Date();
-  const fechaStr = hoy.toLocaleDateString('es-PE');
-  const AZUL='FF1E3A5F', AZUL_M='FF2D5A8E', AZUL_L='FFEBF2FA', BLANCO='FFFFFFFF';
+  wb.creator = 'Merpes Inventario';
+  wb.created = new Date();
 
-  const mkFill = c => ({type:'pattern',pattern:'solid',fgColor:{argb:c}});
-  const mkFont = (bold,color,sz) => ({name:'Calibri',bold:!!bold,color:{argb:color||'FF000000'},size:sz||10});
-  const mkAln  = (h,v) => ({horizontal:h||'left',vertical:v||'middle',wrapText:false});
-  const mkBord = () => ({top:{style:'thin',color:{argb:'FFD1D5E8'}},bottom:{style:'thin',color:{argb:'FFD1D5E8'}},left:{style:'thin',color:{argb:'FFD1D5E8'}},right:{style:'thin',color:{argb:'FFD1D5E8'}}});
+  // ── Construir cfgs igual que cada función exp* ──
+  const _P = PERIODO_BASE;
+  const mH = D.mesesHdr.length ? D.mesesHdr : Array.from({length:14},(_,k)=>'M'+(k+1));
+  const fecha = new Date().toISOString().slice(0,10);
 
-  function agregarHoja(nombre, cabeceras, datos, titulo, anchos) {
-    const ws = wb.addWorksheet(nombre);
-    const ncols = cabeceras.length + 1;
-    ws.mergeCells(1,1,1,ncols);
-    const c1 = ws.getCell(1,1);
-    c1.value = 'GRUPO MERPES PERÚ S.A.C.  |  '+titulo+'  |  '+fechaStr;
-    c1.fill=mkFill(AZUL); c1.font=mkFont(true,BLANCO,12);
-    c1.alignment=mkAln('center','middle'); ws.getRow(1).height=22;
-    const hRow=ws.getRow(2);
-    hRow.values=['#'].concat(cabeceras);
-    for(let c=1;c<=ncols;c++){const cell=hRow.getCell(c);cell.fill=mkFill(AZUL_M);cell.font=mkFont(true,BLANCO,9);cell.border=mkBord();cell.alignment=mkAln('center','middle');}
-    hRow.height=18;
-    datos.forEach((fila,idx)=>{
-      const dRow=ws.getRow(idx+3);
-      dRow.values=[idx+1].concat(fila);
-      for(let c=1;c<=ncols;c++){const cell=dRow.getCell(c);cell.fill=mkFill(idx%2===0?AZUL_L:BLANCO);cell.font=mkFont(false,'FF1A1E2E',9);cell.border=mkBord();cell.alignment=mkAln('left','middle');}
-      dRow.height=15;
+  // 1. VENTAS Y COBERTURA (misma lógica que expVentas sin filtros)
+  const dataV = [...D.kardex];
+  const conStockV = dataV.filter(i=>(i.stock||0)>0).length;
+  const conSugV = dataV.filter(i=>Math.max(0,Math.ceil(i.meses.slice(-_P).reduce((a,b)=>a+b,0)/_P*0.5)-(i.stock||0))>0).length;
+  _agregarHojaAWorkbook(wb, {
+    datos: dataV.map(i=>{
+      const p=Math.round(i.meses.slice(-_P).reduce((a,b)=>a+b,0)/_P*10)/10;
+      const stkMin=Math.ceil(p*0.5);
+      const enCal=SURTIDO_CALIDDA[i.cod]==='ACTIVO',enMyb=SURTIDO_MYBEES[i.cod]==='ACTIVO';
+      const surt=enCal&&enMyb?'Cal+Myb':enCal?'Calidda':enMyb?'Mybees':'—';
+      return [i.cod,i.desc,i.cat,i.linea||'',surt,...i.meses.map(v=>v||0),i.stock||0,stkMin,Math.max(0,stkMin-(i.stock||0)),p,i.cobDias||'—'];
+    }),
+    cabeceras:['Código','Descripción','Categoría','Línea','Surtido',...mH,'Stock 001','Stk.Mín','Compra Sug.','Prom/Mes','Cob.(d)'],
+    titulo:'VENTAS Y COBERTURA', subtitulo:'Stock Alm.001 · '+_P+' meses',
+    filtros:'Todos los SKUs',
+    sheetName:'Ventas y Cobertura',
+    kpis:[{val:dataV.length,lbl:'Total SKUs',color:'blue'},{val:conStockV,lbl:'Con stock 001',color:'green'},{val:conSugV,lbl:'Necesitan reposición',color:'red'},{val:_P+'M',lbl:'Período',color:'amber'}],
+    colWidths:[12,35,16,14,10,...Array(14).fill(7),9,8,10,8,8],
+  });
+
+  // 2. INVENTARIO ACTUAL (misma lógica que expStock sin filtros)
+  const dataS = calcMatriz([...D.stock]);
+  const totalValS = dataS.reduce((s,i)=>s+(i.costoTotal||0),0)||1;
+  _agregarHojaAWorkbook(wb, {
+    datos: dataS.map(i=>[i.cod,i.desc,i.linea||'',i.cat,i.marca||'S/M',i.tipo||'—',i.cant||0,i.costoUnit||0,i.ganUnitProm!=null?i.ganUnitProm:'',i.costoTotal||0,(i.costoTotal||0)/totalValS,i.vta3m||0,i.vtaMes||0,i.cobDias||'—']),
+    cabeceras:['Código','Descripción','Línea','Categoría','Marca','Clasificación','Stock 001','Costo Unit S/','Gan.Unit S/','Valor Total S/','Share %','Vta 3M','Vta/Mes','Cob.(d)'],
+    titulo:'INVENTARIO ACTUAL', subtitulo:'Stock Alm.001 únicamente',
+    filtros:'Todos los SKUs en stock',
+    sheetName:'Inventario Actual',
+    kpis:[{val:dataS.length,lbl:'SKUs en stock',color:'blue'},{val:'S/'+Math.round(totalValS).toLocaleString('es-PE'),lbl:'Valor total',color:'green'},{val:dataS.filter(i=>i.ganUnitProm>=700).length,lbl:'Gan.≥S/700',color:'amber'},{val:dataS.filter(i=>i.ganUnitProm<0).length,lbl:'Gan.negativa',color:'red'}],
+    colWidths:[12,35,14,16,12,14,9,11,10,13,9,8,8,8],
+    colFmts:{8:(v)=>v!=null&&v!==''?'S/'+Number(v).toLocaleString('es-PE'):'—',9:(v)=>v!=null&&v!==''?'S/'+Number(v).toFixed(0):'—',10:(v)=>typeof v==='number'?(v*100).toFixed(1)+'%':'—'},
+  });
+
+  // 3. PRODUCTOS OBSERVADOS (misma lógica que expObs sin filtros)
+  const dataO = [...D.obs];
+  const totalMontoO = dataO.reduce((s,o)=>s+(o.monto||0),0);
+  _agregarHojaAWorkbook(wb, {
+    datos: dataO.map(o=>[o.cod,o.desc,o.cat,o.resp||'—',o.unidObs||0,o.unidPend||0,o.monto||0,o.vtaMes||0,o.accion||'—',(o.ocActiva||[]).join(';')||'—',o.codRem||'—',o.descRem||'—',o.comentario||'',o.fechaArribo||'']),
+    cabeceras:['Código','Descripción','Categoría','Responsable','Unid.Obs','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Cod.Rempl.','Desc.Rempl.','Comentario','F.Arribo Est.'],
+    titulo:'PRODUCTOS OBSERVADOS', subtitulo:'Gestión de quiebres de stock',
+    filtros:'Todos los observados',
+    sheetName:'Observados',
+    kpis:[{val:dataO.length,lbl:'Total observados',color:'red'},{val:dataO.filter(o=>(o.unidPend||0)>0).length,lbl:'Con pendiente',color:'amber'},{val:'S/'+Math.round(totalMontoO).toLocaleString('es-PE'),lbl:'Monto total S/',color:'blue'},{val:dataO.filter(o=>o.accion==='COMPRAR').length,lbl:'Por comprar',color:'green'}],
+    colWidths:[12,35,16,14,9,10,10,8,12,14,12,35,25,12],
+    colFmts:{6:(v)=>v?'S/'+Number(v).toLocaleString('es-PE'):'—'},
+  });
+
+  // 4. COMPRAS SUGERIDAS (de _sugData si existe, si no mostrar aviso)
+  if (_sugData && _sugData.length > 0) {
+    const periodo = (document.getElementById('sv-per')||{}).value||'6';
+    _agregarHojaAWorkbook(wb, {
+      datos: _sugData.map(r=>[r.cod,r.desc,r.cat,r.linea,r.marca,r.stkMin,r.stockAct,r.ocArribo||0,r.compraNeta,r.cobDias,r.promMes,r.ganUnit!==''?r.ganUnit:'',r.ocsRef]),
+      cabeceras:['Codigo','Descripcion','Categoria','Linea','Marca','Stk.Min','Stock Act.','OC por Arribar','Compra Neta','Cob.Dias','Prom/Mes','Gan.Unit.S/','OC Referencia'],
+      titulo:'SUGERIDO DE COMPRAS', subtitulo:'Período '+periodo+' meses',
+      filtros:'Sin filtros (todos los productos)',
+      sheetName:'Compras Sugeridas',
+      kpis:[{val:_sugData.length,lbl:'SKUs a reponer',color:'red'},{val:_sugData.filter(r=>r.cobDias<7).length,lbl:'Urgentes (<7d)',color:'amber'},{val:_sugData.filter(r=>r.compraNeta>0).length,lbl:'Compra neta >0',color:'blue'},{val:_sugData.reduce((s,r)=>s+(r.compraNeta||0),0),lbl:'Total unidades',color:'green'}],
+      colWidths:[12,35,16,14,14,8,9,12,10,8,8,10,20],
     });
-    ws.getColumn(1).width=5;
-    cabeceras.forEach((cab,i)=>{ws.getColumn(i+2).width=anchos&&anchos[i]?anchos[i]:Math.min(Math.max(cab.length+4,10),30);});
-    if(datos.length>0){const tf=ws.getRow(datos.length+3);tf.getCell(2).value='Total: '+datos.length+' registros';tf.getCell(2).font=mkFont(true,'FF1E3A5F',9);}
-    return ws;
   }
 
-  const stockMap={};
-  (D.stock||[]).forEach(s=>{stockMap[s.cod]=s;});
-  const kardMap={};
-  (D.kardex||[]).forEach(k=>{kardMap[k.cod]=k;});
-  const ocMap={};
-  (D.oc||[]).forEach(o=>{if(!ocMap[o.cod])ocMap[o.cod]=0;ocMap[o.cod]+=(o.cant||0);});
-
-  // ── PESTAÑA 1: PRODUCTOS OBSERVADOS ──
-  const obsData=(D.obs||[]).map(o=>{
-    const stk=(stockMap[o.cod]||{}).cant||0;
-    const ocStr=(o.ocActiva||[]).length>0?o.ocActiva.join(' / '):'—';
-    const sustStr=o.codRem?(o.codRem+(o.descRem?' — '+o.descRem:'')):'—';
-    return[o.cod,o.desc,o.cat,o.resp||'—',o.unidObs||0,stk,o.unidPend||0,
-      typeof o.monto==='number'?parseFloat(o.monto.toFixed(2)):0,
-      o.vtaMes||0,o.accion||'—',ocStr,sustStr,o.comentario||''];
+  // 5. HISTORIAL DE COMPRAS (misma lógica que expCompras sin filtros)
+  const dataC = [...D.compras];
+  const provsC = new Set(dataC.map(c=>c.prov)).size;
+  _agregarHojaAWorkbook(wb, {
+    datos: dataC.map(c=>[c.fechaStr||'—',c.cod,c.desc,c.cat||'—',c.gama||c.marca||'S/M',c.prov||'—',c.costoUnit||0,c.cant||0,c.total||0]),
+    cabeceras:['Fecha','Código','Descripción','Categoría','Marca/Gama','Proveedor','Precio C/IGV','Cantidad','Total S/'],
+    titulo:'HISTORIAL DE COMPRAS', subtitulo:'Precios incluyen IGV',
+    filtros:'Todas las compras',
+    sheetName:'Compras',
+    kpis:[{val:dataC.length,lbl:'Líneas de compra',color:'blue'},{val:provsC,lbl:'Proveedores',color:'green'},{val:dataC.reduce((s,c)=>s+(c.cant||0),0),lbl:'Unidades totales',color:'amber'},{val:new Set(dataC.map(c=>c.cod)).size,lbl:'SKUs distintos',color:'blue'}],
+    colWidths:[12,12,35,16,14,30,12,9,11],
+    colFmts:{6:(v)=>v?'S/'+Number(v).toFixed(2):'—',8:(v)=>v?'S/'+Number(v).toLocaleString('es-PE'):'—'},
   });
-  agregarHoja('🚨 Obs. SIG',
-    ['Código','Descripción','Categoría','Responsable','Unid.Obs','Stock Act.','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Sustituto','Comentario'],
-    obsData,'PRODUCTOS OBSERVADOS',[10,30,14,14,9,9,9,10,8,10,20,25,25]);
-
-  // ── PESTAÑA 2: INVENTARIO ACTUAL ──
-  const stockData=(D.stock||[]).map(s=>{
-    const tipo=s.tipo||'';
-    const vt=s.cant&&s.costoUnit?parseFloat((s.cant*s.costoUnit).toFixed(2)):0;
-    const prom=s.promMes||(s.vta3m?s.vta3m/3:0);
-    return[s.cod,s.desc,s.linea||'',s.cat||'',tipo,s.marca||'',
-      s.cant||0,typeof s.costoUnit==='number'?parseFloat(s.costoUnit.toFixed(2)):0,vt,
-      typeof s.vta3m==='number'?parseFloat(s.vta3m.toFixed(1)):0,
-      parseFloat(prom.toFixed(1)),
-      typeof s.cobDias==='number'?Math.round(s.cobDias):'—',s.estadoCob||''];
-  });
-  agregarHoja('📦 Inventario',
-    ['Código','Descripción','Línea','Categoría','Clasificación','Marca','Cant.','Costo Unit S/','Valor Total S/','Vta 3M','Prom/Mes','Cob.Días','Estado Cob.'],
-    stockData,'INVENTARIO ACTUAL',[10,30,14,14,14,12,7,12,14,8,8,8,10]);
-
-  // ── PESTAÑA 3: VENTAS & COBERTURA ──
-  const ventasData=(D.kardex||[])
-    .filter(k=>(k.vta3m||0)>0||(k.promMes||0)>0)
-    .sort((a,b)=>(b.vta3m||0)-(a.vta3m||0))
-    .map(k=>{
-      const s=stockMap[k.cod]||{};const stk=s.cant||0;
-      const prom=k.promMes||(k.vta3m?k.vta3m/3:0);
-      const cob=prom>0?parseFloat((stk/prom).toFixed(1)):0;
-      return[k.cod,k.desc,k.cat||'',k.linea||'',k.act6m?'SI':'NO',
-        parseFloat((k.vta3m||0).toFixed(0)),parseFloat(prom.toFixed(1)),stk,cob,
-        cob<7?'🔴 CRÍTICO':cob<30?'🟡 BAJO':cob>=90?'⚫ EXCESO':'🟢 OK'];
-    });
-  agregarHoja('📈 Ventas & Cob.',
-    ['Código','Descripción','Categoría','Línea','Activo 6M','Vta 3M','Prom/Mes','Stock Act.','Cob.Días','Estado'],
-    ventasData,'VENTAS & COBERTURA',[10,30,14,14,9,10,9,9,9,12]);
-
-  // ── PESTAÑA 4: COMPRAS SUGERIDAS ──
-  const sugData=[];
-  (D.kardex||[]).forEach(k=>{
-    const s=stockMap[k.cod]||{};const stk=s.cant||0;
-    const prom=k.promMes||(k.vta3m?k.vta3m/3:0);
-    if(prom<=0) return;
-    const stkMin=Math.ceil(prom*1.5);
-    const ocCant=ocMap[k.cod]||0;
-    const neto=Math.max(0,stkMin-stk-ocCant);
-    const cob=prom>0?parseFloat((stk/prom).toFixed(1)):0;
-    if(neto>0||cob<30){
-      sugData.push([k.cod,k.desc,k.cat||'',k.linea||'',stk,stkMin,ocCant,neto,
-        parseFloat(prom.toFixed(1)),cob,
-        cob<7?'🔴 CRÍTICO':cob<30?'🟡 BAJO':'🟢 OK',
-        (D.obs||[]).some(o=>o.cod===k.cod)?'OBS':'']);
-    }
-  });
-  sugData.sort((a,b)=>(a[9]||0)-(b[9]||0));
-  agregarHoja('🛒 Compras Sugeridas',
-    ['Código','Descripción','Categoría','Línea','Stock Act.','Stk.Mín','OC Arribo','Compra Neta','Prom/Mes','Cob.Días','Estado','¿Obs?'],
-    sugData,'COMPRAS SUGERIDAS — REPOSICIÓN',[10,30,14,14,9,9,9,10,9,9,12,6]);
-
-  // ── PESTAÑA 5: ÚLTIMAS COMPRAS ──
-  const prevMapC={};
-  const comprasData=(D.compras||[]).map(c=>{
-    const prev=prevMapC[c.cod];
-    let varPct='—';
-    if(prev&&prev>0&&c.costoUnit>0){const d=((c.costoUnit-prev)/prev*100);varPct=(d>0?'+':'')+d.toFixed(1)+'%';}
-    prevMapC[c.cod]=c.costoUnit;
-    return[c.fechaStr||'',c.cod,c.desc,c.gama||c.marca||'',c.cat||'',c.prov||'—',
-      typeof c.costoUnit==='number'?parseFloat(c.costoUnit.toFixed(2)):0,
-      c.cant||0,
-      typeof c.total==='number'?parseFloat(c.total.toFixed(2)):0,
-      varPct,(D.obs||[]).some(o=>o.cod===c.cod)?'OBS':''];
-  });
-  agregarHoja('📋 Últimas Compras',
-    ['Fecha','Código','Descripción','Gama/Marca','Categoría','Proveedor','Precio c/IGV','Cantidad','Total S/','Var.%','¿Obs?'],
-    comprasData,'ÚLTIMAS COMPRAS',[12,10,30,12,14,20,12,8,12,8,6]);
-
-  // ── PESTAÑA 6: MAESTRO DE SUSTITUCIONES ──
-  const sustData=(D.sust||[]).map(s=>[
-    s.cod_obs,s.desc_obs||'',s.tipo||'',s.conf||'',s.fuente||'',s.rec||0,
-    s.cod_rem||'',s.desc_rem||'',s.cat||'',s.cmt||'',s.activo?'SI':'NO']);
-  agregarHoja('🔄 Sustituciones',
-    ['Cód.Observado','Desc.Observado','Tipo','Confianza','Fuente','Veces','Cód.Reemplazo','Desc.Reemplazo','Categoría','Comentario/Patrón','Activo'],
-    sustData,'MAESTRO DE SUSTITUCIONES',[10,30,12,10,10,6,10,30,14,30,7]);
 
   // ── GENERAR Y DESCARGAR ──
-  const nombreArchivo='Reporte_Merpes_'+hoy.toISOString().split('T')[0]+'.xlsx';
-  wb.xlsx.writeBuffer().then(buffer=>{
-    const blob=new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url=URL.createObjectURL(blob);const a=document.createElement('a');
-    a.href=url;a.download=nombreArchivo;a.click();
+  const nombreArchivo = 'Reporte_Merpes_'+fecha+'.xlsx';
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download=nombreArchivo; a.click();
     setTimeout(()=>URL.revokeObjectURL(url),3000);
-    alert('✅ Reporte descargado: '+nombreArchivo);
-  }).catch(e=>{console.error('ExcelJS error:',e);alert('Error generando el Excel: '+e.message);});
+  }).catch(e => {
+    console.error('ExcelJS error:',e);
+    alert('Error generando el Excel: '+e.message);
+  });
 }
+
 
 
 </script>
