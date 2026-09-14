@@ -791,6 +791,18 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
 
+  <!-- BOTÓN EXPORTAR REPORTE COMPLETO -->
+  <div style="background:var(--green-lt);border:1.5px solid var(--green);border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">📊 EXPORTAR REPORTE COMPLETO</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+      Genera un Excel con 5 pestañas: Observados · Inventario · Ventas · Compras · Sustituciones.<br>
+      <b>Usar después de cargar y procesar los archivos</b> (o después de cargar el estado publicado).
+    </div>
+    <button class="btn-pub" onclick="expReporteCompleto()" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">
+      📥 Descargar Reporte Completo (.xlsx)
+    </button>
+  </div>
+
   <!-- BANNER DE ESTADO REMOTO -->
   <div id="gh-status-banner" class="gh-banner warn" style="display:none;">
     <span>⏳</span><span id="gh-status-txt">Verificando estado compartido...</span>
@@ -5100,6 +5112,170 @@ function exportarExcelConLogo(datos, nombreArchivo, cabeceras, titulo, filtrosSt
   }).catch(e=>{
     console.error('ExcelJS error:',e);
     alert('Error generando el Excel: '+e.message);
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// EXPORTAR REPORTE COMPLETO — 5 pestañas en un solo Excel
+// ═══════════════════════════════════════════════════════════
+function expReporteCompleto() {
+  if (typeof ExcelJS === 'undefined') {
+    alert('Librería ExcelJS no cargada. Verifica tu conexión a internet.'); return;
+  }
+  if (!D.kardex || D.kardex.length === 0) {
+    alert('Carga el Kardex primero antes de exportar el reporte completo.'); return;
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Grupo Merpes Perú S.A.C.';
+  const hoy = new Date();
+  const fechaStr = hoy.toLocaleDateString('es-PE');
+  const AZUL = 'FF1E3A5F', AZUL_L = 'FFEBF2FA', BLANCO = 'FFFFFFFF';
+  const ROJO_L = 'FFFEE2E2', AMBER_L = 'FFFEF3C7', VERDE_L = 'FFDCFCE7';
+
+  const mkFill = c => ({type:'pattern',pattern:'solid',fgColor:{argb:c}});
+  const mkFont = (bold,color,sz) => ({name:'Calibri',bold:!!bold,color:{argb:color||'FF000000'},size:sz||10});
+  const mkAln  = (h,v) => ({horizontal:h||'left',vertical:v||'middle',wrapText:false});
+  const mkBord = () => ({top:{style:'thin',color:{argb:'FFD1D5E8'}},bottom:{style:'thin',color:{argb:'FFD1D5E8'}},left:{style:'thin',color:{argb:'FFD1D5E8'}},right:{style:'thin',color:{argb:'FFD1D5E8'}}});
+
+  function agregarCabecera(ws, titulo, fecha) {
+    ws.mergeCells('A1:P1');
+    const c1 = ws.getCell('A1');
+    c1.value = 'GRUPO MERPES PERÚ S.A.C.  |  ' + titulo + '  |  ' + fecha;
+    c1.fill = mkFill(AZUL);
+    c1.font = mkFont(true, BLANCO, 12);
+    c1.alignment = mkAln('center','middle');
+    ws.getRow(1).height = 22;
+  }
+
+  function estilizarFila(ws, numFila, numCols, esHeader) {
+    const row = ws.getRow(numFila);
+    for (let c = 1; c <= numCols; c++) {
+      const cell = row.getCell(c);
+      if (esHeader) {
+        cell.fill = mkFill('FF2D5A8E');
+        cell.font = mkFont(true, BLANCO, 9);
+      } else {
+        cell.fill = mkFill(numFila % 2 === 0 ? AZUL_L : BLANCO);
+        cell.font = mkFont(false, 'FF1A1E2E', 9);
+      }
+      cell.border = mkBord();
+      cell.alignment = mkAln('left','middle');
+    }
+    row.height = esHeader ? 18 : 15;
+  }
+
+  function agregarHoja(wb, nombre, cabeceras, datos, titulo) {
+    const ws = wb.addWorksheet(nombre);
+    agregarCabecera(ws, titulo, fechaStr);
+
+    // Fila de cabeceras
+    ws.getRow(2).values = ['#'].concat(cabeceras);
+    estilizarFila(ws, 2, cabeceras.length + 1, true);
+
+    // Datos
+    datos.forEach((fila, idx) => {
+      ws.getRow(idx + 3).values = [idx + 1].concat(fila);
+      estilizarFila(ws, idx + 3, cabeceras.length + 1, false);
+    });
+
+    // Anchos automáticos
+    ws.columns.forEach((col, i) => {
+      col.width = i === 0 ? 5 : (cabeceras[i-1] ? Math.min(Math.max(cabeceras[i-1].length + 4, 12), 35) : 12);
+    });
+
+    // Fila total si hay datos
+    if (datos.length > 0) {
+      const totalFila = datos.length + 3;
+      ws.getRow(totalFila).values = ['', 'TOTAL: ' + datos.length + ' registros'];
+      const cell = ws.getRow(totalFila).getCell(2);
+      cell.font = mkFont(true, 'FF1E3A5F', 9);
+    }
+  }
+
+  // ── PESTAÑA 1: PRODUCTOS OBSERVADOS ──
+  const obsData = (D.obs || []).map(o => [
+    o.cod, o.desc, o.cat, o.resp||'—',
+    o.unidObs||0, o.unidPend||0,
+    typeof o.monto === 'number' ? o.monto.toFixed(2) : '0.00',
+    o.vtaMes||0, o.accion||'—',
+    (o.ocActiva||[]).join(';')||'—',
+    o.codRem||'—', o.descRem||'—',
+    o.comentario||'', o.fechaArribo||''
+  ]);
+  agregarHoja(wb, '🚨 Obs. SIG', 
+    ['Código','Descripción','Categoría','Responsable','Unid.Obs','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Cod.Rempl.','Desc.Rempl.','Comentario','F.Arribo Est.'],
+    obsData, 'PRODUCTOS OBSERVADOS');
+
+  // ── PESTAÑA 2: INVENTARIO ACTUAL (STOCK) ──
+  const stockData = (D.stock || []).map(s => [
+    s.cod, s.desc, s.linea||'', s.cat||'',
+    s.clasificacion||'', s.marca||'',
+    s.cant||0,
+    typeof s.costoUnit === 'number' ? s.costoUnit.toFixed(2) : '0.00',
+    typeof s.valorTotal === 'number' ? s.valorTotal.toFixed(2) : '0.00',
+    typeof s.vta3m === 'number' ? s.vta3m.toFixed(1) : '0.0',
+    typeof s.promMes === 'number' ? s.promMes.toFixed(1) : '0.0',
+    typeof s.cobDias === 'number' ? s.cobDias.toFixed(0) : '—',
+    s.estadoCob||'', s.activo ? 'SI' : 'NO'
+  ]);
+  agregarHoja(wb, '📦 Inventario',
+    ['Código','Descripción','Línea','Categoría','Clasificación','Marca','Cant.','Costo Unit S/','Valor Total S/','Vta 3M','Prom/Mes','Cob.Días','Estado Cob.','Activo?'],
+    stockData, 'INVENTARIO ACTUAL');
+
+  // ── PESTAÑA 3: VENTAS & COBERTURA (kardex resumido) ──
+  const skusActivos = {};
+  (D.kardex || []).forEach(k => {
+    if (!skusActivos[k.cod]) skusActivos[k.cod] = {cod:k.cod, desc:k.desc, cat:k.cat||'', linea:k.linea||'', vta3m:0, vtaMes:0};
+    const d = skusActivos[k.cod];
+    if (k.tipo === '01-Venta' || k.tipo === '07-Bonif') {
+      d.vta3m += Math.abs(k.qty || 0);
+      d.vtaMes = d.vta3m / 3;
+    }
+  });
+  const ventasData = Object.values(skusActivos)
+    .filter(s => s.vta3m > 0)
+    .sort((a,b) => b.vta3m - a.vta3m)
+    .map(s => [s.cod, s.desc, s.cat, s.linea, s.vta3m.toFixed(0), s.vtaMes.toFixed(1)]);
+  agregarHoja(wb, '📈 Ventas',
+    ['Código','Descripción','Categoría','Línea','Unid. Vta 3M','Prom/Mes'],
+    ventasData, 'VENTAS & COBERTURA — SKUs ACTIVOS');
+
+  // ── PESTAÑA 4: ÚLTIMAS COMPRAS ──
+  const comprasData = (D.compras || []).map(c => [
+    c.fechaStr||'', c.cod, c.desc, c.gama||'', c.cat||'', c.prov||'',
+    typeof c.precioIgv === 'number' ? c.precioIgv.toFixed(2) : '0.00',
+    c.cant||0,
+    typeof c.total === 'number' ? c.total.toFixed(2) : '0.00',
+    typeof c.varPct === 'number' ? c.varPct.toFixed(1)+'%' : '—',
+    c.esObs ? 'OBS' : ''
+  ]);
+  agregarHoja(wb, '🛒 Compras',
+    ['Fecha','Código','Descripción','Gama/Marca','Categoría','Proveedor','Precio c/IGV','Cantidad','Total S/','Var.%','¿Obs?'],
+    comprasData, 'ÚLTIMAS COMPRAS');
+
+  // ── PESTAÑA 5: MAESTRO DE SUSTITUCIONES ──
+  const sustData = (D.sust || []).map(s => [
+    s.cod_obs, s.desc_obs, s.tipo||'', s.conf||'', s.fuente||'',
+    s.rec||0, s.cod_rem||'', s.desc_rem||'', s.cat||'',
+    s.cmt||'', s.activo ? 'SI' : 'NO'
+  ]);
+  agregarHoja(wb, '🔄 Sustituciones',
+    ['Cód.Observado','Desc.Observado','Tipo','Confianza','Fuente','Veces','Cód.Reemplazo','Desc.Reemplazo','Categoría','Comentario','Activo'],
+    sustData, 'MAESTRO DE SUSTITUCIONES');
+
+  // ── GENERAR Y DESCARGAR ──
+  const nombreArchivo = 'Reporte_Merpes_' + hoy.toISOString().split('T')[0] + '.xlsx';
+  wb.xlsx.writeBuffer().then(buffer => {
+    const blob = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = nombreArchivo; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }).catch(e => {
+    console.error('ExcelJS error:', e);
+    alert('Error generando el Excel: ' + e.message);
   });
 }
 
