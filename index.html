@@ -3169,8 +3169,8 @@ function expObs(){
           {val:pendientes,lbl:'Con pendiente venta',color:'amber'},
           {val:'S/'+Math.round(totalMonto).toLocaleString('es-PE'),lbl:'Monto total S/',color:'blue'},
           {val:data.filter(o=>o.accion==='COMPRAR').length,lbl:'Por comprar',color:'green'}],
-    colWidths:[12,35,16,14,9,10,10,8,12,14,12,35,25,12],
-    colFmts:{6:(v)=>v?'S/'+Number(v).toLocaleString('es-PE'):'—'},
+    colWidths:[12,35,16,14,9,9,10,10,8,12,14,12,35,25,12],
+    colFmts:{7:(v)=>v?'S/'+Number(v).toLocaleString('es-PE'):'—'},
   });
 }
 function expObsCSV(){
@@ -5251,14 +5251,17 @@ function expReporteCompleto() {
   const dataO = [...D.obs];
   const totalMontoO = dataO.reduce((s,o)=>s+(o.monto||0),0);
   _agregarHojaAWorkbook(wb, {
-    datos: dataO.map(o=>[o.cod,o.desc,o.cat,o.resp||'—',o.unidObs||0,o.unidPend||0,o.monto||0,o.vtaMes||0,o.accion||'—',(o.ocActiva||[]).join(';')||'—',o.codRem||'—',o.descRem||'—',o.comentario||'',o.fechaArribo||'']),
-    cabeceras:['Código','Descripción','Categoría','Responsable','Unid.Obs','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Cod.Rempl.','Desc.Rempl.','Comentario','F.Arribo Est.'],
+    datos: dataO.map(o=>{
+      const stkAct=(D.stock.find(s=>s.cod===o.cod)||{}).cant||0;
+      return [o.cod,o.desc,o.cat,o.resp||'—',o.unidObs||0,stkAct,o.unidPend||0,o.monto||0,o.vtaMes||0,o.accion||'—',(o.ocActiva||[]).join(';')||'—',o.codRem||'—',o.descRem||'—',o.comentario||'',o.fechaArribo||''];
+    }),
+    cabeceras:['Código','Descripción','Categoría','Responsable','Unid.Obs','Stock Act.','Pend.Venta','Monto S/','Vta/Mes','Acción','OC Activa','Cod.Rempl.','Desc.Rempl.','Comentario','F.Arribo Est.'],
     titulo:'PRODUCTOS OBSERVADOS', subtitulo:'Gestión de quiebres de stock',
     filtros:'Todos los observados',
     sheetName:'Observados',
     kpis:[{val:dataO.length,lbl:'Total observados',color:'red'},{val:dataO.filter(o=>(o.unidPend||0)>0).length,lbl:'Con pendiente',color:'amber'},{val:'S/'+Math.round(totalMontoO).toLocaleString('es-PE'),lbl:'Monto total S/',color:'blue'},{val:dataO.filter(o=>o.accion==='COMPRAR').length,lbl:'Por comprar',color:'green'}],
-    colWidths:[12,35,16,14,9,10,10,8,12,14,12,35,25,12],
-    colFmts:{6:(v)=>v?'S/'+Number(v).toLocaleString('es-PE'):'—'},
+    colWidths:[12,35,16,14,9,9,10,10,8,12,14,12,35,25,12],
+    colFmts:{7:(v)=>v?'S/'+Number(v).toLocaleString('es-PE'):'—'},
   });
 
   // 4. COMPRAS SUGERIDAS (de _sugData si existe, si no mostrar aviso)
