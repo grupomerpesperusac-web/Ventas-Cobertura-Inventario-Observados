@@ -600,50 +600,91 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     </div>
   </div>
 
-  <!-- CLASES: SKUs + Montos -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #7c3aed;">
-    <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">⭐ Por Clase — SKUs · S/ Valor</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-estrella" style="font-size:13px;font-weight:700;color:#166534;">—</div>
-        <div id="sk-cls-estrella-s" style="font-size:8px;font-weight:600;color:#166534;">—</div>
-        <div style="font-size:8px;color:var(--text3);">⭐ Estrella</div>
+  <!-- CLASES: tarjetas con SKUs, S/ y % -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #7c3aed;flex:1;">
+    <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⭐ Por Clase de Inventario</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+
+      <div style="background:#dcfce7;border-radius:6px;padding:6px 8px;border-top:3px solid #166534;">
+        <div style="font-size:9px;font-weight:700;color:#166534;">⭐ Estrella</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-estrella" style="font-size:16px;font-weight:700;color:#166534;">—</span>
+          <span id="sk-cls-estrella-pct" style="font-size:9px;color:#166534;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-estrella-s" style="font-size:9px;color:#166534;font-weight:600;">—</div>
+        <div id="sk-cls-estrella-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-volumen" style="font-size:13px;font-weight:700;color:#92400e;">—</div>
-        <div id="sk-cls-volumen-s" style="font-size:8px;font-weight:600;color:#92400e;">—</div>
-        <div style="font-size:8px;color:var(--text3);">⚠️ Volumen</div>
+
+      <div style="background:#fef3c7;border-radius:6px;padding:6px 8px;border-top:3px solid #92400e;">
+        <div style="font-size:9px;font-weight:700;color:#92400e;">⚠️ Volumen</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-volumen" style="font-size:16px;font-weight:700;color:#92400e;">—</span>
+          <span id="sk-cls-volumen-pct" style="font-size:9px;color:#92400e;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-volumen-s" style="font-size:9px;color:#92400e;font-weight:600;">—</div>
+        <div id="sk-cls-volumen-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-joya" style="font-size:13px;font-weight:700;color:#1d4ed8;">—</div>
-        <div id="sk-cls-joya-s" style="font-size:8px;font-weight:600;color:#1d4ed8;">—</div>
-        <div style="font-size:8px;color:var(--text3);">💎 Joya</div>
+
+      <div style="background:#dbeafe;border-radius:6px;padding:6px 8px;border-top:3px solid #1d4ed8;">
+        <div style="font-size:9px;font-weight:700;color:#1d4ed8;">💎 Joya</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-joya" style="font-size:16px;font-weight:700;color:#1d4ed8;">—</span>
+          <span id="sk-cls-joya-pct" style="font-size:9px;color:#1d4ed8;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-joya-s" style="font-size:9px;color:#1d4ed8;font-weight:600;">—</div>
+        <div id="sk-cls-joya-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-oport" style="font-size:13px;font-weight:700;color:#c2410c;">—</div>
-        <div id="sk-cls-oport-s" style="font-size:8px;font-weight:600;color:#c2410c;">—</div>
-        <div style="font-size:8px;color:var(--text3);">🟠 Oport.</div>
+
+      <div style="background:#ffedd5;border-radius:6px;padding:6px 8px;border-top:3px solid #c2410c;">
+        <div style="font-size:9px;font-weight:700;color:#c2410c;">🟠 Oportunidad</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-oport" style="font-size:16px;font-weight:700;color:#c2410c;">—</span>
+          <span id="sk-cls-oport-pct" style="font-size:9px;color:#c2410c;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-oport-s" style="font-size:9px;color:#c2410c;font-weight:600;">—</div>
+        <div id="sk-cls-oport-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-probl" style="font-size:13px;font-weight:700;color:#991b1b;">—</div>
-        <div id="sk-cls-probl-s" style="font-size:8px;font-weight:600;color:#991b1b;">—</div>
-        <div style="font-size:8px;color:var(--text3);">🔴 Probl.</div>
+
+      <div style="background:#fee2e2;border-radius:6px;padding:6px 8px;border-top:3px solid #991b1b;">
+        <div style="font-size:9px;font-weight:700;color:#991b1b;">🔴 Problemático</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-probl" style="font-size:16px;font-weight:700;color:#991b1b;">—</span>
+          <span id="sk-cls-probl-pct" style="font-size:9px;color:#991b1b;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-probl-s" style="font-size:9px;color:#991b1b;font-weight:600;">—</div>
+        <div id="sk-cls-probl-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-obsol" style="font-size:13px;font-weight:700;color:#374151;">—</div>
-        <div id="sk-cls-obsol-s" style="font-size:8px;font-weight:600;color:#374151;">—</div>
-        <div style="font-size:8px;color:var(--text3);">⚫ Obsoleto</div>
+
+      <div style="background:#f1f5f9;border-radius:6px;padding:6px 8px;border-top:3px solid #374151;">
+        <div style="font-size:9px;font-weight:700;color:#374151;">⚫ Obsoleto</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-obsol" style="font-size:16px;font-weight:700;color:#374151;">—</span>
+          <span id="sk-cls-obsol-pct" style="font-size:9px;color:#374151;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-obsol-s" style="font-size:9px;color:#374151;font-weight:600;">—</div>
+        <div id="sk-cls-obsol-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-alerta" style="font-size:13px;font-weight:700;color:#dc2626;">—</div>
-        <div id="sk-cls-alerta-s" style="font-size:8px;font-weight:600;color:#dc2626;">—</div>
-        <div style="font-size:8px;color:var(--text3);">🔴 Gan.neg.</div>
+
+      <div style="background:#fef2f2;border-radius:6px;padding:6px 8px;border-top:3px solid #dc2626;">
+        <div style="font-size:9px;font-weight:700;color:#dc2626;">🔴 Gan.neg.</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-alerta" style="font-size:16px;font-weight:700;color:#dc2626;">—</span>
+          <span id="sk-cls-alerta-pct" style="font-size:9px;color:#dc2626;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-alerta-s" style="font-size:9px;color:#dc2626;font-weight:600;">—</div>
+        <div id="sk-cls-alerta-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
-      <div style="text-align:center;min-width:58px;">
-        <div id="sk-cls-revisar" style="font-size:13px;font-weight:700;color:#6b7280;">—</div>
-        <div id="sk-cls-revisar-s" style="font-size:8px;font-weight:600;color:#6b7280;">—</div>
-        <div style="font-size:8px;color:var(--text3);">❓ Revisar</div>
+
+      <div style="background:#f9fafb;border-radius:6px;padding:6px 8px;border-top:3px solid #6b7280;">
+        <div style="font-size:9px;font-weight:700;color:#6b7280;">❓ Revisar</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
+          <span id="sk-cls-revisar" style="font-size:16px;font-weight:700;color:#6b7280;">—</span>
+          <span id="sk-cls-revisar-pct" style="font-size:9px;color:#6b7280;font-weight:600;">—%</span>
+        </div>
+        <div id="sk-cls-revisar-s" style="font-size:9px;color:#6b7280;font-weight:600;">—</div>
+        <div id="sk-cls-revisar-spct" style="font-size:8px;color:#6b7280;">— del total</div>
       </div>
+
     </div>
   </div>
 
@@ -1028,6 +1069,8 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <div class="cbox"><h4>📊 Distribución por tipo de cambio</h4><canvas id="ch-sust-tipo" height="220"></canvas></div>
   <div class="cbox"><h4>📊 Distribuc
 
+</div>
+</div>
 </div>
 
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
@@ -2428,10 +2471,15 @@ function renderStock(){
   const setK=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
   const clases=['ESTRELLA','VOLUMEN','JOYA','OPORTUNIDAD','PROBLEMÁTICO','OBSOLETO','ALERTA','REVISAR'];
   const ids   =['estrella','volumen','joya','oport','probl','obsol','alerta','revisar'];
+  const totalSkus = data.length || 1;
+  const totalMonto = data.reduce((s,d)=>s+(d.costoTotal||0),0) || 1;
   clases.forEach((cls,i)=>{
     const skus=data.filter(d=>d.tipo===cls);
+    const skuMonto=skus.reduce((s,d)=>s+(d.costoTotal||0),0);
     setK('sk-cls-'+ids[i], skus.length);
-    setK('sk-cls-'+ids[i]+'-s', fmtS(skus.reduce((s,d)=>s+(d.costoTotal||0),0)));
+    setK('sk-cls-'+ids[i]+'-pct', (skus.length/totalSkus*100).toFixed(1)+'%');
+    setK('sk-cls-'+ids[i]+'-s', fmtS(skuMonto));
+    setK('sk-cls-'+ids[i]+'-spct', (skuMonto/totalMonto*100).toFixed(1)+'% del total');
   });
 
   let html='';
