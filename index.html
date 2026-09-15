@@ -582,13 +582,81 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 <div class="tip">
   Stock actual ordenado de <b>mayor a menor valor</b>. Criterios de análisis: <b>Rotación</b> (Vtas3M/Stock), <b>Cobertura</b> (Stock/Vta30D). <b>Gan. Unit.</b> = promedio (V.Venta − V.Costo) de ventas históricas. 🟢 ≥S/700 · 🟡 S/0–699 · 🔴 negativa (vendido bajo costo).
 </div>
-<div class="krow">
-  <div class="kpi k-blue"><div class="kv" id="sk-total">—</div><div class="kl">Total SKUs stock</div></div>
-  <div class="kpi k-blue"><div class="kv" id="sk-monto">—</div><div class="kl">Valor total S/</div></div>
-  <div class="kpi k-red"><div class="kv" id="sk-crit">—</div><div class="kl">Cob. crítica &lt;7d</div></div>
-  <div class="kpi k-amber"><div class="kv" id="sk-warn">—</div><div class="kl">Cob. baja 7-30d</div></div>
-  <div class="kpi k-green"><div class="kv" id="sk-ok">—</div><div class="kl">Cob. ok ≥30d</div></div>
-  <div class="kpi k-purple"><div class="kv" id="sk-svtas">—</div><div class="kl">Sin ventas 3M</div></div>
+<!-- KPI INVENTARIO: 3 subgrupos -->
+<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:10px;margin-bottom:10px;align-items:start;">
+
+  <!-- SUBGRUPO 1: PRINCIPAL -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--blue);">
+    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📦 Principal</div>
+    <div style="display:flex;gap:10px;">
+      <div style="text-align:center;">
+        <div class="kv" id="sk-monto" style="font-size:20px;font-weight:700;color:var(--blue);">—</div>
+        <div style="font-size:9px;color:var(--text3);">Valor total S/</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-total" style="font-size:20px;font-weight:700;color:var(--blue);">—</div>
+        <div style="font-size:9px;color:var(--text3);">Total SKUs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBGRUPO 2: CLASES -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #7c3aed;">
+    <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">⭐ Por Clase (SKUs)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-estrella" style="font-size:16px;font-weight:700;color:#166534;">—</div>
+        <div style="font-size:8px;color:var(--text3);">⭐ Estrella</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-volumen" style="font-size:16px;font-weight:700;color:#92400e;">—</div>
+        <div style="font-size:8px;color:var(--text3);">⚠️ Volumen</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-joya" style="font-size:16px;font-weight:700;color:#1d4ed8;">—</div>
+        <div style="font-size:8px;color:var(--text3);">💎 Joya</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-oport" style="font-size:16px;font-weight:700;color:#c2410c;">—</div>
+        <div style="font-size:8px;color:var(--text3);">🟠 Oport.</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-probl" style="font-size:16px;font-weight:700;color:#991b1b;">—</div>
+        <div style="font-size:8px;color:var(--text3);">🔴 Probl.</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-obsol" style="font-size:16px;font-weight:700;color:#374151;">—</div>
+        <div style="font-size:8px;color:var(--text3);">⚫ Obsoleto</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-cls-alerta" style="font-size:16px;font-weight:700;color:#991b1b;">—</div>
+        <div style="font-size:8px;color:var(--text3);">🔴 Gan.neg.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBGRUPO 3: COBERTURAS -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);">
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📊 Coberturas (SKUs)</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div class="kv" id="sk-crit" style="font-size:16px;font-weight:700;color:#991b1b;">—</div>
+        <div style="font-size:8px;color:var(--text3);">🔴 Crítica &lt;7d</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-warn" style="font-size:16px;font-weight:700;color:#92400e;">—</div>
+        <div style="font-size:8px;color:var(--text3);">🟡 Baja 7-30d</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-ok" style="font-size:16px;font-weight:700;color:#166534;">—</div>
+        <div style="font-size:8px;color:var(--text3);">🟢 OK ≥30d</div>
+      </div>
+      <div style="text-align:center;">
+        <div class="kv" id="sk-svtas" style="font-size:16px;font-weight:700;color:#374151;">—</div>
+        <div style="font-size:8px;color:var(--text3);">⚫ Sin ventas</div>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="tbox">
   <div class="tbox-h">
@@ -621,17 +689,43 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     </div>
   </div>
   <div class="tw">
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0 4px;font-size:9px;padding:6px 10px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;">
-  <span style="font-weight:700;color:var(--text2);margin-right:4px;">Clases SKU:</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#fef3c7;border-radius:10px;font-weight:600;">⭐ Estrella</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#fee2e2;border-radius:10px;font-weight:600;">🔴 Gan. negativa</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#fef3c7;border-radius:10px;font-weight:600;">🔺 Generador Volumen</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#ecfdf5;border-radius:10px;font-weight:600;">💎 Joya Oculta</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#eff6ff;border-radius:10px;font-weight:600;">🔵 Oportunidad</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#fef2f2;border-radius:10px;font-weight:600;">🔴 Problemático</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#f1f5f9;border-radius:10px;font-weight:600;">⚫ Obsoleto</span>
-  <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:#f1f5f9;border-radius:10px;font-weight:600;">❓ Revisar</span>
-  <span style="margin-left:8px;color:var(--text3);font-size:8px;">• Estrella=Alto valor+buena rotación · Joya=Bajo stock+buena rotación · Obsoleto=Sin ventas 3M+bajo valor</span>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:10px 0 12px;padding:10px;background:var(--bg2);border-radius:8px;">
+  <div style="font-size:10px;font-weight:700;color:var(--text);grid-column:1/-1;margin-bottom:2px;">📊 CLASES DE INVENTARIO — Matriz Rotación × Valor</div>
+  <div style="background:#dcfce7;border-radius:6px;padding:8px 10px;border-left:3px solid #166534;">
+    <div style="font-size:11px;font-weight:700;color:#166534;">⭐ ESTRELLA</div>
+    <div style="font-size:9px;color:#166534;margin-top:2px;">Rotación ALTA · Ganancia ≥S/700</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Prioridad máxima de reposición. Nunca deben quebrar stock.</div>
+  </div>
+  <div style="background:#fef3c7;border-radius:6px;padding:8px 10px;border-left:3px solid #92400e;">
+    <div style="font-size:11px;font-weight:700;color:#92400e;">⚠️ GENERADOR VOLUMEN</div>
+    <div style="font-size:9px;color:#92400e;margin-top:2px;">Rotación ALTA · Ganancia S/0–699</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Mueven mucho pero con poco margen. Útiles para flujo de caja.</div>
+  </div>
+  <div style="background:#dbeafe;border-radius:6px;padding:8px 10px;border-left:3px solid #1d4ed8;">
+    <div style="font-size:11px;font-weight:700;color:#1d4ed8;">💎 JOYA OCULTA</div>
+    <div style="font-size:9px;color:#1d4ed8;margin-top:2px;">Rotación BAJA · Ganancia ≥S/700</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Poco movimiento pero buen margen. Revisar visibilidad comercial.</div>
+  </div>
+  <div style="background:#ffedd5;border-radius:6px;padding:8px 10px;border-left:3px solid #c2410c;">
+    <div style="font-size:11px;font-weight:700;color:#c2410c;">🟠 OPORTUNIDAD</div>
+    <div style="font-size:9px;color:#c2410c;margin-top:2px;">Rotación MEDIA · Ganancia MEDIA</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Potencial de mejora si se trabaja comercialmente.</div>
+  </div>
+  <div style="background:#fee2e2;border-radius:6px;padding:8px 10px;border-left:3px solid #991b1b;">
+    <div style="font-size:11px;font-weight:700;color:#991b1b;">🔴 PROBLEMÁTICO</div>
+    <div style="font-size:9px;color:#991b1b;margin-top:2px;">Rotación BAJA · Ganancia BAJA o NEGATIVA</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Candidatos a liquidar, devolver o cambiar precio urgente.</div>
+  </div>
+  <div style="background:#f1f5f9;border-radius:6px;padding:8px 10px;border-left:3px solid #374151;">
+    <div style="font-size:11px;font-weight:700;color:#374151;">⚫ OBSOLETO</div>
+    <div style="font-size:9px;color:#374151;margin-top:2px;">Sin ventas en 3M · Con stock disponible</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Capital inmovilizado. Oferta de liquidación o baja inmediata.</div>
+  </div>
+  <div style="background:#fef2f2;border-radius:6px;padding:8px 10px;border-left:3px solid #dc2626;">
+    <div style="font-size:11px;font-weight:700;color:#dc2626;">🔴 GANANCIA NEGATIVA</div>
+    <div style="font-size:9px;color:#dc2626;margin-top:2px;">Ganancia &lt; 0 · Cualquier rotación</div>
+    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Se vende bajo costo. Revisar precios, bonificaciones o registros.</div>
+  </div>
 </div>
 <table><thead><tr>
       <th>#</th><th>Código</th><th>Descripción</th><th>Línea</th><th>Categoría</th><th>⭐ Clasificación</th><th>Marca</th>
@@ -787,66 +881,6 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <span class="chip c-amber">🤖 SUGERIDA</span> = inferida por similitud de descripción ·
   <span class="chip c-morado">✏️ MANUAL</span> = ingresada por el equipo de Compras
 </div>
-</div>
-
-<div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
-
-  <!-- BOTÓN EXPORTAR REPORTE COMPLETO -->
-  <div style="background:var(--green-lt);border:1.5px solid var(--green);border-radius:8px;padding:14px 18px;margin-bottom:16px;">
-    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">📊 EXPORTAR REPORTE COMPLETO</div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
-      Genera un Excel con 5 pestañas: Observados · Inventario · Ventas · Compras · Sustituciones.<br>
-      <b>Usar después de cargar y procesar los archivos</b> (o después de cargar el estado publicado).
-    </div>
-    <button class="btn-pub" onclick="expReporteCompleto()" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">
-      📥 Descargar Reporte Completo (.xlsx)
-    </button>
-  </div>
-
-  <!-- BANNER DE ESTADO REMOTO -->
-  <div id="gh-status-banner" class="gh-banner warn" style="display:none;">
-    <span>⏳</span><span id="gh-status-txt">Verificando estado compartido...</span>
-  </div>
-
-  <!-- SECCIÓN: VER ESTADO PUBLICADO -->
-  <div class="slbl">📥 Estado publicado actualmente</div>
-  <div class="krow" id="gh-krow">
-    <div class="kpi k-blue"><div class="kv" id="gh-fecha">—</div><div class="kl">Última publicación</div></div>
-    <div class="kpi k-green"><div class="kv" id="gh-hora">—</div><div class="kl">Hora (hora Lima)</div></div>
-    <div class="kpi"><div class="kv" id="gh-autor">—</div><div class="kl">Publicado por</div></div>
-    <div class="kpi k-orange"><div class="kv" id="gh-prods">—</div><div class="kl">Registros en kardex</div></div>
-  </div>
-  <div style="margin:10px 0 4px;">
-    <button class="btn btn-b" onclick="cargarDesdeGitHub(true)" style="font-size:11px;padding:5px 14px;">
-      ⬇ Cargar el estado publicado ahora
-    </button>
-    <span style="font-size:10px;color:var(--muted);margin-left:8px;">Carga los datos procesados por María en esta sesión</span>
-  </div>
-
-  <div class="divider"></div>
-
-  <!-- SECCIÓN: PUBLICAR (solo para el responsable) -->
-  <div class="slbl">📤 Publicar estado del día</div>
-  <div class="tbox" style="max-width:520px;">
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Solo el responsable de carga (María Rojas) debe usar esta sección.<br>
-      Después de cargar y procesar los 4 archivos, publicar para que todos puedan verlo.
-    </div>
-    <label style="font-size:11px;font-weight:600;color:var(--text);">Tu nombre:</label>
-    <input id="pub-autor" type="text" placeholder="Ej: María Rojas"
-      style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin:4px 0 10px;" />
-    <button class="btn-pub" id="btn-publicar" onclick="publicarGitHub()">
-      🚀 Publicar estado del día en GitHub
-    </button>
-    <div id="pub-msg" class="pub-status"></div>
-    <div style="margin-top:14px;background:var(--bg2);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--muted);">
-      <b style="color:var(--text);">¿Qué se publica?</b> Los datos procesados del kardex, stock, observados y órdenes de compra.
-      No se suben los archivos originales del SIG. El estado queda visible para todos en el link de la herramienta.
-    </div>
-  </div>
-
-</div>
-
 <!-- KPI ROW -->
 <div class="krow">
   <div class="kpi k-green"><div class="kv" id="sk-conf">—</div><div class="kl">Confirmadas hist.</div></div>
@@ -976,6 +1010,66 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 <div class="cgrid">
   <div class="cbox"><h4>📊 Distribución por tipo de cambio</h4><canvas id="ch-sust-tipo" height="220"></canvas></div>
   <div class="cbox"><h4>📊 Distribuc
+
+</div>
+
+<div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
+
+  <!-- BOTÓN EXPORTAR REPORTE COMPLETO -->
+  <div style="background:var(--green-lt);border:1.5px solid var(--green);border-radius:8px;padding:14px 18px;margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;">📊 EXPORTAR REPORTE COMPLETO</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:10px;">
+      Genera un Excel con 5 pestañas: Observados · Inventario · Ventas · Compras · Sustituciones.<br>
+      <b>Usar después de cargar y procesar los archivos</b> (o después de cargar el estado publicado).
+    </div>
+    <button class="btn-pub" onclick="expReporteCompleto()" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">
+      📥 Descargar Reporte Completo (.xlsx)
+    </button>
+  </div>
+
+  <!-- BANNER DE ESTADO REMOTO -->
+  <div id="gh-status-banner" class="gh-banner warn" style="display:none;">
+    <span>⏳</span><span id="gh-status-txt">Verificando estado compartido...</span>
+  </div>
+
+  <!-- SECCIÓN: VER ESTADO PUBLICADO -->
+  <div class="slbl">📥 Estado publicado actualmente</div>
+  <div class="krow" id="gh-krow">
+    <div class="kpi k-blue"><div class="kv" id="gh-fecha">—</div><div class="kl">Última publicación</div></div>
+    <div class="kpi k-green"><div class="kv" id="gh-hora">—</div><div class="kl">Hora (hora Lima)</div></div>
+    <div class="kpi"><div class="kv" id="gh-autor">—</div><div class="kl">Publicado por</div></div>
+    <div class="kpi k-orange"><div class="kv" id="gh-prods">—</div><div class="kl">Registros en kardex</div></div>
+  </div>
+  <div style="margin:10px 0 4px;">
+    <button class="btn btn-b" onclick="cargarDesdeGitHub(true)" style="font-size:11px;padding:5px 14px;">
+      ⬇ Cargar el estado publicado ahora
+    </button>
+    <span style="font-size:10px;color:var(--muted);margin-left:8px;">Carga los datos procesados por María en esta sesión</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECCIÓN: PUBLICAR (solo para el responsable) -->
+  <div class="slbl">📤 Publicar estado del día</div>
+  <div class="tbox" style="max-width:520px;">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Solo el responsable de carga (María Rojas) debe usar esta sección.<br>
+      Después de cargar y procesar los 4 archivos, publicar para que todos puedan verlo.
+    </div>
+    <label style="font-size:11px;font-weight:600;color:var(--text);">Tu nombre:</label>
+    <input id="pub-autor" type="text" placeholder="Ej: María Rojas"
+      style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin:4px 0 10px;" />
+    <button class="btn-pub" id="btn-publicar" onclick="publicarGitHub()">
+      🚀 Publicar estado del día en GitHub
+    </button>
+    <div id="pub-msg" class="pub-status"></div>
+    <div style="margin-top:14px;background:var(--bg2);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--muted);">
+      <b style="color:var(--text);">¿Qué se publica?</b> Los datos procesados del kardex, stock, observados y órdenes de compra.
+      No se suben los archivos originales del SIG. El estado queda visible para todos en el link de la herramienta.
+    </div>
+  </div>
+
+</div>
 
 <!-- SheetJS XLSX 0.18.5 -->
 <script type="text/javascript">
@@ -2310,6 +2404,15 @@ function renderStock(){
   document.getElementById('sk-warn').textContent=withCob.filter(c=>c!==null&&c>=7&&c<30).length;
   document.getElementById('sk-ok').textContent=withCob.filter(c=>c!==null&&c>=30).length;
   document.getElementById('sk-svtas').textContent=withCob.filter(c=>c===null||c===0).length;
+  // KPIs por clase
+  const setKpi=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setKpi('sk-cls-estrella', data.filter(i=>i.tipo==='ESTRELLA').length);
+  setKpi('sk-cls-volumen',  data.filter(i=>i.tipo==='VOLUMEN').length);
+  setKpi('sk-cls-joya',     data.filter(i=>i.tipo==='JOYA').length);
+  setKpi('sk-cls-oport',    data.filter(i=>i.tipo==='OPORTUNIDAD').length);
+  setKpi('sk-cls-probl',    data.filter(i=>i.tipo==='PROBLEMÁTICO').length);
+  setKpi('sk-cls-obsol',    data.filter(i=>i.tipo==='OBSOLETO').length);
+  setKpi('sk-cls-alerta',   data.filter(i=>i.tipo==='ALERTA').length);
 
   let html='';
   data.slice(0,600).forEach((it,idx)=>{
@@ -4120,6 +4223,39 @@ async function cargarDesdeGitHub(mostrarConfirm) {
     if (el('ck-obs'))   el('ck-obs').textContent   = D.obs.length.toLocaleString();
     if (el('ck-oc'))    el('ck-oc').textContent    = (D.oc||[]).length.toLocaleString();
     actualizarKpisGH(data);
+
+    // Re-renderizar todas las pestañas con los datos cargados
+    try {
+      // Enriquecer stock con vtaMes desde kardex (igual que procesarTodo)
+      const kardMap = {};
+      D.kardex.forEach(k => { kardMap[k.cod] = k; });
+      D.stock.forEach(s => {
+        if (s.vtaMes === undefined) {
+          const k = kardMap[s.cod];
+          const ult3 = k ? k.meses.slice(-3).reduce((a,b)=>a+b,0) : 0;
+          s.vta3m = ult3; s.vtaMes = Math.round(ult3/3*10)/10;
+          s.cobDias = s.vtaMes > 0 ? Math.round(s.cant/s.vtaMes*30) : null;
+        }
+      });
+      // Cruzar OC con Obs
+      if (D.oc && D.oc.length > 0) {
+        const ocCods = new Set(D.oc.map(o=>o.cod));
+        D.obs.forEach(it => {
+          if (ocCods.has(it.cod)) {
+            const ocs = D.oc.filter(o=>o.cod===it.cod);
+            it.ocActiva = ocs.map(o=>o.noc||'OC').filter(Boolean);
+            if (it.accion==='COMPRAR') it.accion='ARRIBAR';
+          }
+        });
+      }
+      renderVentas();
+      renderSugerido();
+      renderStock();
+      renderObs();
+      renderCompras();
+      if (D.sust && D.sust.length > 0) { cruceObsSust(); renderSust(); }
+    } catch(re) { console.warn('Re-render parcial:', re); }
+
     const ts = data.ts ? new Date(data.ts) : null;
     const autor = data.autor || '—';
     setBanner('ok', `✅ Datos cargados correctamente. Publicado el ${ts?ts.toLocaleString('es-PE'):'—'} por <b>${autor}</b>.`);
