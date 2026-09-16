@@ -424,12 +424,43 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 <!-- ═══ TAB: VENTAS & COBERTURA ═══ -->
 <div class="pane" id="pane-ventas">
 <div class="tip">Historial de salidas (ventas + bonificaciones + premios) de los últimos 14 meses, ordenado por categoría de mayor a menor movimiento. Cobertura calculada como Stock ÷ Vta30D.</div>
-<div class="krow">
-  <div class="kpi k-blue"><div class="kv" id="vk-skus">—</div><div class="kl">SKUs activos</div></div>
-  <div class="kpi k-green"><div class="kv" id="vk-total3m">—</div><div class="kl">Unid. salidas 3M</div></div>
-  <div class="kpi k-amber"><div class="kv" id="vk-cob30">—</div><div class="kl">Cobertura prom. (días)</div></div>
-  <div class="kpi k-red"><div class="kv" id="vk-scrit">—</div><div class="kl">SKUs cob. crítica (&lt;7d)</div></div>
-  <div class="kpi k-purple"><div class="kv" id="vk-svtas">—</div><div class="kl">SKUs sin ventas 3M</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+  <!-- Volumen -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--blue);">
+    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📦 Volumen</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="vk-skus" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">SKUs activos</div>
+      </div>
+      <div>
+        <div class="kv" id="vk-total3m" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">Unid. salidas 3M</div>
+      </div>
+    </div>
+  </div>
+  <!-- Cobertura -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);">
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Cobertura</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="vk-cob30" style="font-size:20px;font-weight:800;color:var(--green);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">Cob. prom. (días)</div>
+      </div>
+      <div>
+        <div class="kv" id="vk-scrit" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">🔴 SKUs &lt;7d</div>
+      </div>
+    </div>
+  </div>
+  <!-- Sin movimiento -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #6b7280;">
+    <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚫ Sin movimiento</div>
+    <div>
+      <div class="kv" id="vk-svtas" style="font-size:20px;font-weight:800;color:#6b7280;line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);">SKUs sin ventas 3M</div>
+    </div>
+  </div>
 </div>
 <div class="ms-bar-v" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:6px 10px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;position:relative;z-index:200;">
 <!-- Fila 2: multi-selects -->
@@ -582,134 +613,201 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 <div class="tip">
   Stock actual ordenado de <b>mayor a menor valor</b>. Criterios de análisis: <b>Rotación</b> (Vtas3M/Stock), <b>Cobertura</b> (Stock/Vta30D). <b>Gan. Unit.</b> = promedio (V.Venta − V.Costo) de ventas históricas. 🟢 ≥S/700 · 🟡 S/0–699 · 🔴 negativa (vendido bajo costo).
 </div>
-<!-- KPI INVENTARIO reestructurado -->
-<div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;margin-bottom:10px;align-items:start;">
+<!-- KPI INVENTARIO v3 -->
+<div style="display:grid;grid-template-columns:140px 1fr 180px;gap:10px;margin-bottom:12px;align-items:start;">
 
-  <!-- PRINCIPAL -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--blue);min-width:130px;">
-    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📦 Principal</div>
-    <div style="display:flex;gap:12px;">
-      <div style="text-align:center;">
-        <div class="kv" id="sk-monto" style="font-size:18px;font-weight:700;color:var(--blue);">—</div>
-        <div style="font-size:9px;color:var(--text3);">Valor total S/</div>
-      </div>
-      <div style="text-align:center;">
-        <div class="kv" id="sk-total" style="font-size:18px;font-weight:700;color:var(--blue);">—</div>
-        <div style="font-size:9px;color:var(--text3);">Total SKUs</div>
-      </div>
+  <!-- ① PRINCIPAL: vertical -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--blue);">
+    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📦 Principal</div>
+    <div style="margin-bottom:8px;">
+      <div class="kv" id="sk-monto" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Valor total S/</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div class="kv" id="sk-total" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total SKUs</div>
+    </div>
+    <div>
+      <div class="kv" id="sk-items" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total ítems</div>
     </div>
   </div>
 
-  <!-- CLASES: tarjetas con SKUs, S/ y % -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #7c3aed;flex:1;">
+  <!-- ② CLASES: grid 4×2 con SKU, S/ y % -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid #7c3aed;">
     <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⭐ Por Clase de Inventario</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
 
-      <div style="background:#dcfce7;border-radius:6px;padding:6px 8px;border-top:3px solid #166534;">
-        <div style="font-size:9px;font-weight:700;color:#166534;">⭐ Estrella</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-estrella" style="font-size:16px;font-weight:700;color:#166534;">—</span>
-          <span id="sk-cls-estrella-pct" style="font-size:9px;color:#166534;font-weight:600;">—%</span>
+      <div style="background:#dcfce7;border-radius:6px;padding:7px 8px;border-top:3px solid #166534;">
+        <div style="font-size:9px;font-weight:700;color:#166534;margin-bottom:4px;">⭐ Estrella</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-estrella" style="font-size:18px;font-weight:800;color:#166534;line-height:1;">—</span>
+          <span style="font-size:9px;color:#166534;font-weight:600;">SKU</span>
+          <span id="sk-cls-estrella-pct" style="font-size:9px;color:#166534;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-estrella-s" style="font-size:9px;color:#166534;font-weight:600;">—</div>
-        <div id="sk-cls-estrella-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#166534;font-weight:700;">S/</span>
+          <span id="sk-cls-estrella-s" style="font-size:13px;font-weight:700;color:#166534;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-estrella-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.ALTA · Gan.≥S/700. Nunca quebrar.</div>
       </div>
 
-      <div style="background:#fef3c7;border-radius:6px;padding:6px 8px;border-top:3px solid #92400e;">
-        <div style="font-size:9px;font-weight:700;color:#92400e;">⚠️ Volumen</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-volumen" style="font-size:16px;font-weight:700;color:#92400e;">—</span>
-          <span id="sk-cls-volumen-pct" style="font-size:9px;color:#92400e;font-weight:600;">—%</span>
+      <div style="background:#fef3c7;border-radius:6px;padding:7px 8px;border-top:3px solid #92400e;">
+        <div style="font-size:9px;font-weight:700;color:#92400e;margin-bottom:4px;">⚠️ Volumen</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-volumen" style="font-size:18px;font-weight:800;color:#92400e;line-height:1;">—</span>
+          <span style="font-size:9px;color:#92400e;font-weight:600;">SKU</span>
+          <span id="sk-cls-volumen-pct" style="font-size:9px;color:#92400e;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-volumen-s" style="font-size:9px;color:#92400e;font-weight:600;">—</div>
-        <div id="sk-cls-volumen-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#92400e;font-weight:700;">S/</span>
+          <span id="sk-cls-volumen-s" style="font-size:13px;font-weight:700;color:#92400e;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-volumen-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.ALTA · Gan.&lt;S/700. Flujo caja.</div>
       </div>
 
-      <div style="background:#dbeafe;border-radius:6px;padding:6px 8px;border-top:3px solid #1d4ed8;">
-        <div style="font-size:9px;font-weight:700;color:#1d4ed8;">💎 Joya</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-joya" style="font-size:16px;font-weight:700;color:#1d4ed8;">—</span>
-          <span id="sk-cls-joya-pct" style="font-size:9px;color:#1d4ed8;font-weight:600;">—%</span>
+      <div style="background:#dbeafe;border-radius:6px;padding:7px 8px;border-top:3px solid #1d4ed8;">
+        <div style="font-size:9px;font-weight:700;color:#1d4ed8;margin-bottom:4px;">💎 Joya Oculta</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-joya" style="font-size:18px;font-weight:800;color:#1d4ed8;line-height:1;">—</span>
+          <span style="font-size:9px;color:#1d4ed8;font-weight:600;">SKU</span>
+          <span id="sk-cls-joya-pct" style="font-size:9px;color:#1d4ed8;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-joya-s" style="font-size:9px;color:#1d4ed8;font-weight:600;">—</div>
-        <div id="sk-cls-joya-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#1d4ed8;font-weight:700;">S/</span>
+          <span id="sk-cls-joya-s" style="font-size:13px;font-weight:700;color:#1d4ed8;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-joya-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.BAJA · Gan.≥S/700. Potenciar venta.</div>
       </div>
 
-      <div style="background:#ffedd5;border-radius:6px;padding:6px 8px;border-top:3px solid #c2410c;">
-        <div style="font-size:9px;font-weight:700;color:#c2410c;">🟠 Oportunidad</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-oport" style="font-size:16px;font-weight:700;color:#c2410c;">—</span>
-          <span id="sk-cls-oport-pct" style="font-size:9px;color:#c2410c;font-weight:600;">—%</span>
+      <div style="background:#ffedd5;border-radius:6px;padding:7px 8px;border-top:3px solid #c2410c;">
+        <div style="font-size:9px;font-weight:700;color:#c2410c;margin-bottom:4px;">🟠 Oportunidad</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-oport" style="font-size:18px;font-weight:800;color:#c2410c;line-height:1;">—</span>
+          <span style="font-size:9px;color:#c2410c;font-weight:600;">SKU</span>
+          <span id="sk-cls-oport-pct" style="font-size:9px;color:#c2410c;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-oport-s" style="font-size:9px;color:#c2410c;font-weight:600;">—</div>
-        <div id="sk-cls-oport-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#c2410c;font-weight:700;">S/</span>
+          <span id="sk-cls-oport-s" style="font-size:13px;font-weight:700;color:#c2410c;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-oport-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.MEDIA · Gan.&lt;S/700. Trabajar.</div>
       </div>
 
-      <div style="background:#fee2e2;border-radius:6px;padding:6px 8px;border-top:3px solid #991b1b;">
-        <div style="font-size:9px;font-weight:700;color:#991b1b;">🔴 Problemático</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-probl" style="font-size:16px;font-weight:700;color:#991b1b;">—</span>
-          <span id="sk-cls-probl-pct" style="font-size:9px;color:#991b1b;font-weight:600;">—%</span>
+      <div style="background:#fee2e2;border-radius:6px;padding:7px 8px;border-top:3px solid #991b1b;">
+        <div style="font-size:9px;font-weight:700;color:#991b1b;margin-bottom:4px;">🔴 Problemático</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-probl" style="font-size:18px;font-weight:800;color:#991b1b;line-height:1;">—</span>
+          <span style="font-size:9px;color:#991b1b;font-weight:600;">SKU</span>
+          <span id="sk-cls-probl-pct" style="font-size:9px;color:#991b1b;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-probl-s" style="font-size:9px;color:#991b1b;font-weight:600;">—</div>
-        <div id="sk-cls-probl-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#991b1b;font-weight:700;">S/</span>
+          <span id="sk-cls-probl-s" style="font-size:13px;font-weight:700;color:#991b1b;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-probl-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.BAJA · Gan.baja. Liquidar/devolver.</div>
       </div>
 
-      <div style="background:#f1f5f9;border-radius:6px;padding:6px 8px;border-top:3px solid #374151;">
-        <div style="font-size:9px;font-weight:700;color:#374151;">⚫ Obsoleto</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-obsol" style="font-size:16px;font-weight:700;color:#374151;">—</span>
-          <span id="sk-cls-obsol-pct" style="font-size:9px;color:#374151;font-weight:600;">—%</span>
+      <div style="background:#f1f5f9;border-radius:6px;padding:7px 8px;border-top:3px solid #374151;">
+        <div style="font-size:9px;font-weight:700;color:#374151;margin-bottom:4px;">⚫ Obsoleto</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-obsol" style="font-size:18px;font-weight:800;color:#374151;line-height:1;">—</span>
+          <span style="font-size:9px;color:#374151;font-weight:600;">SKU</span>
+          <span id="sk-cls-obsol-pct" style="font-size:9px;color:#374151;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-obsol-s" style="font-size:9px;color:#374151;font-weight:600;">—</div>
-        <div id="sk-cls-obsol-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#374151;font-weight:700;">S/</span>
+          <span id="sk-cls-obsol-s" style="font-size:13px;font-weight:700;color:#374151;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-obsol-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Sin ventas 3M. Capital inmovilizado.</div>
       </div>
 
-      <div style="background:#fef2f2;border-radius:6px;padding:6px 8px;border-top:3px solid #dc2626;">
-        <div style="font-size:9px;font-weight:700;color:#dc2626;">🔴 Gan.neg.</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-alerta" style="font-size:16px;font-weight:700;color:#dc2626;">—</span>
-          <span id="sk-cls-alerta-pct" style="font-size:9px;color:#dc2626;font-weight:600;">—%</span>
+      <div style="background:#fef2f2;border-radius:6px;padding:7px 8px;border-top:3px solid #dc2626;">
+        <div style="font-size:9px;font-weight:700;color:#dc2626;margin-bottom:4px;">🔴 Gan.negativa</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-alerta" style="font-size:18px;font-weight:800;color:#dc2626;line-height:1;">—</span>
+          <span style="font-size:9px;color:#dc2626;font-weight:600;">SKU</span>
+          <span id="sk-cls-alerta-pct" style="font-size:9px;color:#dc2626;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-alerta-s" style="font-size:9px;color:#dc2626;font-weight:600;">—</div>
-        <div id="sk-cls-alerta-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#dc2626;font-weight:700;">S/</span>
+          <span id="sk-cls-alerta-s" style="font-size:13px;font-weight:700;color:#dc2626;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-alerta-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Gan.&lt;0. Revisar precios urgente.</div>
       </div>
 
-      <div style="background:#f9fafb;border-radius:6px;padding:6px 8px;border-top:3px solid #6b7280;">
-        <div style="font-size:9px;font-weight:700;color:#6b7280;">❓ Revisar</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px;">
-          <span id="sk-cls-revisar" style="font-size:16px;font-weight:700;color:#6b7280;">—</span>
-          <span id="sk-cls-revisar-pct" style="font-size:9px;color:#6b7280;font-weight:600;">—%</span>
+      <div style="background:#f9fafb;border-radius:6px;padding:7px 8px;border-top:3px solid #6b7280;">
+        <div style="font-size:9px;font-weight:700;color:#6b7280;margin-bottom:4px;">❓ Revisar</div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span id="sk-cls-revisar" style="font-size:18px;font-weight:800;color:#6b7280;line-height:1;">—</span>
+          <span style="font-size:9px;color:#6b7280;font-weight:600;">SKU</span>
+          <span id="sk-cls-revisar-pct" style="font-size:9px;color:#6b7280;font-weight:600;margin-left:auto;">—%</span>
         </div>
-        <div id="sk-cls-revisar-s" style="font-size:9px;color:#6b7280;font-weight:600;">—</div>
-        <div id="sk-cls-revisar-spct" style="font-size:8px;color:#6b7280;">— del total</div>
+        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
+          <span style="font-size:9px;color:#6b7280;font-weight:700;">S/</span>
+          <span id="sk-cls-revisar-s" style="font-size:13px;font-weight:700;color:#6b7280;line-height:1;">—</span>
+        </div>
+        <div id="sk-cls-revisar-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Sin dato ganancia. Enriquecer.</div>
       </div>
 
     </div>
   </div>
 
-  <!-- COBERTURAS -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);min-width:160px;">
-    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">📊 Coberturas (SKUs)</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <div style="text-align:center;">
-        <div class="kv" id="sk-crit" style="font-size:14px;font-weight:700;color:#991b1b;">—</div>
-        <div style="font-size:8px;color:var(--text3);">🔴 &lt;7d</div>
+  <!-- ③ COBERTURAS: vertical con % -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--green);">
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📊 Coberturas</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div>
+          <span class="kv" id="sk-crit" style="font-size:16px;font-weight:800;color:#991b1b;">—</span>
+          <span style="font-size:9px;color:#991b1b;font-weight:600;"> SKU</span>
+        </div>
+        <div style="text-align:right;">
+          <span id="sk-crit-pct" style="font-size:11px;font-weight:700;color:#991b1b;">—%</span><br>
+          <span style="font-size:8px;color:var(--text3);">🔴 Crítica &lt;7d</span>
+        </div>
       </div>
-      <div style="text-align:center;">
-        <div class="kv" id="sk-warn" style="font-size:14px;font-weight:700;color:#92400e;">—</div>
-        <div style="font-size:8px;color:var(--text3);">🟡 7-30d</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div>
+          <span class="kv" id="sk-warn" style="font-size:16px;font-weight:800;color:#92400e;">—</span>
+          <span style="font-size:9px;color:#92400e;font-weight:600;"> SKU</span>
+        </div>
+        <div style="text-align:right;">
+          <span id="sk-warn-pct" style="font-size:11px;font-weight:700;color:#92400e;">—%</span><br>
+          <span style="font-size:8px;color:var(--text3);">🟡 Baja 7-30d</span>
+        </div>
       </div>
-      <div style="text-align:center;">
-        <div class="kv" id="sk-ok" style="font-size:14px;font-weight:700;color:#166534;">—</div>
-        <div style="font-size:8px;color:var(--text3);">🟢 ≥30d</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div>
+          <span class="kv" id="sk-ok" style="font-size:16px;font-weight:800;color:#166534;">—</span>
+          <span style="font-size:9px;color:#166534;font-weight:600;"> SKU</span>
+        </div>
+        <div style="text-align:right;">
+          <span id="sk-ok-pct" style="font-size:11px;font-weight:700;color:#166534;">—%</span><br>
+          <span style="font-size:8px;color:var(--text3);">🟢 OK ≥30d</span>
+        </div>
       </div>
-      <div style="text-align:center;">
-        <div class="kv" id="sk-svtas" style="font-size:14px;font-weight:700;color:#374151;">—</div>
-        <div style="font-size:8px;color:var(--text3);">⚫ S/vtas</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div>
+          <span class="kv" id="sk-svtas" style="font-size:16px;font-weight:800;color:#374151;">—</span>
+          <span style="font-size:9px;color:#374151;font-weight:600;"> SKU</span>
+        </div>
+        <div style="text-align:right;">
+          <span id="sk-svtas-pct" style="font-size:11px;font-weight:700;color:#374151;">—%</span><br>
+          <span style="font-size:8px;color:var(--text3);">⚫ Sin ventas</span>
+        </div>
       </div>
     </div>
   </div>
+
 </div>
 <div class="tbox">
   <div class="tbox-h">
@@ -813,13 +911,49 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <b>Productos sin stock en Almacén Principal (OBS).</b> Selecciona la acción a realizar para cada item con el desplegable — el cambio se guarda automáticamente.
   Prioridad de atención: 🔴 Por Comprar -> 🔵 OC por Arribar -> 🟡 Por Cambiar -> ⚫ Anular.
 </div>
-<div class="krow">
-  <div class="kpi k-red"><div class="kv" id="ok-total">—</div><div class="kl">Total observados</div></div>
-  <div class="kpi k-red"><div class="kv" id="ok-monto">—</div><div class="kl">Monto total S/</div></div>
-  <div class="kpi k-red"><div class="kv" id="ok-comprar">—</div><div class="kl">🔴 Por Comprar</div></div>
-  <div class="kpi k-blue"><div class="kv" id="ok-arribar">—</div><div class="kl">🔵 OC Arribar</div></div>
-  <div class="kpi k-amber"><div class="kv" id="ok-cambiar">—</div><div class="kl">🟡 Por Cambiar</div></div>
-  <div class="kpi k-green"><div class="kv" id="ok-stock">—</div><div class="kl">🟢 Con Stock</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+  <!-- Principal -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #991b1b;">
+    <div style="font-size:9px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">🚨 Principal</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="ok-total" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">Total SKU obs.</div>
+      </div>
+      <div>
+        <div class="kv" id="ok-monto" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">Monto total S/</div>
+      </div>
+    </div>
+  </div>
+  <!-- Acciones urgentes -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #92400e;">
+    <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚡ Acciones urgentes</div>
+    <div style="display:flex;gap:12px;">
+      <div>
+        <div class="kv" id="ok-comprar" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">🔴 Comprar</div>
+      </div>
+      <div>
+        <div class="kv" id="ok-arribar" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">🔵 OC Arribo</div>
+      </div>
+    </div>
+  </div>
+  <!-- En gestión -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);">
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">✅ En gestión</div>
+    <div style="display:flex;gap:12px;">
+      <div>
+        <div class="kv" id="ok-cambiar" style="font-size:20px;font-weight:800;color:#92400e;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">🟡 Cambiar</div>
+      </div>
+      <div>
+        <div class="kv" id="ok-stock" style="font-size:20px;font-weight:800;color:var(--green);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">🟢 Con stock</div>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="tbox">
   <div class="tbox-h">
@@ -867,11 +1001,37 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   Historial de compras/ingresos de mercadería, ordenado de <b>más reciente a más antiguo</b>. Incluye último precio (con IGV incluido), proveedor recomendado y análisis de variación de precios.
   Usar como referencia para <b>órdenes de compra urgentes</b> de los productos observados.
 </div>
-<div class="krow">
-  <div class="kpi k-blue"><div class="kv" id="ck-compras">—</div><div class="kl">Líneas de compra</div></div>
-  <div class="kpi k-blue"><div class="kv" id="ck-provs">—</div><div class="kl">Proveedores</div></div>
-  <div class="kpi k-green"><div class="kv" id="ck-ul">—</div><div class="kl">Última compra</div></div>
-  <div class="kpi k-amber"><div class="kv" id="ck-skusc">—</div><div class="kl">SKUs comprados</div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+  <!-- Cantidad -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--blue);">
+    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📦 Cantidad</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="ck-compras" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">Líneas de compra</div>
+      </div>
+      <div>
+        <div class="kv" id="ck-skusc" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">SKUs comprados</div>
+      </div>
+    </div>
+  </div>
+  <!-- Proveedores -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);">
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">🤝 Proveedores</div>
+    <div>
+      <div class="kv" id="ck-provs" style="font-size:20px;font-weight:800;color:var(--green);line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);">Proveedores distintos</div>
+    </div>
+  </div>
+  <!-- Fecha -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #92400e;">
+    <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📅 Última compra</div>
+    <div>
+      <div class="kv" id="ck-ul" style="font-size:16px;font-weight:800;color:#92400e;line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);">Fecha más reciente</div>
+    </div>
+  </div>
 </div>
 <div class="tbox">
   <div class="tbox-h">
@@ -2462,13 +2622,21 @@ function renderStock(){
   const withCob=data.map(s=>s.cobDias!==undefined?s.cobDias:null);
   document.getElementById('sk-total').textContent=total.toLocaleString();
   document.getElementById('sk-monto').textContent='S/'+Math.round(monto).toLocaleString('es-PE');
-  document.getElementById('sk-crit').textContent=withCob.filter(c=>c!==null&&c<7).length;
-  document.getElementById('sk-warn').textContent=withCob.filter(c=>c!==null&&c>=7&&c<30).length;
-  document.getElementById('sk-ok').textContent=withCob.filter(c=>c!==null&&c>=30).length;
-  document.getElementById('sk-svtas').textContent=withCob.filter(c=>c===null||c===0).length;
+  const nCrit=withCob.filter(c=>c!==null&&c<7).length;
+  const nWarn=withCob.filter(c=>c!==null&&c>=7&&c<30).length;
+  const nOk=withCob.filter(c=>c!==null&&c>=30).length;
+  const nSvtas=withCob.filter(c=>c===null||c===0).length;
+  const totalCob=data.length||1;
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  setEl('sk-crit',nCrit); setEl('sk-crit-pct',(nCrit/totalCob*100).toFixed(1)+'%');
+  setEl('sk-warn',nWarn); setEl('sk-warn-pct',(nWarn/totalCob*100).toFixed(1)+'%');
+  setEl('sk-ok',nOk);     setEl('sk-ok-pct',(nOk/totalCob*100).toFixed(1)+'%');
+  setEl('sk-svtas',nSvtas); setEl('sk-svtas-pct',(nSvtas/totalCob*100).toFixed(1)+'%');
+  // Total ítems = suma de cantidades
+  const totalItems = data.reduce((s,d)=>s+(d.cant||0),0);
+  setEl('sk-items', totalItems.toLocaleString('es-PE'));
   // Clases: SKUs + Montos S/
-  const fmtS=v=>'S/'+Math.round(v).toLocaleString('es-PE');
-  const setK=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  const fmtS=v=>Math.round(v).toLocaleString('es-PE');
   const clases=['ESTRELLA','VOLUMEN','JOYA','OPORTUNIDAD','PROBLEMÁTICO','OBSOLETO','ALERTA','REVISAR'];
   const ids   =['estrella','volumen','joya','oport','probl','obsol','alerta','revisar'];
   const totalSkus = data.length || 1;
@@ -2476,10 +2644,10 @@ function renderStock(){
   clases.forEach((cls,i)=>{
     const skus=data.filter(d=>d.tipo===cls);
     const skuMonto=skus.reduce((s,d)=>s+(d.costoTotal||0),0);
-    setK('sk-cls-'+ids[i], skus.length);
-    setK('sk-cls-'+ids[i]+'-pct', (skus.length/totalSkus*100).toFixed(1)+'%');
-    setK('sk-cls-'+ids[i]+'-s', fmtS(skuMonto));
-    setK('sk-cls-'+ids[i]+'-spct', (skuMonto/totalMonto*100).toFixed(1)+'% del total');
+    setEl('sk-cls-'+ids[i], skus.length);
+    setEl('sk-cls-'+ids[i]+'-pct', (skus.length/totalSkus*100).toFixed(1)+'%');
+    setEl('sk-cls-'+ids[i]+'-s', fmtS(skuMonto));
+    setEl('sk-cls-'+ids[i]+'-spct', (skuMonto/totalMonto*100).toFixed(1)+'% del total');
   });
 
   let html='';
