@@ -635,128 +635,169 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 
   <!-- ② CLASES: grid 4×2 con SKU, S/ y % -->
   <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid #7c3aed;">
-    <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⭐ Por Clase de Inventario</div>
+    <div style="font-size:9px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 CLASES DE INVENTARIO — Matriz Rotación × Valor</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
 
       <div style="background:#dcfce7;border-radius:6px;padding:7px 8px;border-top:3px solid #166534;">
         <div style="font-size:9px;font-weight:700;color:#166534;margin-bottom:4px;">⭐ Estrella</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-estrella" style="font-size:18px;font-weight:800;color:#166534;line-height:1;">—</span>
-          <span style="font-size:9px;color:#166534;font-weight:600;">SKU</span>
-          <span id="sk-cls-estrella-pct" style="font-size:9px;color:#166534;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#166534;font-style:italic;margin-bottom:4px;">Rot. ALTA · Gan. ≥S/500</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-estrella" style="font-size:17px;font-weight:800;color:#166534;line-height:1;">—</span>
+            <span style="font-size:8px;color:#166534;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-estrella-pct" style="font-size:9px;color:#166534;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#166534;font-weight:700;">S/</span>
-          <span id="sk-cls-estrella-s" style="font-size:13px;font-weight:700;color:#166534;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#166534;font-weight:700;">S/</span>
+            <span id="sk-cls-estrella-s" style="font-size:12px;font-weight:700;color:#166534;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-estrella-spct" style="font-size:9px;color:#166534;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-estrella-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.ALTA · Gan.≥S/700. Nunca quebrar.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #16653430;padding-top:3px;">Prioridad máxima de reposición. Nunca deben quebrar stock.</div>
       </div>
 
       <div style="background:#fef3c7;border-radius:6px;padding:7px 8px;border-top:3px solid #92400e;">
         <div style="font-size:9px;font-weight:700;color:#92400e;margin-bottom:4px;">⚠️ Volumen</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-volumen" style="font-size:18px;font-weight:800;color:#92400e;line-height:1;">—</span>
-          <span style="font-size:9px;color:#92400e;font-weight:600;">SKU</span>
-          <span id="sk-cls-volumen-pct" style="font-size:9px;color:#92400e;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#92400e;font-style:italic;margin-bottom:4px;">Rot. ALTA · Gan. &lt;S/500</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-volumen" style="font-size:17px;font-weight:800;color:#92400e;line-height:1;">—</span>
+            <span style="font-size:8px;color:#92400e;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-volumen-pct" style="font-size:9px;color:#92400e;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#92400e;font-weight:700;">S/</span>
-          <span id="sk-cls-volumen-s" style="font-size:13px;font-weight:700;color:#92400e;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#92400e;font-weight:700;">S/</span>
+            <span id="sk-cls-volumen-s" style="font-size:12px;font-weight:700;color:#92400e;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-volumen-spct" style="font-size:9px;color:#92400e;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-volumen-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.ALTA · Gan.&lt;S/700. Flujo caja.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #92400e30;padding-top:3px;">Mueven mucho con poco margen. Clave para flujo de caja.</div>
       </div>
 
       <div style="background:#dbeafe;border-radius:6px;padding:7px 8px;border-top:3px solid #1d4ed8;">
         <div style="font-size:9px;font-weight:700;color:#1d4ed8;margin-bottom:4px;">💎 Joya Oculta</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-joya" style="font-size:18px;font-weight:800;color:#1d4ed8;line-height:1;">—</span>
-          <span style="font-size:9px;color:#1d4ed8;font-weight:600;">SKU</span>
-          <span id="sk-cls-joya-pct" style="font-size:9px;color:#1d4ed8;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#1d4ed8;font-style:italic;margin-bottom:4px;">Rot. BAJA · Gan. ≥S/500</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-joya" style="font-size:17px;font-weight:800;color:#1d4ed8;line-height:1;">—</span>
+            <span style="font-size:8px;color:#1d4ed8;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-joya-pct" style="font-size:9px;color:#1d4ed8;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#1d4ed8;font-weight:700;">S/</span>
-          <span id="sk-cls-joya-s" style="font-size:13px;font-weight:700;color:#1d4ed8;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#1d4ed8;font-weight:700;">S/</span>
+            <span id="sk-cls-joya-s" style="font-size:12px;font-weight:700;color:#1d4ed8;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-joya-spct" style="font-size:9px;color:#1d4ed8;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-joya-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.BAJA · Gan.≥S/700. Potenciar venta.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #1d4ed830;padding-top:3px;">Poco movimiento pero buen margen. Potenciar su venta.</div>
       </div>
 
       <div style="background:#ffedd5;border-radius:6px;padding:7px 8px;border-top:3px solid #c2410c;">
         <div style="font-size:9px;font-weight:700;color:#c2410c;margin-bottom:4px;">🟠 Oportunidad</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-oport" style="font-size:18px;font-weight:800;color:#c2410c;line-height:1;">—</span>
-          <span style="font-size:9px;color:#c2410c;font-weight:600;">SKU</span>
-          <span id="sk-cls-oport-pct" style="font-size:9px;color:#c2410c;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#c2410c;font-style:italic;margin-bottom:4px;">Rot. MEDIA · Gan. &lt;S/500</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-oport" style="font-size:17px;font-weight:800;color:#c2410c;line-height:1;">—</span>
+            <span style="font-size:8px;color:#c2410c;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-oport-pct" style="font-size:9px;color:#c2410c;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#c2410c;font-weight:700;">S/</span>
-          <span id="sk-cls-oport-s" style="font-size:13px;font-weight:700;color:#c2410c;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#c2410c;font-weight:700;">S/</span>
+            <span id="sk-cls-oport-s" style="font-size:12px;font-weight:700;color:#c2410c;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-oport-spct" style="font-size:9px;color:#c2410c;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-oport-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.MEDIA · Gan.&lt;S/700. Trabajar.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #c2410c30;padding-top:3px;">Potencial de mejora si se trabaja comercialmente.</div>
       </div>
 
       <div style="background:#fee2e2;border-radius:6px;padding:7px 8px;border-top:3px solid #991b1b;">
         <div style="font-size:9px;font-weight:700;color:#991b1b;margin-bottom:4px;">🔴 Problemático</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-probl" style="font-size:18px;font-weight:800;color:#991b1b;line-height:1;">—</span>
-          <span style="font-size:9px;color:#991b1b;font-weight:600;">SKU</span>
-          <span id="sk-cls-probl-pct" style="font-size:9px;color:#991b1b;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#991b1b;font-style:italic;margin-bottom:4px;">Rot. BAJA · Gan. &lt;S/500</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-probl" style="font-size:17px;font-weight:800;color:#991b1b;line-height:1;">—</span>
+            <span style="font-size:8px;color:#991b1b;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-probl-pct" style="font-size:9px;color:#991b1b;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#991b1b;font-weight:700;">S/</span>
-          <span id="sk-cls-probl-s" style="font-size:13px;font-weight:700;color:#991b1b;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#991b1b;font-weight:700;">S/</span>
+            <span id="sk-cls-probl-s" style="font-size:12px;font-weight:700;color:#991b1b;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-probl-spct" style="font-size:9px;color:#991b1b;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-probl-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Rot.BAJA · Gan.baja. Liquidar/devolver.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #991b1b30;padding-top:3px;">Candidatos a liquidar, devolver o cambiar precio urgente.</div>
       </div>
 
       <div style="background:#f1f5f9;border-radius:6px;padding:7px 8px;border-top:3px solid #374151;">
         <div style="font-size:9px;font-weight:700;color:#374151;margin-bottom:4px;">⚫ Obsoleto</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-obsol" style="font-size:18px;font-weight:800;color:#374151;line-height:1;">—</span>
-          <span style="font-size:9px;color:#374151;font-weight:600;">SKU</span>
-          <span id="sk-cls-obsol-pct" style="font-size:9px;color:#374151;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#374151;font-style:italic;margin-bottom:4px;">Sin ventas 3M · Con stock</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-obsol" style="font-size:17px;font-weight:800;color:#374151;line-height:1;">—</span>
+            <span style="font-size:8px;color:#374151;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-obsol-pct" style="font-size:9px;color:#374151;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#374151;font-weight:700;">S/</span>
-          <span id="sk-cls-obsol-s" style="font-size:13px;font-weight:700;color:#374151;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#374151;font-weight:700;">S/</span>
+            <span id="sk-cls-obsol-s" style="font-size:12px;font-weight:700;color:#374151;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-obsol-spct" style="font-size:9px;color:#374151;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-obsol-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Sin ventas 3M. Capital inmovilizado.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #37415130;padding-top:3px;">Capital inmovilizado. Oferta de liquidación o baja inmediata.</div>
       </div>
 
       <div style="background:#fef2f2;border-radius:6px;padding:7px 8px;border-top:3px solid #dc2626;">
-        <div style="font-size:9px;font-weight:700;color:#dc2626;margin-bottom:4px;">🔴 Gan.negativa</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-alerta" style="font-size:18px;font-weight:800;color:#dc2626;line-height:1;">—</span>
-          <span style="font-size:9px;color:#dc2626;font-weight:600;">SKU</span>
-          <span id="sk-cls-alerta-pct" style="font-size:9px;color:#dc2626;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:9px;font-weight:700;color:#dc2626;margin-bottom:4px;">🔴 Gan. negativa</div>
+        <div style="font-size:7px;color:#dc2626;font-style:italic;margin-bottom:4px;">Gan. &lt;0 · Cualquier rot.</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-alerta" style="font-size:17px;font-weight:800;color:#dc2626;line-height:1;">—</span>
+            <span style="font-size:8px;color:#dc2626;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-alerta-pct" style="font-size:9px;color:#dc2626;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#dc2626;font-weight:700;">S/</span>
-          <span id="sk-cls-alerta-s" style="font-size:13px;font-weight:700;color:#dc2626;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#dc2626;font-weight:700;">S/</span>
+            <span id="sk-cls-alerta-s" style="font-size:12px;font-weight:700;color:#dc2626;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-alerta-spct" style="font-size:9px;color:#dc2626;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-alerta-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Gan.&lt;0. Revisar precios urgente.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #dc262630;padding-top:3px;">Se vende bajo costo. Revisar precios, bonificaciones o registros.</div>
       </div>
 
       <div style="background:#f9fafb;border-radius:6px;padding:7px 8px;border-top:3px solid #6b7280;">
         <div style="font-size:9px;font-weight:700;color:#6b7280;margin-bottom:4px;">❓ Revisar</div>
-        <div style="display:flex;align-items:baseline;gap:4px;">
-          <span id="sk-cls-revisar" style="font-size:18px;font-weight:800;color:#6b7280;line-height:1;">—</span>
-          <span style="font-size:9px;color:#6b7280;font-weight:600;">SKU</span>
-          <span id="sk-cls-revisar-pct" style="font-size:9px;color:#6b7280;font-weight:600;margin-left:auto;">—%</span>
+        <div style="font-size:7px;color:#6b7280;font-style:italic;margin-bottom:4px;">Con movimiento · Sin dato gan.</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:2px;">
+          <div style="display:flex;align-items:baseline;gap:3px;">
+            <span id="sk-cls-revisar" style="font-size:17px;font-weight:800;color:#6b7280;line-height:1;">—</span>
+            <span style="font-size:8px;color:#6b7280;font-weight:600;">SKU</span>
+          </div>
+          <span id="sk-cls-revisar-pct" style="font-size:9px;color:#6b7280;font-weight:700;">—%</span>
         </div>
-        <div style="display:flex;align-items:baseline;gap:3px;margin-top:3px;">
-          <span style="font-size:9px;color:#6b7280;font-weight:700;">S/</span>
-          <span id="sk-cls-revisar-s" style="font-size:13px;font-weight:700;color:#6b7280;line-height:1;">—</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:3px;">
+          <div style="display:flex;align-items:baseline;gap:2px;">
+            <span style="font-size:8px;color:#6b7280;font-weight:700;">S/</span>
+            <span id="sk-cls-revisar-s" style="font-size:12px;font-weight:700;color:#6b7280;line-height:1;">—</span>
+          </div>
+          <span id="sk-cls-revisar-spct" style="font-size:9px;color:#6b7280;font-weight:700;">—%</span>
         </div>
-        <div id="sk-cls-revisar-spct" style="font-size:8px;color:#6b7280;margin-top:1px;">— del total</div>
-        <div style="font-size:7px;color:#6b7280;margin-top:3px;font-style:italic;">Sin dato ganancia. Enriquecer.</div>
+        <div style="font-size:7px;color:#6b7280;margin-top:4px;border-top:1px solid #6b728030;padding-top:3px;">Enriquecer con precios de venta para clasificar correctamente.</div>
       </div>
+    </div>
 
     </div>
   </div>
@@ -840,121 +881,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     </div>
   </div>
   <div class="tw">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:10px 0 12px;padding:10px;background:var(--bg2);border-radius:8px;">
-  <div style="font-size:10px;font-weight:700;color:var(--text);grid-column:1/-1;margin-bottom:2px;">📊 CLASES DE INVENTARIO — Matriz Rotación × Valor</div>
-  <div style="background:#dcfce7;border-radius:6px;padding:8px 10px;border-left:3px solid #166534;">
-    <div style="font-size:11px;font-weight:700;color:#166534;">⭐ ESTRELLA</div>
-    <div style="font-size:9px;color:#166534;margin-top:2px;">Rotación ALTA · Ganancia ≥S/700</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Prioridad máxima de reposición. Nunca deben quebrar stock.</div>
-  </div>
-  <div style="background:#fef3c7;border-radius:6px;padding:8px 10px;border-left:3px solid #92400e;">
-    <div style="font-size:11px;font-weight:700;color:#92400e;">⚠️ GENERADOR VOLUMEN</div>
-    <div style="font-size:9px;color:#92400e;margin-top:2px;">Rotación ALTA · Ganancia S/0–699</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Mueven mucho con poco margen. Útiles para flujo de caja.</div>
-  </div>
-  <div style="background:#dbeafe;border-radius:6px;padding:8px 10px;border-left:3px solid #1d4ed8;">
-    <div style="font-size:11px;font-weight:700;color:#1d4ed8;">💎 JOYA OCULTA</div>
-    <div style="font-size:9px;color:#1d4ed8;margin-top:2px;">Rotación BAJA/MEDIA · Ganancia ≥S/700</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Poco movimiento pero buen margen. Revisar visibilidad comercial.</div>
-  </div>
-  <div style="background:#ffedd5;border-radius:6px;padding:8px 10px;border-left:3px solid #c2410c;">
-    <div style="font-size:11px;font-weight:700;color:#c2410c;">🟠 OPORTUNIDAD</div>
-    <div style="font-size:9px;color:#c2410c;margin-top:2px;">Rotación MEDIA · Ganancia S/0–699</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Potencial de mejora si se trabaja comercialmente.</div>
-  </div>
-  <div style="background:#fee2e2;border-radius:6px;padding:8px 10px;border-left:3px solid #991b1b;">
-    <div style="font-size:11px;font-weight:700;color:#991b1b;">🔴 PROBLEMÁTICO</div>
-    <div style="font-size:9px;color:#991b1b;margin-top:2px;">Rotación BAJA · Ganancia S/0–699</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Candidatos a liquidar, devolver o cambiar precio urgente.</div>
-  </div>
-  <div style="background:#f1f5f9;border-radius:6px;padding:8px 10px;border-left:3px solid #374151;">
-    <div style="font-size:11px;font-weight:700;color:#374151;">⚫ OBSOLETO</div>
-    <div style="font-size:9px;color:#374151;margin-top:2px;">Sin ventas en 3M · Con stock disponible</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Capital inmovilizado. Oferta de liquidación o baja inmediata.</div>
-  </div>
-  <div style="background:#fef2f2;border-radius:6px;padding:8px 10px;border-left:3px solid #dc2626;">
-    <div style="font-size:11px;font-weight:700;color:#dc2626;">🔴 GANANCIA NEGATIVA</div>
-    <div style="font-size:9px;color:#dc2626;margin-top:2px;">Ganancia &lt; 0 · Cualquier rotación</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Se vende bajo costo. Revisar precios, bonificaciones o registros.</div>
-  </div>
-  <div style="background:#f9fafb;border-radius:6px;padding:8px 10px;border-left:3px solid #6b7280;">
-    <div style="font-size:11px;font-weight:700;color:#6b7280;">❓ REVISAR</div>
-    <div style="font-size:9px;color:#6b7280;margin-top:2px;">Con movimiento · Sin datos de ganancia</div>
-    <div style="font-size:9px;color:var(--text2);margin-top:3px;">Enriquecer con precios de venta para clasificar correctamente.</div>
-  </div>
-</div>
-<table><thead><tr>
-      <th>#</th><th>Código</th><th>Descripción</th><th>Línea</th><th>Categoría</th><th>⭐ Clasificación</th><th>Marca</th>
-      <th style="background:#dcfce7;font-weight:700;">Cant.</th>
-      <th>Costo Unit S/</th><th>Valor Total S/</th><th>Share %</th>
-      <th style="background:#dcfce7;font-weight:700;">Vta 3M</th>
-      <th style="background:#dcfce7;font-weight:700;">Prom/Mes</th>
-      <th style="background:#dcfce7;font-weight:700;">Cob. Días</th>
-      <th>Estado Cob.</th>
-      <th>Activo?</th><th>Sugerencia</th>
-    </tr></thead>
-    <tbody id="tbody-stock"><tr><td colspan="17" style="text-align:center;padding:20px;color:var(--text3);">Carga el Stock valorizado primero.</td></tr></tbody>
-    </table>
-  </div>
-</div>
-<div class="cgrid">
-  <div class="cbox"><h4>📊 Top 10 categorías — Valor de stock S/</h4><canvas id="ch-sk-cat" height="220"></canvas></div>
-  <div class="cbox"><h4>📊 Top 10 líneas — Share del inventario %</h4><canvas id="ch-sk-lin" height="220"></canvas></div>
-  <div class="cbox"><h4>📊 Distribución por semáforo de cobertura</h4><canvas id="ch-sk-sem" height="220"></canvas></div>
-  <div class="cbox"><h4>📊 Top 15 productos — Mayor valor en stock</h4><canvas id="ch-sk-top" height="220"></canvas></div>
-</div>
-</div>
-
-<!-- ═══ TAB: OBSERVADOS ═══ -->
-<div class="pane" id="pane-obs">
-<div class="tip">
-  <b>Productos sin stock en Almacén Principal (OBS).</b> Selecciona la acción a realizar para cada item con el desplegable — el cambio se guarda automáticamente.
-  Prioridad de atención: 🔴 Por Comprar -> 🔵 OC por Arribar -> 🟡 Por Cambiar -> ⚫ Anular.
-</div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-  <!-- Principal -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #991b1b;">
-    <div style="font-size:9px;font-weight:700;color:#991b1b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">🚨 Principal</div>
-    <div style="display:flex;gap:16px;">
-      <div>
-        <div class="kv" id="ok-total" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">Total SKU obs.</div>
-      </div>
-      <div>
-        <div class="kv" id="ok-monto" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">Monto total S/</div>
-      </div>
-    </div>
-  </div>
-  <!-- Acciones urgentes -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #92400e;">
-    <div style="font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚡ Acciones urgentes</div>
-    <div style="display:flex;gap:12px;">
-      <div>
-        <div class="kv" id="ok-comprar" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">🔴 Comprar</div>
-      </div>
-      <div>
-        <div class="kv" id="ok-arribar" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">🔵 OC Arribo</div>
-      </div>
-    </div>
-  </div>
-  <!-- En gestión -->
-  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);">
-    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">✅ En gestión</div>
-    <div style="display:flex;gap:12px;">
-      <div>
-        <div class="kv" id="ok-cambiar" style="font-size:20px;font-weight:800;color:#92400e;line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">🟡 Cambiar</div>
-      </div>
-      <div>
-        <div class="kv" id="ok-stock" style="font-size:20px;font-weight:800;color:var(--green);line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">🟢 Con stock</div>
-      </div>
-    </div>
-  </div>
-</div>
+    
 <div class="tbox">
   <div class="tbox-h">
     <h3>🚨 Productos Observados — Lista de acción para Compras</h3>
@@ -2545,8 +2472,8 @@ function calcMatriz(items){
     const gan = i.ganUnitProm;
     if (gan === null || gan === undefined) {
       val='SIN_DATO'; valLabel='Sin datos de venta';
-    } else if (gan >= 700) {
-      val='ALTO'; valLabel='Gan. alta (≥S/700)';
+    } else if (gan >= 500) {
+      val='ALTO'; valLabel='Gan. alta (≥S/500)';
     } else if (gan >= 0) {
       val='BAJO'; valLabel='Gan. baja (<S/700)';
     } else {
@@ -2676,7 +2603,7 @@ function renderStock(){
       <td style="font-size:10px;">${it.marca}</td>
       <td class="mono" style="text-align:right;">${it.cant.toLocaleString()}</td>
       <td class="mono" style="text-align:right;">S/${it.costoUnit.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-      <td class="mono fw7" style="text-align:right;background:#fef9c3;">${it.ganUnitProm===null||it.ganUnitProm===undefined?'—':it.ganUnitProm>=700?'<span style="color:#166534;font-weight:700;">+S/'+it.ganUnitProm.toFixed(0)+'</span>':it.ganUnitProm>=0?'<span style="color:#92400e;">S/'+it.ganUnitProm.toFixed(0)+'</span>':'<span style="color:#991b1b;font-weight:700;">S/'+it.ganUnitProm.toFixed(0)+'</span>'}</td>
+      <td class="mono fw7" style="text-align:right;background:#fef9c3;">${it.ganUnitProm===null||it.ganUnitProm===undefined?'—':it.ganUnitProm>=500?'<span style="color:#166534;font-weight:700;">+S/'+it.ganUnitProm.toFixed(0)+'</span>':it.ganUnitProm>=0?'<span style="color:#92400e;">S/'+it.ganUnitProm.toFixed(0)+'</span>':'<span style="color:#991b1b;font-weight:700;">S/'+it.ganUnitProm.toFixed(0)+'</span>'}</td>
       <td class="mono fw7" style="text-align:right;">S/${Math.round(it.costoTotal).toLocaleString('es-PE')}</td>
       <td class="mono" style="text-align:right;">${(it.share*100).toFixed(1)}%</td>
       <td class="mono" style="text-align:right;">${it.vta3m.toLocaleString()}</td>
@@ -3463,7 +3390,7 @@ function expStock(){
     sheetName:'Inventario Actual',
     kpis:[{val:data.length,lbl:'SKUs en stock',color:'blue'},
           {val:'S/'+Math.round(totalVal).toLocaleString('es-PE'),lbl:'Valor total Alm.001',color:'green'},
-          {val:data.filter(i=>i.ganUnitProm>=700).length,lbl:'Gan.≥S/700',color:'amber'},
+          {val:data.filter(i=>i.ganUnitProm>=500).length,lbl:'Gan.≥S/500',color:'amber'},
           {val:data.filter(i=>i.ganUnitProm<0).length,lbl:'Gan.negativa',color:'red'}],
     colWidths:[12,35,14,16,12,14,9,11,10,13,9,8,8,8],
     colFmts:{
@@ -4695,7 +4622,7 @@ function renderSugerido() {
     const cob  = prom > 0 && stockAct > 0 ? Math.round(stockAct / prom * 30) : null;
     const gan  = i.ganUnitProm;
     const ganStr = gan===null||gan===undefined ? '—'
-      : gan >= 700 ? '<span style="color:#166534;font-weight:700;">+S/'+gan.toFixed(0)+'</span>'
+      : gan >= 500 ? '<span style="color:#166534;font-weight:700;">+S/'+gan.toFixed(0)+'</span>'
       : gan >= 0   ? '<span style="color:#92400e;">S/'+gan.toFixed(0)+'</span>'
       :              '<span style="color:#991b1b;font-weight:700;">S/'+gan.toFixed(0)+'</span>';
 
@@ -5408,7 +5335,7 @@ function exportarExcelConLogo(datos, nombreArchivo, cabeceras, titulo, filtrosSt
       } else if(ci===iGan){
         const g=Number(val);
         if(val===''||val===null||isNaN(g)){ cell.value='—'; }
-        else if(g>=700){
+        else if(g>=500){
           cell.value='+S/'+g.toFixed(0);
           cell.fill=mkFill(VERDE_L); cell.font=mkFont(true,VERDE,9);
           cell.alignment=mkAln('right','middle');
@@ -5592,7 +5519,7 @@ function expReporteCompleto() {
     titulo:'INVENTARIO ACTUAL', subtitulo:'Stock Alm.001 únicamente',
     filtros:'Todos los SKUs en stock',
     sheetName:'Inventario Actual',
-    kpis:[{val:dataS.length,lbl:'SKUs en stock',color:'blue'},{val:'S/'+Math.round(totalValS).toLocaleString('es-PE'),lbl:'Valor total',color:'green'},{val:dataS.filter(i=>i.ganUnitProm>=700).length,lbl:'Gan.≥S/700',color:'amber'},{val:dataS.filter(i=>i.ganUnitProm<0).length,lbl:'Gan.negativa',color:'red'}],
+    kpis:[{val:dataS.length,lbl:'SKUs en stock',color:'blue'},{val:'S/'+Math.round(totalValS).toLocaleString('es-PE'),lbl:'Valor total',color:'green'},{val:dataS.filter(i=>i.ganUnitProm>=500).length,lbl:'Gan.≥S/500',color:'amber'},{val:dataS.filter(i=>i.ganUnitProm<0).length,lbl:'Gan.negativa',color:'red'}],
     colWidths:[12,35,14,16,12,14,9,11,10,13,9,8,8,8],
     colFmts:{8:(v)=>v!=null&&v!==''?'S/'+Number(v).toLocaleString('es-PE'):'—',9:(v)=>v!=null&&v!==''?'S/'+Number(v).toFixed(0):'—',10:(v)=>typeof v==='number'?(v*100).toFixed(1)+'%':'—'},
   });
