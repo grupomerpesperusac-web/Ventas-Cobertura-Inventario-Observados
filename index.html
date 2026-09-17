@@ -274,6 +274,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     <span class="badge" id="b-fecha">Sin datos</span>
     <span class="badge" id="b-stock">Stock: —</span>
     <span class="badge danger" id="b-obs">Obs: —</span>
+    <button class="btn btn-o" onclick="abrirCompradores()" style="font-size:11px;">👤 Compradores</button>
     <button class="btn btn-o" onclick="document.getElementById('modal-guia').classList.remove('hidden')" style="font-size:11px;">📋 Guía de formatos</button>
     <button class="btn btn-r" onclick="limpiarTodo()">🗑 Limpiar sesión</button>
   </div>
@@ -392,6 +393,50 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     <div class="ust" id="st-oc"></div>
   </div>
 
+  <!-- OBSERVADOS - CLIENTES (pedido/cliente/provincia) -->
+  <div class="ucard">
+    <h5>👤 5. Observados — Clientes <span class="tag-opt">OPCIONAL · CONTEXTO</span></h5>
+    <p class="udesc">
+      Reporte del SIG con los <b>pedidos observados y datos del cliente</b>: razón social, distrito, dirección de entrega y teléfono.<br>
+      Se cruza automáticamente con el archivo de abajo (Observados — Productos) usando el <b>N° de Documento</b>.<br>
+      Cols: Número · Estado · Sub Estado · Propiedad · Ruc · Razon Social · Distrito · Direccion · Telefono
+    </p>
+    <div class="udrop" id="drop-obscli">
+      <input type="file" id="f-obscli" accept=".xlsx,.xls">
+      <label for="f-obscli" style="display:block;width:100%;cursor:pointer;">
+        <div style="font-size:28px;margin-bottom:6px;">👤</div>
+        <div style="font-size:12px;font-weight:700;color:var(--blue2);margin-bottom:4px;">Observados — Clientes</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">
+          Arrastra el archivo aquí<br>o haz clic para seleccionar
+        </div>
+        <div style="font-size:9px;background:#e0e7ff;color:#3730a3;border-radius:4px;padding:3px 8px;display:inline-block;">REPORTES_OBSERVADOS_CLIENTES.xlsx</div>
+      </label>
+    </div>
+    <div class="ust" id="st-obscli"></div>
+  </div>
+
+  <!-- OBSERVADOS - PRODUCTOS (SKU <-> pedido que lo originó) -->
+  <div class="ucard">
+    <h5>🔗 6. Observados — Productos <span class="tag-opt">OPCIONAL · CONTEXTO</span></h5>
+    <p class="udesc">
+      Reporte del SIG que <b>relaciona cada SKU observado con el pedido</b> que lo originó (detalle por almacén).<br>
+      Junto con el archivo de arriba, arma la vista Pedido / Cliente / Estatus / SKU en la pestaña 🚨 Observados (botón 👤 en cada fila).<br>
+      Cols: Alma · Numero · Ruc · Codigo · Descrip. · Unid. · Disp. · Estado · Despacho
+    </p>
+    <div class="udrop" id="drop-obsprod">
+      <input type="file" id="f-obsprod" accept=".xlsx,.xls">
+      <label for="f-obsprod" style="display:block;width:100%;cursor:pointer;">
+        <div style="font-size:28px;margin-bottom:6px;">🔗</div>
+        <div style="font-size:12px;font-weight:700;color:var(--blue2);margin-bottom:4px;">Observados — Productos</div>
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">
+          Arrastra el archivo aquí<br>o haz clic para seleccionar
+        </div>
+        <div style="font-size:9px;background:#e0e7ff;color:#3730a3;border-radius:4px;padding:3px 8px;display:inline-block;">REPORTES_OBSERVADOS_PRODUCTOS.xlsx</div>
+      </label>
+    </div>
+    <div class="ust" id="st-obsprod"></div>
+  </div>
+
   <!-- PROCESAR -->
   <div class="ucard ucard-proc">
     <h5 style="color:var(--blue);">⚙️ Procesar y guardar</h5>
@@ -424,41 +469,108 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 <!-- ═══ TAB: VENTAS & COBERTURA ═══ -->
 <div class="pane" id="pane-ventas">
 <div class="tip">Historial de salidas (ventas + bonificaciones + premios) de los últimos 14 meses, ordenado por categoría de mayor a menor movimiento. Cobertura calculada como Stock ÷ Vta30D.</div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:8px;margin-bottom:10px;align-items:start;">
   <!-- Volumen -->
   <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--blue);">
     <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📦 Volumen</div>
     <div style="display:flex;gap:16px;">
       <div>
-        <div class="kv" id="vk-skus" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div class="kv" id="vk-skus" style="font-size:18px;font-weight:800;color:var(--blue);line-height:1;">—</div>
         <div style="font-size:9px;color:var(--text3);">SKUs activos</div>
+        <div id="vk-skus-pct" style="font-size:10px;font-weight:700;color:var(--blue);">—%</div>
       </div>
       <div>
-        <div class="kv" id="vk-total3m" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">Unid. salidas 3M</div>
+        <div class="kv" id="vk-total3m" style="font-size:18px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);">Unid. salidas <span id="vk-total3m-per">6M</span></div>
       </div>
     </div>
   </div>
   <!-- Cobertura -->
   <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--green);">
-    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Cobertura</div>
-    <div style="display:flex;gap:16px;">
-      <div>
-        <div class="kv" id="vk-cob30" style="font-size:20px;font-weight:800;color:var(--green);line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">Cob. prom. (días)</div>
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Cobertura <span style="font-weight:400;color:var(--text3);text-transform:none;">(prom. <span id="vk-cob30" style="font-weight:700;color:var(--green);">—</span>d)</span></div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-scrit" style="font-size:14px;font-weight:800;color:#991b1b;">—</span><span style="font-size:8px;color:#991b1b;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-scrit-pct" style="font-size:10px;font-weight:700;color:#991b1b;">—%</span><br><span style="font-size:8px;color:var(--text3);">🔴 Crítica &lt;7d</span></div>
       </div>
-      <div>
-        <div class="kv" id="vk-scrit" style="font-size:20px;font-weight:800;color:#991b1b;line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);">🔴 SKUs &lt;7d</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-swarn" style="font-size:14px;font-weight:800;color:#92400e;">—</span><span style="font-size:8px;color:#92400e;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-swarn-pct" style="font-size:10px;font-weight:700;color:#92400e;">—%</span><br><span style="font-size:8px;color:var(--text3);">🟡 Baja 7-30d</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-sok" style="font-size:14px;font-weight:800;color:#166534;">—</span><span style="font-size:8px;color:#166534;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-sok-pct" style="font-size:10px;font-weight:700;color:#166534;">—%</span><br><span style="font-size:8px;color:var(--text3);">🟢 OK ≥30d</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-ssvtas" style="font-size:14px;font-weight:800;color:#374151;">—</span><span style="font-size:8px;color:#374151;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-ssvtas-pct" style="font-size:10px;font-weight:700;color:#374151;">—%</span><br><span style="font-size:8px;color:var(--text3);">⬜ Sin cobertura</span></div>
       </div>
     </div>
   </div>
-  <!-- Sin movimiento -->
+  <!-- Surtido -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #7e22ce;">
+    <div style="font-size:9px;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">🎯 Surtido</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-surt-caly" style="font-size:14px;font-weight:800;color:#0369a1;">—</span><span style="font-size:8px;color:#0369a1;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-surt-caly-pct" style="font-size:10px;font-weight:700;color:#0369a1;">—%</span><br><span style="font-size:8px;color:var(--text3);">🔵 Solo Calidda</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-surt-myb" style="font-size:14px;font-weight:800;color:#c2410c;">—</span><span style="font-size:8px;color:#c2410c;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-surt-myb-pct" style="font-size:10px;font-weight:700;color:#c2410c;">—%</span><br><span style="font-size:8px;color:var(--text3);">🟠 Solo Mybees</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-surt-amb" style="font-size:14px;font-weight:800;color:#166534;">—</span><span style="font-size:8px;color:#166534;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-surt-amb-pct" style="font-size:10px;font-weight:700;color:#166534;">—%</span><br><span style="font-size:8px;color:var(--text3);">🟢 Ambos</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-surt-nin" style="font-size:14px;font-weight:800;color:#374151;">—</span><span style="font-size:8px;color:#374151;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-surt-nin-pct" style="font-size:10px;font-weight:700;color:#374151;">—%</span><br><span style="font-size:8px;color:var(--text3);">⚫ Ninguno</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Estado Surtido -->
+  <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #0369a1;">
+    <div style="font-size:9px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">🔀 Estado Surtido</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-est-actst" style="font-size:14px;font-weight:800;color:#166534;">—</span><span style="font-size:8px;color:#166534;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-est-actst-pct" style="font-size:10px;font-weight:700;color:#166534;">—%</span><br><span style="font-size:8px;color:var(--text3);">✅ Surtido con stock</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-est-actns" style="font-size:14px;font-weight:800;color:#991b1b;">—</span><span style="font-size:8px;color:#991b1b;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-est-actns-pct" style="font-size:10px;font-weight:700;color:#991b1b;">—%</span><br><span style="font-size:8px;color:var(--text3);">🔴 Surtido sin stock</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-est-inst" style="font-size:14px;font-weight:800;color:#c2410c;">—</span><span style="font-size:8px;color:#c2410c;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-est-inst-pct" style="font-size:10px;font-weight:700;color:#c2410c;">—%</span><br><span style="font-size:8px;color:var(--text3);">🟠 Fuera surtido, con stock</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-est-inns" style="font-size:14px;font-weight:800;color:#374151;">—</span><span style="font-size:8px;color:#374151;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-est-inns-pct" style="font-size:10px;font-weight:700;color:#374151;">—%</span><br><span style="font-size:8px;color:var(--text3);">⚫ Fuera surtido, sin stock</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- Anomalía -->
   <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid #6b7280;">
-    <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚫ Sin movimiento</div>
-    <div>
-      <div class="kv" id="vk-svtas" style="font-size:20px;font-weight:800;color:#6b7280;line-height:1;">—</div>
-      <div style="font-size:9px;color:var(--text3);">SKUs sin ventas 3M</div>
+    <div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">⚠️ Anomalía</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-svtas" style="font-size:14px;font-weight:800;color:#6b7280;">—</span><span style="font-size:8px;color:#6b7280;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-svtas-pct" style="font-size:10px;font-weight:700;color:#6b7280;">—%</span><br><span style="font-size:8px;color:var(--text3);">⚫ Sin movimiento</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-neg" style="font-size:14px;font-weight:800;color:#991b1b;">—</span><span style="font-size:8px;color:#991b1b;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-neg-pct" style="font-size:10px;font-weight:700;color:#991b1b;">—%</span><br><span style="font-size:8px;color:var(--text3);">🚨 Inventario negativo</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-alm2" style="font-size:14px;font-weight:800;color:#92400e;">—</span><span style="font-size:8px;color:#92400e;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-alm2-pct" style="font-size:10px;font-weight:700;color:#92400e;">—%</span><br><span style="font-size:8px;color:var(--text3);">📦 Almacén 002 (2da cond.)</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <div><span class="kv" id="vk-alm3" style="font-size:14px;font-weight:800;color:#7c2d12;">—</span><span style="font-size:8px;color:#7c2d12;font-weight:600;"> SKU</span></div>
+        <div style="text-align:right;"><span id="vk-alm3-pct" style="font-size:10px;font-weight:700;color:#7c2d12;">—%</span><br><span style="font-size:8px;color:var(--text3);">🔧 Almacén 003 (Averías)</span></div>
+      </div>
     </div>
   </div>
 </div>
@@ -832,28 +944,29 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 <div class="pane" id="pane-obs">
 <div class="tip">
   Quiebres de stock (reporte SIN STOCK del SIG) netos de lo disponible en almacén principal. <b>Unid.Pend.</b> = Observadas − Stock Actual (mín. 0). <b>Monto</b> = Pendiente × Costo Unit. con IGV (18%).
+  <br>📌 Las tarjetas de abajo se calculan sobre los SKUs <b>pendientes</b> (Unid.Pend. &gt; 0) — lo que realmente falta comprar/atender. Usa "👁 Ver todos" para ver también los ya resueltos/anulados en la tabla.
 </div>
 <!-- KPI OBSERVADOS -->
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;align-items:start;">
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px;align-items:start;">
 
   <!-- ① PRINCIPAL -->
   <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--blue);">
-    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🚨 Principal</div>
+    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🚨 Principal (pendientes)</div>
     <div style="display:flex;gap:16px;">
       <div>
         <div class="kv" id="ok-total" style="font-size:22px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px;">SKUs observados</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">SKUs pendientes</div>
       </div>
       <div>
         <div class="kv" id="ok-monto" style="font-size:22px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px;">Monto S/ (PVP+IGV)</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">Monto pendiente S/ (PVP+IGV)</div>
       </div>
     </div>
   </div>
 
   <!-- ② ACCIONES URGENTES -->
   <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid #b91c1c;">
-    <div style="font-size:9px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">⚡ Acciones urgentes</div>
+    <div style="font-size:9px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">⚡ Acciones urgentes (pendientes)</div>
     <div style="display:flex;gap:16px;">
       <div>
         <div class="kv" id="ok-comprar" style="font-size:22px;font-weight:800;color:#b91c1c;line-height:1;">—</div>
@@ -868,15 +981,42 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 
   <!-- ③ EN GESTIÓN -->
   <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--green);">
-    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">✅ En gestión</div>
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">✅ En gestión (pendientes)</div>
     <div style="display:flex;gap:16px;">
       <div>
         <div class="kv" id="ok-cambiar" style="font-size:22px;font-weight:800;color:#92400e;line-height:1;">—</div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px;">🟡 Por cambiar</div>
       </div>
       <div>
-        <div class="kv" id="ok-stock" style="font-size:22px;font-weight:800;color:#166534;line-height:1;">—</div>
-        <div style="font-size:9px;color:var(--text3);margin-top:1px;">🟢 Con stock / resuelto</div>
+        <div class="kv" id="ok-stock" style="font-size:22px;font-weight:800;color:#166534;line-height:1;" title="SKUs marcados como Con stock/Anular manualmente pero que aún registran Unid.Pend. &gt; 0 — revisar, puede ser un dato desactualizado.">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">🟢 Marcados resueltos (revisar)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ COMPRADORES -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid #7e22ce;">
+    <div style="font-size:9px;font-weight:700;color:#7e22ce;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">👥 Compradores — pendientes por atender</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <span style="font-size:9px;">👤 Endira Gómez</span>
+        <span><span class="kv" id="ok-comp-0" style="font-size:14px;font-weight:800;color:#7e22ce;">—</span><span style="font-size:8px;color:var(--text3);"> SKU</span></span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <span style="font-size:9px;">👤 María Rojas</span>
+        <span><span class="kv" id="ok-comp-1" style="font-size:14px;font-weight:800;color:#7e22ce;">—</span><span style="font-size:8px;color:var(--text3);"> SKU</span></span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <span style="font-size:9px;">👤 Cristina Chávez</span>
+        <span><span class="kv" id="ok-comp-2" style="font-size:14px;font-weight:800;color:#7e22ce;">—</span><span style="font-size:8px;color:var(--text3);"> SKU</span></span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+        <span style="font-size:9px;">👤 Dante Clavijo</span>
+        <span><span class="kv" id="ok-comp-3" style="font-size:14px;font-weight:800;color:#7e22ce;">—</span><span style="font-size:8px;color:var(--text3);"> SKU</span></span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;border-top:1px dashed var(--line);padding-top:4px;margin-top:1px;">
+        <span style="font-size:9px;color:var(--text3);">⚪ Sin asignar</span>
+        <span><span class="kv" id="ok-comp-sa" style="font-size:14px;font-weight:800;color:var(--text3);">—</span><span style="font-size:8px;color:var(--text3);"> SKU</span></span>
       </div>
     </div>
   </div>
@@ -898,6 +1038,9 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
         <select style="display:none;" id="os-acc" onchange="filtrarObs()"><option value=""></option></select>
         <select style="display:none;" id="os-cat" onchange="filtrarObs()"><option value=""></option></select>
         <select style="display:none;" id="os-resp" onchange="filtrarObs()"><option value=""></option></select>
+        <label style="display:flex;align-items:center;gap:4px;font-size:9px;cursor:pointer;padding:3px 8px;border:1px solid #cbd5e1;border-radius:4px;background:#f8fafc;white-space:nowrap;" title="Por defecto solo se listan los SKUs con Unid.Pend. > 0 (los que falta comprar/atender). Marca esto para ver también los resueltos con stock y los anulados.">
+          <input type="checkbox" id="cb-todos-obs" onchange="filtrarObs()" style="width:12px;height:12px;"> 👁 Ver todos (incl. resueltos/anulados)
+        </label>
       </div>
     </div>
   </div>
@@ -908,9 +1051,9 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <th>Vta/Mes</th><th>Días Obs. (mes)</th>
       <th>⚡ ACCIÓN</th><th>OC Activa</th>
       <th>Reemplazo</th><th>Desc. Reemplazo</th>
-      <th>COMENTARIOS</th><th>Sustitución hist.</th><th>Fecha Est. Arribo</th>
+      <th>COMENTARIOS</th><th>Sustitución hist.</th><th>Fecha Est. Arribo</th><th>Fecha Est. Atención</th><th>👤 Pedidos/Clientes</th>
     </tr></thead>
-    <tbody id="tbody-obs"><tr><td colspan="19" style="text-align:center;padding:20px;color:var(--text3);">Carga el archivo de Observados SIG primero.</td></tr></tbody>
+    <tbody id="tbody-obs"><tr><td colspan="20" style="text-align:center;padding:20px;color:var(--text3);">Carga el archivo de Observados SIG primero.</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -1106,6 +1249,82 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 </div>
 <div id="grupos-equiv-cont" style="padding:4px 0;"></div>
 
+<!-- MODAL COMPRADORES -->
+<div class="mov hidden" id="modal-comp" onclick="closeCompModal(event)">
+  <div class="mod" style="max-width:680px;">
+    <div class="mod-t">
+      <span>👤 Asignación de Compradores por Categoría</span>
+      <button class="mod-x" onclick="document.getElementById('modal-comp').classList.add('hidden')">✕</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-bottom:10px;">
+      Marca las categorías que le corresponden a cada comprador. Se usa para asignar automáticamente el responsable de cada producto observado (columna Resp.) y para sugerir el comprador en Últimas Compras. Puedes reasignar una categoría a otro comprador o dejarla sin marcar en nadie.
+    </div>
+    <div id="comp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <span id="comp-msg" style="font-size:10px;color:var(--text3);"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-o" onclick="resetCompradores()">↺ Restaurar por defecto</button>
+        <button class="btn btn-b" onclick="guardarCompradores()">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL GUÍA DE FORMATOS -->
+<div class="mov hidden" id="modal-guia" onclick="closeGuiaModal(event)">
+  <div class="mod" style="max-width:640px;">
+    <div class="mod-t">
+      <span>📋 Guía de formatos y navegación</span>
+      <button class="mod-x" onclick="document.getElementById('modal-guia').classList.add('hidden')">✕</button>
+    </div>
+    <div style="font-size:11px;line-height:1.6;color:var(--text1);">
+      <p style="margin:0 0 8px;"><b>¿Cómo funciona la herramienta?</b> Cada pestaña de arriba corresponde a una parte del proceso. La primera vez en el día, sigue este orden:</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin:10px 0;">
+        <div style="border-left:3px solid var(--blue);padding-left:10px;">
+          <b>1. 📥 Carga de Datos</b> — Arrastra aquí los archivos del día: <b>Kardex Dinámico</b> y <b>Observados SIG</b> son obligatorios; <b>Stock Valorizado</b> y <b>OC Activas</b> son opcionales pero mejoran la precisión. Luego presiona <b>Procesar Todo</b>.
+        </div>
+        <div style="border-left:3px solid var(--blue);padding-left:10px;">
+          <b>2. 📈 Ventas &amp; Cobertura</b> — Historial de ventas de los últimos 14 meses por producto, con la cobertura en días (cuánto dura el stock al ritmo de venta actual) y filtros por categoría, línea, canal y surtido.
+        </div>
+        <div style="border-left:3px solid var(--blue);padding-left:10px;">
+          <b>3. 📦 Inventario Actual</b> — Stock valorizado y clasificación de cada producto (Estrella, Volumen, Joya Oculta, Problemático, etc.) según su rotación y ganancia.
+        </div>
+        <div style="border-left:3px solid var(--blue);padding-left:10px;">
+          <b>4. 🚨 Productos Observados</b> — Quiebres de stock reportados por el SIG: qué comprar, qué está por arribar (OC activa) y qué cambiar o anular.
+        </div>
+        <div style="border-left:3px solid var(--blue);padding-left:10px;">
+          <b>5. 🛒 Últimas Compras</b> — Historial de ingresos y ranking de proveedores.
+        </div>
+        <div style="border-left:3px solid var(--blue);padding-left:10px;">
+          <b>6. 🔄 Sustituciones</b> — Maestro de productos sustitutos, para cuando un observado no tiene stock pero hay un reemplazo equivalente.
+        </div>
+        <div style="border-left:3px solid var(--green);padding-left:10px;">
+          <b>7. 🌐 Publicar / Ver</b> — Solo quien cargó los archivos debe <b>Publicar estado del día</b> al terminar. Así el resto del equipo ve el mismo reporte con <b>Cargar el estado publicado ahora</b>, sin tener que cargar los archivos de nuevo.
+        </div>
+      </div>
+      <p style="margin-top:10px;font-size:10px;color:var(--text3);">📌 Mientras no publiques, los datos también quedan guardados en este navegador (localStorage), por si cierras y vuelves a abrir la pestaña el mismo día. Usa <b>👤 Compradores</b> arriba para reasignar qué categorías le corresponden a cada comprador.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PEDIDOS/CLIENTES POR SKU OBSERVADO -->
+<div class="mov hidden" id="modal-pedobs" onclick="closePedObsModal(event)">
+  <div class="mod" style="max-width:820px;">
+    <div class="mod-t">
+      <span id="pedobs-titulo">👤 Pedidos / Clientes</span>
+      <button class="mod-x" onclick="closePedObsModal()">✕</button>
+    </div>
+    <p style="font-size:10px;color:var(--text3);margin:0 0 8px;">Cruce entre el SKU observado y los reportes <b>Observados — Clientes</b> (pedido↔cliente↔dirección) y <b>Observados — Productos</b> (SKU↔pedido) cargados en 📥 Carga de Datos.</p>
+    <div class="tw" style="max-height:360px;">
+      <table><thead><tr>
+        <th>N° Pedido</th><th>Cliente</th><th>Distrito</th><th>Teléfono</th><th>Estatus</th><th>Canal</th><th>Línea</th>
+      </tr></thead>
+      <tbody id="pedobs-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- FORMULARIO MODAL NUEVO PAR -->
 <div class="mov hidden" id="modal-sust" onclick="closeSustModal(event)">
   <div class="mod" style="max-width:520px;">
@@ -1269,6 +1488,8 @@ var D = {
   oc:      [],   // [{noc,cod,desc,fechaStr,cant,prov,diasRest}]
   sust:    [],   // [{id,cod_obs,cod_rem,tipo,conf,rec,cat,cmt,activo,fuente}] — OC activas (opcional)
   obsAcc:  {},   // {cod: accion} — acciones editadas por usuario, persistidas en localStorage
+  obsClientes:  [], // [{numero,tipo,fDocum,fVencim,monto,estado,subEstado,propiedad,ruc,razonSocial,entidad,prov,dscProv,canal,dscCanal,distrito,direccion,telefono}] — Reporte Observados Clientes
+  obsProductos: [], // [{alma,numero,ruc,cod,descrip,unid,disp,estado,despacho,fechaIngreso}] — Reporte Observados Productos (SKU↔pedido)
   charts:  {},
   mesesHdr: []
 };
@@ -1303,7 +1524,7 @@ function gTab(id) {
 // ===================================================
 // DRAG & DROP
 // ===================================================
-['kard','stock','obs','oc'].forEach(id=>{
+['kard','stock','obs','oc','obscli','obsprod'].forEach(id=>{
   const drop=document.getElementById('drop-'+id);
   const inp=document.getElementById('f-'+id);
   if(!drop||!inp) return;
@@ -1327,6 +1548,8 @@ function leerArchivo(tipo,file){
       if(tipo==='stock') parsearStockActual(wb,file.name);   // stock actual opcional
       if(tipo==='obs')   parsearObs(wb,file.name);
       if(tipo==='oc')    parsearOCActivas(wb,file.name);
+      if(tipo==='obscli')  parsearObsClientes(wb,file.name);
+      if(tipo==='obsprod') parsearObsProductos(wb,file.name);
     }catch(ex){ setSt(tipo,'Error: '+ex.message,false); }
   };
   r.readAsArrayBuffer(file);
@@ -1950,6 +2173,157 @@ function inferirAccion(comentario,stk1,codRem){
 }
 
 // ===================================================
+// HELPERS FECHA / TEXTO (reporte Observados Clientes/Productos)
+// ===================================================
+function _up(v){ return String(v==null?'':v).toUpperCase().trim(); }
+
+function xlDate(v){
+  try{
+    if(v===null||v===undefined||v==='') return '';
+    if(typeof v==='number'&&v>25000){
+      const d=new Date(Math.round((v-25569)*86400000));
+      if(!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    }
+    const s=String(v).trim();
+    let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if(m){
+      let yy=m[3].length===2?('20'+m[3]):m[3];
+      const d=new Date(+yy,+m[2]-1,+m[1]);
+      if(!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    }
+    if(s.match(/^\d{4}-\d{2}-\d{2}/)) return s.slice(0,10);
+  }catch(e){}
+  return '';
+}
+
+// ===================================================
+// PARSER OBSERVADOS — CLIENTES (pedido ↔ cliente ↔ provincia)
+// ===================================================
+function parsearObsClientes(wb,fname){
+  const shName=wb.SheetNames.find(s=>/REPORTE|CLIENTE/i.test(s))||wb.SheetNames[0];
+  const ws=wb.Sheets[shName];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+  let hdrR=-1;
+  for(let i=0;i<Math.min(raw.length,15);i++){
+    const s=raw[i].map(v=>_up(v)).join('|');
+    if(/N[UÚ]MERO/.test(s)&&/RUC/.test(s)&&/ESTADO/.test(s)){hdrR=i;break;}
+  }
+  if(hdrR<0){setSt('obscli','No se encontró cabecera (Número/Ruc/Estado) en el archivo.',false);return;}
+
+  const hdrs=raw[hdrR].map(h=>_up(h));
+  const fi=re=>hdrs.findIndex(h=>re.test(h));
+  const iTipo=fi(/^T\.?$/);
+  const iFDocum=fi(/F\.?\s*DOCUM/);
+  const iFVencim=fi(/F\.?\s*VENCIM/);
+  const iNum=fi(/N[UÚ]MERO/);
+  const iMonto=fi(/^MONTO$/);
+  const iEstado=fi(/^ESTADO$/);
+  const iSubEstado=fi(/SUB\s*ESTADO/);
+  const iPropiedad=fi(/PROPIEDAD/);
+  const iRuc=fi(/^RUC$/);
+  const iRazon=fi(/RAZ[OÓ]N\s*SOCIAL/);
+  const iEntidad=fi(/^ENTIDAD$/);
+  const iCod1=fi(/COD\.?\s*COS\s*1/);
+  const iDsc1=fi(/DSC\.?\s*COS\s*1/);
+  const iCod2=fi(/COD\.?\s*COS\s*2/);
+  const iDsc2=fi(/DSC\.?\s*COS\s*2/);
+  const iDistrito=fi(/DISTRITO/);
+  const iDireccion=fi(/DIRECCI[OÓ]N/);
+  const iTelefono=fi(/TEL[EÉ]FONO/);
+
+  if(iNum<0||iEstado<0){setSt('obscli','No se pudo ubicar columnas clave (Número/Estado) en la cabecera.',false);return;}
+
+  const items=[];
+  for(let r=hdrR+1;r<raw.length;r++){
+    const row=raw[r];
+    if(!row) continue;
+    const numero=String(row[iNum]||'').trim();
+    if(!numero) continue;
+    items.push({
+      numero,
+      tipo:      iTipo>-1?String(row[iTipo]||'').trim():'',
+      fDocum:    iFDocum>-1?xlDate(row[iFDocum]):'',
+      fVencim:   iFVencim>-1?xlDate(row[iFVencim]):'',
+      monto:     iMonto>-1?(parseFloat(row[iMonto])||0):0,
+      estado:    iEstado>-1?String(row[iEstado]||'').trim():'',
+      subEstado: iSubEstado>-1?String(row[iSubEstado]||'').trim():'',
+      propiedad: iPropiedad>-1?String(row[iPropiedad]||'').trim():'',
+      ruc:       iRuc>-1?String(row[iRuc]||'').trim():'',
+      razonSocial:iRazon>-1?String(row[iRazon]||'').trim():'',
+      entidad:   iEntidad>-1?String(row[iEntidad]||'').trim():'',
+      prov:      iCod1>-1?String(row[iCod1]||'').trim():'',
+      dscProv:   iDsc1>-1?String(row[iDsc1]||'').trim():'',
+      canal:     iCod2>-1?String(row[iCod2]||'').trim():'',
+      dscCanal:  iDsc2>-1?String(row[iDsc2]||'').trim():'',
+      distrito:  iDistrito>-1?String(row[iDistrito]||'').trim():'',
+      direccion: iDireccion>-1?String(row[iDireccion]||'').trim():'',
+      telefono:  iTelefono>-1?String(row[iTelefono]||'').trim():''
+    });
+  }
+
+  D.obsClientes=items;
+  setSt('obscli',`${items.length} pedidos/clientes observados`,true);
+  if(D.obs&&D.obs.length>0) renderObs();
+}
+
+// ===================================================
+// PARSER OBSERVADOS — PRODUCTOS (SKU ↔ pedido que lo originó)
+// ===================================================
+function parsearObsProductos(wb,fname){
+  const shName=wb.SheetNames.find(s=>/REPORTE|PRODUCT/i.test(s))||wb.SheetNames[0];
+  const ws=wb.Sheets[shName];
+  const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+  let hdrR=-1;
+  for(let i=0;i<Math.min(raw.length,15);i++){
+    const s=raw[i].map(v=>_up(v)).join('|');
+    if(/N[UÚ]MERO/.test(s)&&/C[OÓ]DIGO/.test(s)&&/ESTADO/.test(s)){hdrR=i;break;}
+  }
+  if(hdrR<0){setSt('obsprod','No se encontró cabecera (Numero/Codigo/Estado) en el archivo.',false);return;}
+
+  const hdrs=raw[hdrR].map(h=>_up(h));
+  const fi=re=>hdrs.findIndex(h=>re.test(h));
+  const iAlma=fi(/^ALMA/);
+  const iPEmis=fi(/P\.?\s*EMIS/);
+  const iNum=fi(/N[UÚ]MERO/);
+  const iRuc=fi(/^RUC$/);
+  const iCod=fi(/C[OÓ]DIGO/);
+  const iDesc=fi(/DESCRIP/);
+  const iUnid=fi(/^UNID/);
+  const iDisp=fi(/DISP/);
+  const iEstado=fi(/^ESTADO$/);
+  const iDespacho=fi(/DESPACHO/);
+  const iFIng=fi(/FECHA\s*INGRESO/);
+
+  if(iCod<0||iNum<0){setSt('obsprod','No se pudo ubicar columnas clave (Numero/Codigo) en la cabecera.',false);return;}
+
+  const items=[];
+  for(let r=hdrR+1;r<raw.length;r++){
+    const row=raw[r];
+    if(!row) continue;
+    const cod=String(row[iCod]||'').trim();
+    if(!cod||!/^\d/.test(cod)||cod.length<6) continue;
+    items.push({
+      alma:      iAlma>-1?String(row[iAlma]||'').trim():'',
+      numero:    String(row[iNum]||'').trim(),
+      ruc:       iRuc>-1?String(row[iRuc]||'').trim():'',
+      cod,
+      descrip:   iDesc>-1?String(row[iDesc]||'').trim():'',
+      unid:      iUnid>-1?(parseFloat(row[iUnid])||0):0,
+      disp:      iDisp>-1?(parseFloat(row[iDisp])||0):0,
+      estado:    iEstado>-1?String(row[iEstado]||'').trim().toUpperCase():'',
+      despacho:  iDespacho>-1?String(row[iDespacho]||'').trim():'',
+      fechaIngreso: iFIng>-1?xlDate(row[iFIng]):''
+    });
+  }
+
+  D.obsProductos=items;
+  setSt('obsprod',`${items.length} líneas SKU↔pedido (${new Set(items.map(i=>i.cod)).size} SKUs · ${new Set(items.map(i=>i.numero)).size} pedidos)`,true);
+  if(D.obs&&D.obs.length>0) renderObs();
+}
+
+// ===================================================
 // PARSER COMPRAS / INGRESOS HISTÓRICOS
 // ===================================================
 function parsearCompras(wb,fname){
@@ -2350,14 +2724,71 @@ function renderVentas(){
   else if(ord==='stock') data.sort((a,b)=>b.stock-a.stock);
 
   // KPIs — siempre del dataset filtrado
-  document.getElementById('vk-skus').textContent=data.filter(i=>i.activo==='ACTIVO').length.toLocaleString();
+  const totalSK=data.length||1;
+  const setElV=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  const setPctV=(id,n)=>{const el=document.getElementById(id);if(el)el.textContent=(n/totalSK*100).toFixed(1)+'%';};
+
+  // ① Volumen
+  const nActivosV=data.filter(i=>i.activo==='ACTIVO').length;
+  setElV('vk-skus',nActivosV.toLocaleString()); setPctV('vk-skus-pct',nActivosV);
   const tot3m=data.reduce((s,i)=>s+i._3m,0);
-  document.getElementById('vk-total3m').textContent=tot3m.toLocaleString();
+  setElV('vk-total3m',tot3m.toLocaleString());
+  setElV('vk-total3m-per',_P+'M');
+
+  // ② Cobertura — 4 criterios
   const cobs=data.filter(i=>i.cob>0).map(i=>i.cob);
   const cobProm=cobs.length?Math.round(cobs.reduce((a,b)=>a+b,0)/cobs.length):0;
-  document.getElementById('vk-cob30').textContent=cobProm;
-  document.getElementById('vk-scrit').textContent=data.filter(i=>i.cob>0&&i.cob<7).length;
-  document.getElementById('vk-svtas').textContent=data.filter(i=>i._3m===0).length;
+  setElV('vk-cob30',cobProm);
+  const nCritV=data.filter(i=>i.cob>0&&i.cob<7).length;
+  const nWarnV=data.filter(i=>i.cob>=7&&i.cob<30).length;
+  const nOkV=data.filter(i=>i.cob>=30).length;
+  const nSinCobV=data.filter(i=>i.cob===null||i.cob<=0).length;
+  setElV('vk-scrit',nCritV);  setPctV('vk-scrit-pct',nCritV);
+  setElV('vk-swarn',nWarnV);  setPctV('vk-swarn-pct',nWarnV);
+  setElV('vk-sok',nOkV);      setPctV('vk-sok-pct',nOkV);
+  setElV('vk-ssvtas',nSinCobV); setPctV('vk-ssvtas-pct',nSinCobV);
+
+  // ③ Surtido — pertenencia (Calidda / Mybees / Ambos / Ninguno)
+  let nCalV=0,nMybV=0,nAmbV=0,nNinV=0;
+  data.forEach(i=>{
+    const _enCal=SURTIDO_CALIDDA[i.cod]==='ACTIVO';
+    const _enMyb=SURTIDO_MYBEES[i.cod]==='ACTIVO';
+    if(_enCal&&_enMyb) nAmbV++;
+    else if(_enCal) nCalV++;
+    else if(_enMyb) nMybV++;
+    else nNinV++;
+  });
+  setElV('vk-surt-caly',nCalV); setPctV('vk-surt-caly-pct',nCalV);
+  setElV('vk-surt-myb',nMybV);  setPctV('vk-surt-myb-pct',nMybV);
+  setElV('vk-surt-amb',nAmbV);  setPctV('vk-surt-amb-pct',nAmbV);
+  setElV('vk-surt-nin',nNinV);  setPctV('vk-surt-nin-pct',nNinV);
+
+  // ④ Estado surtido — 4 estados (dentro/fuera de surtido × con/sin stock)
+  let nActStV=0,nActNsV=0,nInStV=0,nInNsV=0;
+  data.forEach(i=>{
+    const _enCal=SURTIDO_CALIDDA[i.cod]==='ACTIVO';
+    const _enMyb=SURTIDO_MYBEES[i.cod]==='ACTIVO';
+    const _enSurt=_enCal||_enMyb;
+    const _tSt=(i.stock||0)>0;
+    if(_enSurt&&_tSt) nActStV++;
+    else if(_enSurt) nActNsV++;
+    else if(_tSt) nInStV++;
+    else nInNsV++;
+  });
+  setElV('vk-est-actst',nActStV); setPctV('vk-est-actst-pct',nActStV);
+  setElV('vk-est-actns',nActNsV); setPctV('vk-est-actns-pct',nActNsV);
+  setElV('vk-est-inst',nInStV);   setPctV('vk-est-inst-pct',nInStV);
+  setElV('vk-est-inns',nInNsV);   setPctV('vk-est-inns-pct',nInNsV);
+
+  // ⑤ Anomalía — sin movimiento / inventario negativo / almacén 002 / almacén 003
+  const nSvtasV=data.filter(i=>i._3m===0).length;
+  const nNegV=data.filter(i=>(i.stock||0)<0).length;
+  const nAlm2V=data.filter(i=>(i.stk2||0)>0).length;
+  const nAlm3V=data.filter(i=>(i.stk3||0)>0).length;
+  setElV('vk-svtas',nSvtasV); setPctV('vk-svtas-pct',nSvtasV);
+  setElV('vk-neg',nNegV);     setPctV('vk-neg-pct',nNegV);
+  setElV('vk-alm2',nAlm2V);   setPctV('vk-alm2-pct',nAlm2V);
+  setElV('vk-alm3',nAlm3V);   setPctV('vk-alm3-pct',nAlm3V);
 
   // Tabla
   const max3m=Math.max(...data.map(i=>i._3m),1);
@@ -2651,20 +3082,17 @@ function filtrarStock(){renderStock();}
 // ===================================================
 // RENDER OBSERVADOS
 // ===================================================
-function renderObs(){
-  const q=(document.getElementById('os-q')||{}).value||'';
-  const acc=(document.getElementById('os-acc')||{}).value||'';
-  const cat=(document.getElementById('os-cat')||{}).value||'';
-  const resp=(document.getElementById('os-resp')||{}).value||'';
-
-  // Cruzar kardex para vtas mensuales
+// Enriquece D.obs con stock actual / pendiente / monto / accion sugerida.
+// Compartido entre renderObs() (tabla) y actualizarKpisObs() (tarjetas), para
+// que ambos calculen exactamente lo mismo sin duplicar la lógica.
+function calcObsDerivados(){
   const kMap={};
   D.kardex.forEach(k=>{kMap[k.cod]=k;});
-  // Cruzar historial de compras para OC
   const compMap={};
   D.compras.forEach(c=>{if(!compMap[c.cod])compMap[c.cod]=c;});
-
-  let data=D.obs.map(it=>{
+  const pedMap={};
+  (D.obsProductos||[]).forEach(p=>{(pedMap[p.cod]=pedMap[p.cod]||[]).push(p);});
+  return D.obs.map(it=>{
     const k=kMap[it.cod];
     const vtaMes=k?Math.round(k.meses.slice(-3).reduce((a,b)=>a+b,0)/3*10)/10:0;
     const ultComp=compMap[it.cod];
@@ -2675,9 +3103,55 @@ function renderObs(){
     // Auto-sugerir "STOCK" si el stock cubre todos los observados
     const accionSugerida=(stockActual>0&&unidPend===0&&it.accion!=='ANULAR')?
       'STOCK':it.accion;
+    const numPed=(pedMap[it.cod]||[]).length;
     return {...it,vtaMes,ultComp,costoUnit,stockActual,unidPend,montoIGV,
-            accion:accionSugerida};
+            accion:accionSugerida,numPed};
   });
+}
+
+// Recalcula solo las tarjetas KPI (sin re-render de las 400 filas de la tabla).
+// Se llama tras cada edición en la tabla (accion/responsable) para que las
+// tarjetas se muevan en vivo mientras el comprador trabaja la lista.
+function actualizarKpisObs(){
+  const data=calcObsDerivados();
+  const setEl=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  // Desde 17-sep-2026 (parte 3): TODAS las tarjetas (Principal / Acciones
+  // urgentes / En gestión / Compradores) se calculan sobre el subconjunto
+  // PENDIENTE (Unid.Pend. > 0) — lo que realmente falta comprar/atender —
+  // a pedido explícito de Dante, en vez del universo completo de observados.
+  const pend=data.filter(i=>i.unidPend>0);
+  const totObs=pend.length;
+  const montoObs=pend.reduce((s,i)=>s+(i.monto||0),0);
+  setEl('ok-total',totObs);
+  setEl('ok-monto','S/'+Math.round(montoObs).toLocaleString('es-PE'));
+  setEl('ok-comprar',pend.filter(i=>i.accion==='COMPRAR').length);
+  setEl('ok-arribar',pend.filter(i=>i.accion==='ARRIBAR').length);
+  setEl('ok-cambiar',pend.filter(i=>i.accion==='CAMBIAR').length);
+  setEl('ok-stock',pend.filter(i=>i.accion==='STOCK'||i.accion==='ANULAR').length);
+
+  // Compradores — SKUs pendientes (Unid.Pend. > 0) que cada uno tiene por atender
+  const NAMES_OBS=['Endira Gómez','María Rojas','Cristina Chávez','Dante Clavijo'];
+  NAMES_OBS.forEach((name,idx)=>{
+    setEl('ok-comp-'+idx, pend.filter(i=>i.resp===name).length);
+  });
+  setEl('ok-comp-sa', pend.filter(i=>!i.resp||i.resp==='Sin asignar').length);
+}
+
+function renderObs(){
+  const q=(document.getElementById('os-q')||{}).value||'';
+  const acc=(document.getElementById('os-acc')||{}).value||'';
+  const cat=(document.getElementById('os-cat')||{}).value||'';
+  const resp=(document.getElementById('os-resp')||{}).value||'';
+
+  actualizarKpisObs();
+
+  let data=calcObsDerivados();
+
+  // Por defecto solo se listan los SKUs con Unid.Pend. > 0 (lo que falta
+  // comprar/atender). El checkbox "Ver todos" revela también los resueltos
+  // con stock y los anulados.
+  const verTodosObs=(document.getElementById('cb-todos-obs')||{}).checked;
+  if(!verTodosObs) data=data.filter(i=>i.unidPend>0);
 
   if(q) data=data.filter(i=>i.cod.includes(q)||i.desc.toLowerCase().includes(q.toLowerCase()));
   const _accMs=getMultiSel('ms-acc-o');
@@ -2694,15 +3168,9 @@ function renderObs(){
   const ord={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,STOCK:4,ANULAR:5};
   data.sort((a,b)=>(ord[a.accion]||9)-(ord[b.accion]||9)||(b.monto-a.monto));
 
-  // KPIs — reactivos al filtro activo
-  const totObs=data.length;
-  const montoObs=data.reduce((s,i)=>s+i.monto,0);
-  document.getElementById('ok-total').textContent=totObs;
-  document.getElementById('ok-monto').textContent='S/'+Math.round(montoObs).toLocaleString('es-PE');
-  document.getElementById('ok-comprar').textContent=data.filter(i=>i.accion==='COMPRAR').length;
-  document.getElementById('ok-arribar').textContent=data.filter(i=>i.accion==='ARRIBAR').length;
-  document.getElementById('ok-cambiar').textContent=data.filter(i=>i.accion==='CAMBIAR').length;
-  document.getElementById('ok-stock').textContent=data.filter(i=>i.accion==='STOCK'||i.accion==='ANULAR').length;
+  // Las tarjetas KPI ya se actualizaron arriba via actualizarKpisObs()
+  // (siempre sobre el dataset completo, sin importar el filtro de "Ver todos"
+  // ni los demás filtros de la tabla, para que den la foto general).
 
   let html='';
   data.slice(0,400).forEach((it,idx)=>{
@@ -2786,9 +3254,11 @@ function renderObs(){
               : '—')}
       </td>
       <td><input type="date" value="${it.fechaArribo||''}" style="font-size:9px;border:1px solid #d1d5db;border-radius:4px;padding:2px 4px;color:var(--text2);width:110px;" onchange="cambiarFechaArribo('${it.cod}',this.value)" onclick="event.stopPropagation()" title="Fecha estimada de arribo"></td>
+      <td><input type="date" value="${it.fechaAtencion||''}" style="font-size:9px;border:1px solid #86efac;border-radius:4px;padding:2px 4px;color:#166534;background:#f0fdf4;width:110px;" onchange="cambiarFechaAtencion('${it.cod}',this.value)" onclick="event.stopPropagation()" title="Fecha estimada en que el comprador atenderá este pedido/cliente"></td>
+      <td style="text-align:center;">${it.numPed>0?`<button class="btn btn-o" style="font-size:9px;padding:2px 8px;" onclick="verPedidosObs('${it.cod}')" title="Ver pedidos y clientes asociados a este SKU">👤 ${it.numPed}</button>`:'<span style="color:#94a3b8;font-size:9px;">—</span>'}</td>
     </tr>`;
   });
-  document.getElementById('tbody-obs').innerHTML=html||'<tr><td colspan="16" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
+  document.getElementById('tbody-obs').innerHTML=html||'<tr><td colspan="20" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
 
   // Gráficos observados
   const accMap2={COMPRAR:0,ARRIBAR:0,CAMBIAR:0,STOCK:0,ANULAR:0};
@@ -2822,12 +3292,19 @@ function cambiarAccion(cod,acc,sel){
   const accClsMap={COMPRAR:'comprar',ARRIBAR:'recibir',CAMBIAR:'cambiar',ANULAR:'anular',STOCK:'stock'};
   sel.className='acc-sel '+(accClsMap[acc]||'');
   guardarLS();
+  actualizarKpisObs();
 }
 
 function cambiarFechaArribo(cod,fecha){
   D.obs.forEach(it=>{if(it.cod===cod)it.fechaArribo=fecha;});
   if(!D.obsAcc)D.obsAcc={};
   D.obsAcc[cod+"_fa"]=fecha;
+  guardarLS();
+}
+function cambiarFechaAtencion(cod,fecha){
+  D.obs.forEach(it=>{if(it.cod===cod)it.fechaAtencion=fecha;});
+  if(!D.obsAcc)D.obsAcc={};
+  D.obsAcc[cod+"_fatn"]=fecha;
   guardarLS();
 }
 function cambiarComentario(cod,val){
@@ -2841,6 +3318,7 @@ function cambiarResp(cod,resp){
   if(!D.obsAcc) D.obsAcc={};
   D.obsAcc[cod+'_resp']=resp;
   guardarLS();
+  actualizarKpisObs();
 }
 
 function cambiarReemplazo(cod, nuevoCodRem){
@@ -3190,6 +3668,8 @@ function setPeriodo(p){
   PERIODO_BASE=parseInt(p)||6;
   const lbl=document.getElementById('th-prom-label');
   if(lbl)lbl.textContent='Prom.'+p+'M';
+  const lblV=document.getElementById('vk-total3m-per');
+  if(lblV)lblV.textContent=p+'M';
   // Resaltar botón activo
   ['btn-p3','btn-p6','btn-p12'].forEach(id=>{
     const b=document.getElementById(id);
@@ -3537,6 +4017,7 @@ function guardarLS(){
     const payload={
       kardex:D.kardex,stock:D.stock,obs:D.obs,compras:D.compras,
       oc:D.oc,sust:D.sust,obsAcc:D.obsAcc,mesesHdr:D.mesesHdr,compradores:D.COMPRADORES,
+      obsClientes:D.obsClientes,obsProductos:D.obsProductos,
       fecha:document.getElementById('fecha-rpt').value,
       mes:document.getElementById('mes-rpt').value,
       ts:new Date().toISOString()
@@ -3558,6 +4039,8 @@ function cargarLS(){
     D.oc=p.oc||[];
     D.sust=p.sust||[];
     D.obsAcc=p.obsAcc||{};
+    D.obsClientes=p.obsClientes||[];
+    D.obsProductos=p.obsProductos||[];
     if(p.compradores) D.COMPRADORES=p.compradores;
     D.mesesHdr=p.mesesHdr||[];
     if(p.fecha) document.getElementById('fecha-rpt').value=p.fecha;
@@ -3603,8 +4086,8 @@ function cargarLS(){
 function limpiarTodo(){
   if(!confirm('¿Limpiar TODOS los datos (kardex, stock, observados, compras) del navegador?')) return;
   localStorage.removeItem(LS_KEY);
-  D={kardex:[],stock:[],obs:[],compras:[],oc:[],sust:[],obsAcc:{},charts:{},mesesHdr:[]};
-  ['kard','stock','obs','oc'].forEach(id=>{
+  D={kardex:[],stock:[],obs:[],compras:[],oc:[],sust:[],obsAcc:{},obsClientes:[],obsProductos:[],charts:{},mesesHdr:[]};
+  ['kard','stock','obs','oc','obscli','obsprod'].forEach(id=>{
     const el=document.getElementById('st-'+id);
     if(el){el.className='ust';el.textContent='';}
     const fi=document.getElementById('f-'+id);
@@ -4128,6 +4611,52 @@ function closeSustModal(e) {
     document.getElementById('modal-sust').classList.add('hidden');
 }
 
+function closeCompModal(e) {
+  if (!e || e.target.id === 'modal-comp')
+    document.getElementById('modal-comp').classList.add('hidden');
+}
+
+function closeGuiaModal(e) {
+  if (!e || e.target.id === 'modal-guia')
+    document.getElementById('modal-guia').classList.add('hidden');
+}
+
+function closePedObsModal(e) {
+  if (!e || e.target.id === 'modal-pedobs')
+    document.getElementById('modal-pedobs').classList.add('hidden');
+}
+
+function verPedidosObs(cod){
+  const prods=(D.obsProductos||[]).filter(p=>p.cod===cod);
+  const cliByNum={};
+  (D.obsClientes||[]).forEach(c=>{cliByNum[c.numero]=c;});
+  const it=(D.obs||[]).find(i=>i.cod===cod);
+  const tEl=document.getElementById('pedobs-titulo');
+  if(tEl) tEl.textContent='👤 Pedidos / Clientes — SKU '+cod+(it?(' · '+it.desc):'');
+  const bEl=document.getElementById('pedobs-body');
+  if(prods.length===0){
+    if(bEl) bEl.innerHTML='<tr><td colspan="7" style="text-align:center;padding:16px;color:var(--text3);font-size:11px;">No hay pedidos asociados a este SKU en los reportes de Clientes/Productos cargados.<br>Verifica que hayas subido "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos.</td></tr>';
+  } else if(bEl) {
+    let html='';
+    prods.forEach(p=>{
+      const c=cliByNum[p.numero]||{};
+      const estLinea=p.estado==='OK'?'<span class="chip c-verde" style="font-size:8px;">🟢 OK</span>':'<span class="chip c-rojo" style="font-size:8px;">🔴 FALTA</span>';
+      html+=`<tr>
+        <td class="mono fw7" style="padding:6px 8px;font-size:10px;">${p.numero}</td>
+        <td style="padding:6px 8px;font-size:10px;">${c.razonSocial||'—'}</td>
+        <td style="padding:6px 8px;font-size:10px;">${c.distrito||'—'}</td>
+        <td style="padding:6px 8px;font-size:10px;">${c.telefono||'—'}</td>
+        <td style="padding:6px 8px;font-size:10px;">${c.propiedad||c.estado||'—'}</td>
+        <td style="padding:6px 8px;font-size:10px;">${c.dscCanal||c.dscProv||'—'}</td>
+        <td style="padding:6px 8px;text-align:center;">${estLinea}</td>
+      </tr>`;
+    });
+    bEl.innerHTML=html;
+  }
+  const m=document.getElementById('modal-pedobs');
+  if(m) m.classList.remove('hidden');
+}
+
 function verDetalleP(cod) {
   abrirDetalle(cod, 'obs');
 }
@@ -4375,6 +4904,8 @@ async function cargarDesdeGitHub(mostrarConfirm) {
     D.oc       = data.oc       || [];
     D.sust     = data.sust     || [];
     D.obsAcc   = data.obsAcc   || {};
+    D.obsClientes  = data.obsClientes  || [];
+    D.obsProductos = data.obsProductos || [];
     D.mesesHdr = data.mesesHdr || [];
     if (data.compradores) D.COMPRADORES = data.compradores;
     if (data.fecha) document.getElementById('fecha-rpt').value = data.fecha;
@@ -4396,6 +4927,7 @@ async function cargarDesdeGitHub(mostrarConfirm) {
       if(D.oc&&D.oc.length>0){const ocCods=new Set(D.oc.map(o=>o.cod));D.obs.forEach(it=>{if(ocCods.has(it.cod)){const ocs=D.oc.filter(o=>o.cod===it.cod);it.ocActiva=ocs.map(o=>o.noc||'OC').filter(Boolean);if(it.accion==='COMPRAR')it.accion='ARRIBAR';}});}
       renderVentas();renderSugerido();renderStock();renderObs();renderCompras();
       if(D.sust&&D.sust.length>0){cruceObsSust();renderSust();}
+      actualizarFiltrosVentas();actualizarFiltrosStock();actualizarFiltrosObs();actualizarFiltrosCompras();
     } catch(re){console.warn('Re-render:',re);}
     const ts = data.ts ? new Date(data.ts) : null;
     const autor = data.autor || '—';
@@ -4437,6 +4969,7 @@ async function publicarGitHub() {
       kardex: D.kardex, stock: D.stock, obs: D.obs, compras: D.compras,
       oc: D.oc, sust: D.sust, obsAcc: D.obsAcc, mesesHdr: D.mesesHdr,
       compradores: D.COMPRADORES,
+      obsClientes: D.obsClientes, obsProductos: D.obsProductos,
       fecha: document.getElementById('fecha-rpt').value,
       mes:   document.getElementById('mes-rpt').value,
       autor: autor.trim(),
