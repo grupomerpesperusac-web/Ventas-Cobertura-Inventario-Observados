@@ -808,7 +808,80 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     </div>
   </div>
   <div class="tw">
-    
+    <table><thead><tr>
+      <th>#</th><th>Código</th><th>Descripción</th><th>Línea</th><th>Categoría</th><th>Clase</th><th>Marca</th>
+      <th>Stock</th><th>Costo Unit. S/</th>
+      <th style="background:#fef9c3;font-weight:700;">Gan. Unit. S/</th>
+      <th style="background:#eff6ff;font-weight:700;">Costo Total S/</th>
+      <th>% Part.</th><th>Vta 3M</th><th>Vta/Mes</th>
+      <th style="background:#fef3c7;font-weight:700;">Cobertura</th><th>Días</th><th>Activo</th><th>Sugerencia</th>
+    </tr></thead>
+    <tbody id="tbody-stock"><tr><td colspan="18" style="text-align:center;padding:20px;color:var(--text3);">Carga el archivo de Stock Valorizado primero.</td></tr></tbody>
+    </table>
+  </div>
+<div class="cgrid">
+  <div class="cbox"><h4>📊 Top 10 categorías — Valor de stock S/</h4><canvas id="ch-sk-cat" height="220"></canvas></div>
+  <div class="cbox"><h4>📊 Distribución por línea — Valor S/</h4><canvas id="ch-sk-lin" height="220"></canvas></div>
+  <div class="cbox"><h4>📊 Distribución por cobertura — SKUs</h4><canvas id="ch-sk-sem" height="220"></canvas></div>
+  <div class="cbox"><h4>📊 Top 15 — Mayor valor de stock S/</h4><canvas id="ch-sk-top" height="220"></canvas></div>
+</div>
+</div>
+</div>
+
+<!-- ═══ TAB: OBSERVADOS ═══ -->
+<div class="pane" id="pane-obs">
+<div class="tip">
+  Quiebres de stock (reporte SIN STOCK del SIG) netos de lo disponible en almacén principal. <b>Unid.Pend.</b> = Observadas − Stock Actual (mín. 0). <b>Monto</b> = Pendiente × Costo Unit. con IGV (18%).
+</div>
+<!-- KPI OBSERVADOS -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;align-items:start;">
+
+  <!-- ① PRINCIPAL -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--blue);">
+    <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">🚨 Principal</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="ok-total" style="font-size:22px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">SKUs observados</div>
+      </div>
+      <div>
+        <div class="kv" id="ok-monto" style="font-size:22px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">Monto S/ (PVP+IGV)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② ACCIONES URGENTES -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid #b91c1c;">
+    <div style="font-size:9px;font-weight:700;color:#b91c1c;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">⚡ Acciones urgentes</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="ok-comprar" style="font-size:22px;font-weight:800;color:#b91c1c;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">🔴 Por comprar</div>
+      </div>
+      <div>
+        <div class="kv" id="ok-arribar" style="font-size:22px;font-weight:800;color:#1d4ed8;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">🔵 OC por arribar</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ③ EN GESTIÓN -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--green);">
+    <div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">✅ En gestión</div>
+    <div style="display:flex;gap:16px;">
+      <div>
+        <div class="kv" id="ok-cambiar" style="font-size:22px;font-weight:800;color:#92400e;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">🟡 Por cambiar</div>
+      </div>
+      <div>
+        <div class="kv" id="ok-stock" style="font-size:22px;font-weight:800;color:#166534;line-height:1;">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">🟢 Con stock / resuelto</div>
+      </div>
+    </div>
+  </div>
+
+</div>
 <div class="tbox">
   <div class="tbox-h">
     <h3>🚨 Productos Observados — Lista de acción para Compras</h3>
