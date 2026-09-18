@@ -1063,6 +1063,27 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <div class="cbox"><h4>📊 Monto por responsable S/</h4><canvas id="ch-ob-resp" height="220"></canvas></div>
   <div class="cbox"><h4>📊 Top 10 — Mayor monto observado S/</h4><canvas id="ch-ob-top" height="220"></canvas></div>
 </div>
+
+<!-- ═══ REPORTE COMERCIAL: ESTATUS DE PEDIDOS ═══ -->
+<div style="margin-top:22px;border-top:2px solid var(--border);padding-top:16px;">
+  <h4 style="font-size:13px;font-weight:800;color:var(--text1);margin-bottom:4px;">📦 Estatus de Pedidos — Reporte Comercial</h4>
+  <p style="font-size:10px;color:var(--text3);margin:0 0 10px;">
+    Vista por pedido/cliente pensada para el área Comercial: qué pedidos tienen SKUs observados, cuáles ya tienen stock y cuáles siguen pendientes de compra (con fecha estimada del comprador). Se arma cruzando <b>Observados — Clientes</b> y <b>Observados — Productos</b> (cargados en 📥 Carga de Datos) con el estado actual de cada SKU.
+  </p>
+  <div class="tbar-ms" style="margin-bottom:8px;">
+    <input class="si" id="rp-q" placeholder="🔍 Buscar cliente, SKU, N° pedido o descripción…" oninput="filtrarRepPedidos()" style="width:280px;">
+    <div class="ms-wrap" id="ms-rp-est"></div>
+    <div class="ms-wrap" id="ms-rp-comp"></div>
+    <span id="rp-count" style="font-size:10px;color:var(--text3);margin-left:auto;"></span>
+  </div>
+  <div class="tw">
+    <table><thead><tr>
+      <th>N° Pedido</th><th>Cliente</th><th>Distrito</th><th>SKU</th><th>Descripción</th><th>Estatus</th><th>Fecha Estimada</th><th>Comprador</th>
+    </tr></thead>
+    <tbody id="tbody-rep-pedidos"><tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr></tbody>
+    </table>
+  </div>
+</div>
 </div>
 
 <!-- ═══ TAB: COMPRAS ═══ -->
@@ -3282,6 +3303,10 @@ function renderObs(){
   const topObs=[...D.obs].sort((a,b)=>b.monto-a.monto).slice(0,10);
   mkChart('ch-ob-top','bar',topObs.map(i=>i.cod+' '+i.desc.slice(0,18)),topObs.map(i=>Math.round(i.monto)),
     ['#b91c1c'],'S/');
+
+  // Reporte Comercial: Estatus de Pedidos (cruce Clientes/Productos)
+  actualizarFiltrosRepPedidos();
+  renderRepPedidos();
 }
 
 function filtrarObs(){renderObs();}
@@ -4624,6 +4649,99 @@ function closeGuiaModal(e) {
 function closePedObsModal(e) {
   if (!e || e.target.id === 'modal-pedobs')
     document.getElementById('modal-pedobs').classList.add('hidden');
+}
+
+// ===================================================
+// REPORTE COMERCIAL — ESTATUS DE PEDIDOS
+// (cruce Observados-Clientes × Observados-Productos × D.obs)
+// ===================================================
+function construirReportePedidos(){
+  const derivados=calcObsDerivados();
+  const codMap={};
+  derivados.forEach(d=>{codMap[d.cod]=d;});
+  const cliByNum={};
+  (D.obsClientes||[]).forEach(c=>{cliByNum[c.numero]=c;});
+  return (D.obsProductos||[]).map(p=>{
+    const c=cliByNum[p.numero]||{};
+    const d=codMap[p.cod];
+    // Estatus de la línea: se toma del propio reporte Observados-Productos
+    // (OK/FALTA), que refleja la disponibilidad real para ESE pedido —
+    // más preciso a nivel de línea que el stock agregado de la empresa.
+    const estatus=p.estado==='OK'?'CON_STOCK':'PENDIENTE';
+    return {
+      numero:p.numero,
+      cliente:c.razonSocial||'',
+      distrito:c.distrito||'',
+      telefono:c.telefono||'',
+      canal:c.dscCanal||c.dscProv||'',
+      propiedad:c.propiedad||c.estado||'',
+      cod:p.cod,
+      desc:(d&&d.desc)?d.desc:(p.descrip||''),
+      estatus,
+      fechaEstimada: estatus==='PENDIENTE' ? ((d&&d.fechaAtencion)?d.fechaAtencion:'') : (p.fechaIngreso||''),
+      comprador: (d&&d.resp)?d.resp:'Sin asignar'
+    };
+  });
+}
+
+function actualizarFiltrosRepPedidos(){
+  const rows=construirReportePedidos();
+  const comps=[...new Set(rows.map(r=>r.comprador))].sort();
+  buildMultiDropdown('ms-rp-est',['CON_STOCK','PENDIENTE'],'Estatus','filtrarRepPedidos',
+    {CON_STOCK:'🟢 Con stock',PENDIENTE:'🔴 Pendiente compra'});
+  buildMultiDropdown('ms-rp-comp',comps,'Comprador','filtrarRepPedidos');
+}
+
+function filtrarRepPedidos(){renderRepPedidos();}
+
+function renderRepPedidos(){
+  const tbody=document.getElementById('tbody-rep-pedidos');
+  if(!tbody) return;
+  const cEl=document.getElementById('rp-count');
+  if(!D.obsProductos||D.obsProductos.length===0){
+    tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr>';
+    if(cEl) cEl.textContent='';
+    return;
+  }
+  const rows=construirReportePedidos();
+  const q=((document.getElementById('rp-q')||{}).value||'').trim().toLowerCase();
+  const estS=getMultiSel('ms-rp-est');
+  const compS=getMultiSel('ms-rp-comp');
+
+  let data=rows;
+  if(q) data=data.filter(r=>
+    r.numero.toLowerCase().includes(q) ||
+    r.cliente.toLowerCase().includes(q) ||
+    r.cod.toLowerCase().includes(q) ||
+    (r.desc||'').toLowerCase().includes(q) ||
+    (r.distrito||'').toLowerCase().includes(q)
+  );
+  if(estS.length) data=data.filter(r=>estS.includes(r.estatus));
+  if(compS.length) data=data.filter(r=>compS.includes(r.comprador));
+
+  data=[...data].sort((a,b)=>{
+    if(a.estatus!==b.estatus) return a.estatus==='PENDIENTE'?-1:1;
+    return (a.cliente||'').localeCompare(b.cliente||'');
+  });
+
+  let html='';
+  data.slice(0,500).forEach(r=>{
+    const chip=r.estatus==='CON_STOCK'
+      ? '<span class="chip c-verde" style="font-size:8px;">🟢 Con stock</span>'
+      : '<span class="chip c-rojo" style="font-size:8px;">🔴 Pendiente compra</span>';
+    html+=`<tr>
+      <td class="mono fw7" style="font-size:10px;">${r.numero}</td>
+      <td style="font-size:10px;max-width:180px;">${r.cliente||'—'}</td>
+      <td style="font-size:10px;">${r.distrito||'—'}</td>
+      <td class="mono fw7 blue" style="font-size:10px;cursor:pointer;" onclick="abrirDetalle('${r.cod}','obs')">${r.cod}</td>
+      <td style="font-size:10px;max-width:220px;">${r.desc||'—'}</td>
+      <td>${chip}</td>
+      <td style="font-size:10px;">${r.fechaEstimada||'—'}</td>
+      <td style="font-size:10px;">${r.comprador}</td>
+    </tr>`;
+  });
+  tbody.innerHTML=html||'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
+  if(cEl) cEl.textContent=data.length+' de '+rows.length+' líneas';
 }
 
 function verPedidosObs(cod){
