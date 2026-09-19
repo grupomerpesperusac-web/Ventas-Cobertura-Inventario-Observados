@@ -3208,9 +3208,6 @@ function calcObsDerivados(){
     const stockActual=(D.stock.find(s=>s.cod===it.cod)||{}).cant||0;
     const unidPend=Math.max(0,(it.unidObs||0)-stockActual);
     const montoIGV=Math.round(unidPend*costoUnit*1.18);
-    // Auto-sugerir "STOCK" si el stock cubre todos los observados
-    const accionSugerida=(stockActual>0&&unidPend===0&&it.accion!=='ANULAR')?
-      'STOCK':it.accion;
     const numPed=(pedMap[it.cod]||[]).length;
     // Sugerencia automática de SKU de reemplazo (solo si aún falta comprar
     // y el comprador no confirmó ya un código manualmente)
@@ -3218,6 +3215,19 @@ function calcObsDerivados(){
     if(unidPend>0 && !it.codRem){
       remSug=sugerirReemplazo(it,kMap,stockMap,porLinea,porCat);
     }
+    // Auto-sugerir la ACCIÓN:
+    //  1) "STOCK" si el stock del propio SKU cubre todo lo observado.
+    //  2) "CAMBIAR" si el sistema identificó un sustituto (remSug) y el
+    //     comprador todavía no decidió manualmente la acción de este SKU
+    //     (sin valor guardado en D.obsAcc) — María revisa la fila desde el
+    //     propio dropdown y la mantiene o la modifica (18-sep-2026 parte 7,
+    //     pedido explícito de Dante). Una vez que ella elige algo desde el
+    //     dropdown queda persistido en D.obsAcc y ya no se vuelve a
+    //     auto-proponer.
+    const accionPropuestaCambiar=(!!remSug && !D.obsAcc[it.cod] && it.accion!=='ANULAR');
+    const accionSugerida=(stockActual>0&&unidPend===0&&it.accion!=='ANULAR')
+      ? 'STOCK'
+      : (accionPropuestaCambiar ? 'CAMBIAR' : it.accion);
     const codRemEfectivo=it.codRem||(remSug?remSug.cod:'');
     const descRemEfectivo=it.codRem?(it.descRem||''):(remSug?remSug.desc:'');
     const stockRemEfectivo=codRemEfectivo?(stockMap[codRemEfectivo]||0):0;
