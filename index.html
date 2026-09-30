@@ -274,6 +274,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     <span class="badge" id="b-fecha">Sin datos</span>
     <span class="badge" id="b-stock">Stock: —</span>
     <span class="badge danger" id="b-obs">Obs: —</span>
+    <span class="badge" id="b-sync" title="Sincronización automática con el estado publicado en GitHub (cada 30 s)">⚫ Sync: —</span>
     <button class="btn btn-o" onclick="abrirCompradores()" style="font-size:11px;">👤 Compradores</button>
     <button class="btn btn-o" onclick="document.getElementById('modal-guia').classList.remove('hidden')" style="font-size:11px;">📋 Guía de formatos</button>
     <button class="btn btn-r" onclick="limpiarTodo()">🗑 Limpiar sesión</button>
@@ -4239,18 +4240,37 @@ function expComprasResumen(){
 // ===================================================
 var LS_KEY='merpes_inv_v3';
 
+// 29-sep-2026: payload extraído a su propia función para reutilizarlo tanto
+// desde guardarLS() (guardado normal, tras una edición local) como desde
+// guardarLSSilencioso() (guardado en segundo plano tras sincronizar con el
+// estado publicado en GitHub, sin tocar el mensaje "💾 Guardado" de la
+// pestaña Carga de Datos, y con el ts EXACTO de publicación en vez de
+// "ahora" — ver sección "SINCRONIZACIÓN AUTOMÁTICA" más abajo).
+function construirPayloadLS(tsOverride){
+  return {
+    kardex:D.kardex,stock:D.stock,obs:D.obs,compras:D.compras,
+    oc:D.oc,sust:D.sust,obsAcc:D.obsAcc,mesesHdr:D.mesesHdr,compradores:D.COMPRADORES,
+    obsClientes:D.obsClientes,obsProductos:D.obsProductos,
+    fecha:(document.getElementById('fecha-rpt')||{}).value,
+    mes:(document.getElementById('mes-rpt')||{}).value,
+    ts:tsOverride||new Date().toISOString()
+  };
+}
 function guardarLS(){
   try{
-    const payload={
-      kardex:D.kardex,stock:D.stock,obs:D.obs,compras:D.compras,
-      oc:D.oc,sust:D.sust,obsAcc:D.obsAcc,mesesHdr:D.mesesHdr,compradores:D.COMPRADORES,
-      obsClientes:D.obsClientes,obsProductos:D.obsProductos,
-      fecha:document.getElementById('fecha-rpt').value,
-      mes:document.getElementById('mes-rpt').value,
-      ts:new Date().toISOString()
-    };
+    const payload=construirPayloadLS();
     localStorage.setItem(LS_KEY,JSON.stringify(payload));
     document.getElementById('proc-msg').textContent='💾 Guardado: '+new Date().toLocaleTimeString('es-PE');
+  }catch(e){console.warn('LS lleno:',e);}
+}
+// Igual que guardarLS() pero para uso en segundo plano (sincronización
+// automática): no toca el mensaje de la pestaña Carga de Datos, y permite
+// forzar el ts guardado (para que quede igual al ts real de publicación,
+// no al momento en que este navegador lo recibió).
+function guardarLSSilencioso(tsOverride){
+  try{
+    const payload=construirPayloadLS(tsOverride);
+    localStorage.setItem(LS_KEY,JSON.stringify(payload));
   }catch(e){console.warn('LS lleno:',e);}
 }
 
@@ -5135,8 +5155,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('fecha-rpt').value=hoy.toISOString().split('T')[0];
   document.getElementById('mes-rpt').value=hoy.toISOString().slice(0,7);
 
-  // NO auto-restaurar datos — la herramienta arranca siempre vacía
-  // Verificar si hay datos guardados y mostrar opción de restaurar
+  // 29-sep-2026: la herramienta YA NO arranca vacía a la espera de un clic
+  // manual — ver "SINCRONIZACIÓN AUTOMÁTICA" más abajo (iniciarSyncAutomatico,
+  // llamada al final de este bloque). Este banner de "Restaurar sesión
+  // anterior" se mantiene solo para el caso en que ESTE navegador tenga
+  // datos propios más nuevos que lo último publicado (por ejemplo, María a
+  // medio procesar archivos sin publicar aún) — en ese caso la sync
+  // automática no los pisa sola, y aquí se ofrece recuperarlos a mano.
   try{
     const raw=localStorage.getItem(LS_KEY);
     if(raw){
@@ -5168,6 +5193,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   // Inicializar sustituciones históricas
   if(!D.sust||D.sust.length===0) D.sust=HIST_PARES.map(p=>({...p}));
   initSust();
+
+  // 29-sep-2026: arranca la sincronización automática con el estado
+  // publicado (carga inicial silenciosa si corresponde + poll cada 30s).
+  iniciarSyncAutomatico();
 });
 // ------------------------------------------------------------
 // EXPORT
@@ -5182,48 +5211,10 @@ function expSust() {
   dlCSV('maestro_sustituciones.csv', rows);
 }
 
-
-document.addEventListener('DOMContentLoaded',()=>{
-  // Fecha de hoy por defecto
-  const hoy=new Date();
-  document.getElementById('fecha-rpt').value=hoy.toISOString().split('T')[0];
-  document.getElementById('mes-rpt').value=hoy.toISOString().slice(0,7);
-
-  // NO auto-restaurar datos — la herramienta arranca siempre vacía
-  // Verificar si hay datos guardados y mostrar opción de restaurar
-  try{
-    const raw=localStorage.getItem(LS_KEY);
-    if(raw){
-      const p=JSON.parse(raw);
-      const ts=p.ts?new Date(p.ts).toLocaleString('es-PE'):'—';
-      const kardexN=p.kardex?p.kardex.length:0;
-      const obsN=p.obs?p.obs.length:0;
-      // Mostrar banner de "hay datos guardados" con botón para restaurar
-      const banner=document.getElementById('persist-notice');
-      const txt=document.getElementById('persist-txt');
-      if(banner&&txt&&kardexN>0){
-        const btnRestore=document.createElement('button');
-        btnRestore.className='btn btn-b';
-        btnRestore.style.cssText='font-size:10px;padding:3px 10px;margin-left:6px;';
-        btnRestore.textContent='⬆ Restaurar sesión anterior';
-        btnRestore.onclick=function(){
-          cargarLS();
-          banner.style.display='none';
-        };
-        txt.textContent='Hay datos guardados del '+ts+' (Kardex:'+kardexN+' · Obs:'+obsN+'). ';
-        txt.appendChild(btnRestore);
-        banner.style.display='flex';
-      }
-      // Si hay compradores guardados, restaurarlos aunque no se carguen los datos
-      if(p.compradores) D.COMPRADORES=p.compradores;
-    }
-  }catch(e){}
-
-  // Inicializar sustituciones históricas
-  if(!D.sust||D.sust.length===0) D.sust=HIST_PARES.map(p=>({...p}));
-  initSust();
-});
-
+// (29-sep-2026: se eliminó un segundo listener DOMContentLoaded idéntico al
+// de arriba, que duplicaba el botón "Restaurar sesión anterior" y llamaba a
+// initSust() dos veces — bug preexistente, no relacionado con el pedido de
+// Dante, corregido de paso al tocar esta zona del código.)
 
 // ===================================================
 // ESTADO COMPARTIDO — GITHUB BACKEND
@@ -5297,54 +5288,152 @@ function actualizarKpisGH(data) {
   fmt('gh-prods', data.kardex ? data.kardex.length.toLocaleString() : '—');
 }
 
-async function cargarDesdeGitHub(mostrarConfirm) {
+// ===================================================
+// SINCRONIZACIÓN AUTOMÁTICA (29-sep-2026)
+// ===================================================
+// Pedido explícito de Dante: que cualquiera que abra la herramienta (en
+// particular compradores como Endira Gómez, que nunca suben archivos ni
+// publican) vea el estado publicado prácticamente en tiempo real (~30s de
+// delay como máximo), sin tener que ir a la pestaña Publicar/Ver y apretar
+// "Cargar el estado publicado ahora" a mano cada vez.
+//
+// Causa raíz del "solo veo data parcial" que reportaba Endira: la
+// herramienta SIEMPRE arrancaba vacía (comentario histórico "NO
+// auto-restaurar datos"), y lo único que se auto-cargaba al abrir la página
+// era el localStorage DE ESE NAVEGADOR (cargarLS(), vía el botón "Restaurar
+// sesión anterior") — nunca el estado compartido de GitHub. Si su navegador
+// tenía un localStorage viejo o vacío, eso es exactamente lo que veía en
+// cada "actualización" (F5), sin importar cuántas veces refrescara la
+// página, porque F5 nunca consultaba GitHub por sí solo.
+//
+// Regla de decisión (usa el mismo campo `ts` que ya existe en el payload,
+// sin necesidad de un flag adicional de "hay cambios sin publicar"):
+//   - Si el `ts` del estado publicado en GitHub es MÁS NUEVO que el `ts`
+//     guardado en localStorage de este navegador (o si no hay nada
+//     guardado) → se aplica automáticamente, sin pedir confirmación.
+//   - Si el `ts` local es igual o más nuevo (por ejemplo, María a medio
+//     procesar archivos nuevos sin publicar aún, o cualquiera que acaba de
+//     editar una fila de Observados) → NO se pisa solo; esa persona sigue
+//     viendo su propio trabajo hasta que decida publicar o cargar manual.
+// Así, ver datos en "tiempo real" nunca implica el riesgo de borrar trabajo
+// local sin publicar de otra persona.
+let _pollGitHubTimer = null;
+
+function setSyncStatus(status, msg) {
+  const el = document.getElementById('b-sync');
+  if (!el) return;
+  const ico = {ok:'🟢', busy:'🟡', err:'🔴', off:'⚫'}[status] || '⚫';
+  el.textContent = ico + ' Sync: ' + (msg || '—');
+  el.title = 'Sincronización automática con el estado publicado en GitHub (cada 30 s). ' + (msg || '');
+}
+
+function _tsLocalEfectivo() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return 0;
+    const p = JSON.parse(raw);
+    return p.ts ? new Date(p.ts).getTime() : 0;
+  } catch(e) { return 0; }
+}
+
+// Consulta el estado publicado y lo aplica SOLO si es más nuevo que lo que
+// ya hay en este navegador. Se usa tanto para la carga inicial silenciosa
+// como para cada tick del poll de 30s — misma regla en los dos casos.
+async function chequearYSincronizar() {
+  // No molestar con pedidos de red si la pestaña está en segundo plano.
+  if (document.hidden) return;
+  try {
+    setSyncStatus('busy', 'Verificando…');
+    const res = await fetch(GH_RAW + '?t=' + Date.now());
+    if (!res.ok) { setSyncStatus('err', 'Sin estado publicado todavía'); return; }
+    const data = await res.json();
+    actualizarKpisGH(data); // mantiene vivas las tarjetas de Publicar/Ver aunque no se esté en esa pestaña
+    const remoteTs = data.ts ? new Date(data.ts).getTime() : 0;
+    const localTs  = _tsLocalEfectivo();
+    if (remoteTs > localTs) {
+      aplicarEstadoGitHub(data);
+      setSyncStatus('ok', 'Actualizado automáticamente · ' + new Date().toLocaleTimeString('es-PE') + (data.autor ? ' (por ' + data.autor + ')' : ''));
+    } else {
+      setSyncStatus('ok', 'Al día · ' + new Date().toLocaleTimeString('es-PE'));
+    }
+  } catch(e) {
+    setSyncStatus('err', 'Sin conexión a internet');
+  }
+}
+
+// Arranca la sincronización: una verificación inmediata al abrir la página
+// (que carga sola el estado publicado si este navegador no tiene nada más
+// nuevo) y luego un chequeo cada 30 segundos mientras la pestaña siga
+// abierta.
+function iniciarSyncAutomatico() {
+  chequearYSincronizar();
+  if (_pollGitHubTimer) clearInterval(_pollGitHubTimer);
+  _pollGitHubTimer = setInterval(chequearYSincronizar, 30000);
+}
+
+// 29-sep-2026: lógica de "aplicar el JSON publicado a D + re-renderizar todo"
+// extraída de cargarDesdeGitHub() para poder reutilizarla también desde la
+// sincronización automática en segundo plano (ver "SINCRONIZACIÓN AUTOMÁTICA"
+// más abajo), sin duplicar los ~20 pasos de restauración. No pide confirm()
+// ni muestra alert() — eso queda a cargo de quien la llama.
+function aplicarEstadoGitHub(data) {
+  D.kardex   = data.kardex   || [];
+  D.stock    = data.stock    || [];
+  D.obs      = data.obs      || [];
+  D.compras  = data.compras  || [];
+  D.oc       = data.oc       || [];
+  D.sust     = data.sust     || [];
+  D.obsAcc   = data.obsAcc   || {};
+  D.obsClientes  = data.obsClientes  || [];
+  D.obsProductos = data.obsProductos || [];
+  D.mesesHdr = data.mesesHdr || [];
+  if (data.compradores) D.COMPRADORES = data.compradores;
+  if (data.fecha) document.getElementById('fecha-rpt').value = data.fecha;
+  if (data.mes)   document.getElementById('mes-rpt').value   = data.mes;
+  // Actualizar KPIs de carga
+  const el = id => document.getElementById(id);
+  if (el('ck-prod'))  el('ck-prod').textContent  = D.kardex.length.toLocaleString();
+  if (el('ck-stock')) el('ck-stock').textContent = D.stock.length.toLocaleString();
+  if (el('ck-obs'))   el('ck-obs').textContent   = D.obs.length.toLocaleString();
+  if (el('ck-oc'))    el('ck-oc').textContent    = (D.oc||[]).length.toLocaleString();
+  actualizarKpisGH(data);
+  // Re-renderizar todas las pestañas
+  try {
+    const kardMap={};D.kardex.forEach(k=>{kardMap[k.cod]=k;});
+    D.stock.forEach(s=>{
+      if(s.vtaMes===undefined){const k=kardMap[s.cod];const ult3=k?k.meses.slice(-3).reduce((a,b)=>a+b,0):0;
+      s.vta3m=ult3;s.vtaMes=Math.round(ult3/3*10)/10;s.cobDias=s.vtaMes>0?Math.round(s.cant/s.vtaMes*30):null;}
+    });
+    if(D.oc&&D.oc.length>0){const ocCods=new Set(D.oc.map(o=>o.cod));D.obs.forEach(it=>{if(ocCods.has(it.cod)){const ocs=D.oc.filter(o=>o.cod===it.cod);it.ocActiva=ocs.map(o=>o.noc||'OC').filter(Boolean);if(it.accion==='COMPRAR')it.accion='ARRIBAR';}});}
+    renderVentas();renderSugerido();renderStock();renderObs();renderCompras();
+    if(D.sust&&D.sust.length>0){cruceObsSust();renderSust();}
+    actualizarFiltrosVentas();actualizarFiltrosStock();actualizarFiltrosObs();actualizarFiltrosCompras();
+  } catch(re){console.warn('Re-render:',re);}
+  // Deja constancia en este navegador de que ya está al día con este ts
+  // exacto de publicación (no "ahora") — así una edición local posterior
+  // siempre queda con un ts más nuevo que el último publicado conocido,
+  // y la sincronización automática nunca la pisa sin querer.
+  guardarLSSilencioso(data.ts||new Date().toISOString());
+}
+
+async function cargarDesdeGitHub(mostrarConfirm, silencioso) {
   if (mostrarConfirm) {
     if (!confirm('¿Cargar los datos publicados por el responsable? Esto reemplazará los datos actuales en esta sesión.')) return;
   }
   try {
-    setBanner('pub', '⏳ Descargando estado publicado...');
+    if(!silencioso) setBanner('pub', '⏳ Descargando estado publicado...');
     const res = await fetch(GH_RAW + '?t=' + Date.now());
     if (!res.ok) throw new Error('Sin estado publicado');
     const data = await res.json();
-    // Restaurar en D
-    D.kardex   = data.kardex   || [];
-    D.stock    = data.stock    || [];
-    D.obs      = data.obs      || [];
-    D.compras  = data.compras  || [];
-    D.oc       = data.oc       || [];
-    D.sust     = data.sust     || [];
-    D.obsAcc   = data.obsAcc   || {};
-    D.obsClientes  = data.obsClientes  || [];
-    D.obsProductos = data.obsProductos || [];
-    D.mesesHdr = data.mesesHdr || [];
-    if (data.compradores) D.COMPRADORES = data.compradores;
-    if (data.fecha) document.getElementById('fecha-rpt').value = data.fecha;
-    if (data.mes)   document.getElementById('mes-rpt').value   = data.mes;
-    // Actualizar KPIs de carga
-    const el = id => document.getElementById(id);
-    if (el('ck-prod'))  el('ck-prod').textContent  = D.kardex.length.toLocaleString();
-    if (el('ck-stock')) el('ck-stock').textContent = D.stock.length.toLocaleString();
-    if (el('ck-obs'))   el('ck-obs').textContent   = D.obs.length.toLocaleString();
-    if (el('ck-oc'))    el('ck-oc').textContent    = (D.oc||[]).length.toLocaleString();
-    actualizarKpisGH(data);
-    // Re-renderizar todas las pestañas
-    try {
-      const kardMap={};D.kardex.forEach(k=>{kardMap[k.cod]=k;});
-      D.stock.forEach(s=>{
-        if(s.vtaMes===undefined){const k=kardMap[s.cod];const ult3=k?k.meses.slice(-3).reduce((a,b)=>a+b,0):0;
-        s.vta3m=ult3;s.vtaMes=Math.round(ult3/3*10)/10;s.cobDias=s.vtaMes>0?Math.round(s.cant/s.vtaMes*30):null;}
-      });
-      if(D.oc&&D.oc.length>0){const ocCods=new Set(D.oc.map(o=>o.cod));D.obs.forEach(it=>{if(ocCods.has(it.cod)){const ocs=D.oc.filter(o=>o.cod===it.cod);it.ocActiva=ocs.map(o=>o.noc||'OC').filter(Boolean);if(it.accion==='COMPRAR')it.accion='ARRIBAR';}});}
-      renderVentas();renderSugerido();renderStock();renderObs();renderCompras();
-      if(D.sust&&D.sust.length>0){cruceObsSust();renderSust();}
-      actualizarFiltrosVentas();actualizarFiltrosStock();actualizarFiltrosObs();actualizarFiltrosCompras();
-    } catch(re){console.warn('Re-render:',re);}
+    aplicarEstadoGitHub(data);
     const ts = data.ts ? new Date(data.ts) : null;
     const autor = data.autor || '—';
     setBanner('ok', `✅ Datos cargados correctamente. Publicado el ${ts?ts.toLocaleString('es-PE'):'—'} por <b>${autor}</b>.`);
-    alert('✅ Datos cargados. Ahora puedes ir a cualquier pestaña para ver el reporte del día.');
+    if(!silencioso) alert('✅ Datos cargados. Ahora puedes ir a cualquier pestaña para ver el reporte del día.');
+    setSyncStatus('ok','Sincronizado · '+new Date().toLocaleTimeString('es-PE')+(autor&&autor!=='—'?' (publicado por '+autor+')':''));
   } catch(e) {
     setBanner('err', '❌ Error al cargar: ' + e.message);
+    if(!silencioso) setSyncStatus('err','Error al cargar: '+e.message);
   }
 }
 
@@ -5418,6 +5507,13 @@ async function publicarGitHub() {
     setPubMsg('✅ Publicado correctamente. Todos pueden ver el estado del día.', 'var(--green)');
     actualizarKpisGH(payload);
     setBanner('ok', `✅ Estado publicado a las ${new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})} por <b>${autor.trim()}</b>.`);
+    // 29-sep-2026: alinear el ts guardado en ESTE navegador con el ts recién
+    // publicado — si no, la sincronización automática (cada 30s) vería el
+    // remoto como "más nuevo" que el local unos segundos después de publicar
+    // y volvería a aplicar (innecesariamente) los mismos datos que ya están
+    // en pantalla, en el propio navegador de quien acaba de publicar.
+    guardarLSSilencioso(payload.ts);
+    setSyncStatus('ok','Publicado y sincronizado · '+new Date().toLocaleTimeString('es-PE'));
 
   } catch(e) {
     setPubMsg('❌ Error al publicar: ' + e.message, 'var(--red)');
