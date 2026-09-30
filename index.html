@@ -115,6 +115,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 .acc-sel.cambiar{background:#fef3c7;color:#92400e;border-color:#fcd34d;}
 .acc-sel.anular{background:#f3f4f6;color:#374151;border-color:#d1d5db;}
 .acc-sel.stock{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
+.acc-sel.convertir{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd;}
 /* ══ CHART BOX (tamaño fijo) ══ */
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-top:14px;}
 .cbox{background:var(--bg2);border:1.5px solid var(--line);border-radius:var(--r);padding:14px;}
@@ -992,6 +993,10 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
         <div class="kv" id="ok-stock" style="font-size:22px;font-weight:800;color:#166534;line-height:1;" title="SKUs marcados como Con stock/Anular manualmente pero que aún registran Unid.Pend. &gt; 0 — revisar, puede ser un dato desactualizado.">—</div>
         <div style="font-size:9px;color:var(--text3);margin-top:1px;">🟢 Marcados resueltos (revisar)</div>
       </div>
+      <div>
+        <div class="kv" id="ok-convertir" style="font-size:22px;font-weight:800;color:#5b21b6;line-height:1;" title="SKUs marcados 'Por convertir' — se atenderán como parte de un pack.">—</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:1px;">📦 Por convertir</div>
+      </div>
     </div>
   </div>
 
@@ -1078,14 +1083,17 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     <div class="ms-wrap" id="ms-rp-canal"></div>
     <div class="ms-wrap" id="ms-rp-surt"></div>
     <div class="ms-wrap" id="ms-rp-tsurt"></div>
+    <label style="display:flex;align-items:center;gap:4px;font-size:9px;cursor:pointer;padding:3px 8px;border:1px solid #fca5a5;border-radius:4px;background:#fef2f2;white-space:nowrap;" title="Pedidos cuya fecha de pedido es de hace más de 7 días y aún siguen sin atender (Por Comprar / OC por Arribar / Por Cambiar / Por Convertir).">
+      <input type="checkbox" id="cb-rp-antiguos" onchange="filtrarRepPedidos()" style="width:12px;height:12px;"> ⏳ Solo antiguos (&gt;7d) — <span id="rp-antiguos-count" style="font-weight:800;color:#b91c1c;">0</span>
+    </label>
     <button class="btn btn-o" onclick="expRepComercial()">⬇ Excel</button>
     <span id="rp-count" style="font-size:10px;color:var(--text3);margin-left:auto;"></span>
   </div>
   <div class="tw">
     <table><thead><tr>
-      <th>N° Pedido</th><th>DNI</th><th>Cliente</th><th>Teléfono</th><th>Canal CC2</th><th>Distrito</th><th>SKU</th><th>Descripción</th><th>Estatus</th><th>Fecha Est. Arribo</th><th>Fecha Est. Atención</th><th>Comprador</th>
+      <th>Fecha Pedido</th><th>N° Pedido</th><th>DNI</th><th>Cliente</th><th>Teléfono</th><th>Canal CC2</th><th>Distrito</th><th>SKU</th><th>Descripción</th><th>Estatus</th><th>Fecha Est. Arribo</th><th>Fecha Est. Atención</th><th>Comprador</th>
     </tr></thead>
-    <tbody id="tbody-rep-pedidos"><tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr></tbody>
+    <tbody id="tbody-rep-pedidos"><tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -3308,6 +3316,7 @@ function actualizarKpisObs(){
   setEl('ok-arribar',pend.filter(i=>i.accion==='ARRIBAR').length);
   setEl('ok-cambiar',pend.filter(i=>i.accion==='CAMBIAR').length);
   setEl('ok-stock',pend.filter(i=>i.accion==='STOCK'||i.accion==='ANULAR').length);
+  setEl('ok-convertir',pend.filter(i=>i.accion==='CONVERTIR').length);
 
   // Compradores — SKUs pendientes (Unid.Pend. > 0) que cada uno tiene por atender
   const NAMES_OBS=['Endira Gómez','María Rojas','Cristina Chávez','Dante Clavijo'];
@@ -3317,13 +3326,18 @@ function actualizarKpisObs(){
   setEl('ok-comp-sa', pend.filter(i=>!i.resp||i.resp==='Sin asignar').length);
 }
 
-function renderObs(){
+// Cadena de filtros de la tabla "Productos Observados — Lista de acción para
+// Compras" (búsqueda + checkbox "Ver todos" + Acción/Categoría/Responsable),
+// extraída a una función propia (30-sep-2026) para que tanto renderObs()
+// como expObs() y el Reporte Comercial de abajo (construirReportePedidos(),
+// vía codigosFiltradosObs()) apliquen EXACTAMENTE la misma lógica — a pedido
+// explícito de Dante de que el Reporte Comercial "replique todos los cambios
+// que se hacen en la parte superior... inclusive los filtros".
+function filtrarDataObs(){
   const q=(document.getElementById('os-q')||{}).value||'';
   const acc=(document.getElementById('os-acc')||{}).value||'';
   const cat=(document.getElementById('os-cat')||{}).value||'';
   const resp=(document.getElementById('os-resp')||{}).value||'';
-
-  actualizarKpisObs();
 
   let data=calcObsDerivados();
 
@@ -3344,8 +3358,23 @@ function renderObs(){
   if(_rspMs.length) data=data.filter(i=>_rspMs.includes(i.resp||'—'));
   else if(resp) data=data.filter(i=>i.resp===resp);
 
-  // Ordenar por prioridad: COMPRAR -> ARRIBAR -> CAMBIAR -> STOCK -> ANULAR
-  const ord={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,STOCK:4,ANULAR:5};
+  return data;
+}
+
+// Set de códigos de SKU que pasan los filtros de la tabla superior de
+// Productos Observados en este momento — usado por el Reporte Comercial
+// para ocultar/mostrar pedidos en función de lo que esté filtrado arriba.
+function codigosFiltradosObs(){
+  return new Set(filtrarDataObs().map(i=>i.cod));
+}
+
+function renderObs(){
+  actualizarKpisObs();
+
+  let data=filtrarDataObs();
+
+  // Ordenar por prioridad: COMPRAR -> ARRIBAR -> CAMBIAR -> CONVERTIR -> STOCK -> ANULAR
+  const ord={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,CONVERTIR:4,STOCK:5,ANULAR:6};
   data.sort((a,b)=>(ord[a.accion]||9)-(ord[b.accion]||9)||(b.monto-a.monto));
 
   // Las tarjetas KPI ya se actualizaron arriba via actualizarKpisObs()
@@ -3359,16 +3388,18 @@ function renderObs(){
       COMPRAR:'<span class="chip c-rojo">🔴 Por Comprar</span>',
       ARRIBAR:'<span class="chip c-azul">🔵 OC por Arribar</span>',
       CAMBIAR:'<span class="chip c-amber">🟡 Por Cambiar</span>',
+      CONVERTIR:'<span class="chip c-morado">📦 Por Convertir</span>',
       ANULAR: '<span class="chip c-gris">⚫ Anular</span>',
       STOCK:  '<span class="chip c-verde">🟢 Con Stock</span>',
     };
     // Select editable para acción (con estilos adaptativos)
-    const accClsMap={COMPRAR:'comprar',ARRIBAR:'recibir',CAMBIAR:'cambiar',ANULAR:'anular',STOCK:'stock'};
-    const accSel=`<select class="acc-sel ${accClsMap[it.accion]||''}" 
+    const accClsMap={COMPRAR:'comprar',ARRIBAR:'recibir',CAMBIAR:'cambiar',CONVERTIR:'convertir',ANULAR:'anular',STOCK:'stock'};
+    const accSel=`<select class="acc-sel ${accClsMap[it.accion]||''}"
       onchange="cambiarAccion('${it.cod}',this.value,this)" onclick="event.stopPropagation()">
       <option value="COMPRAR" ${it.accion==='COMPRAR'?'selected':''}>🔴 Por Comprar</option>
       <option value="ARRIBAR" ${it.accion==='ARRIBAR'?'selected':''}>🔵 OC Arribar</option>
       <option value="CAMBIAR" ${it.accion==='CAMBIAR'?'selected':''}>🟡 Cambiar</option>
+      <option value="CONVERTIR" ${it.accion==='CONVERTIR'?'selected':''}>📦 Por Convertir</option>
       <option value="STOCK"   ${it.accion==='STOCK'?'selected':''}>🟢 Con Stock</option>
       <option value="ANULAR"  ${it.accion==='ANULAR'?'selected':''}>⚫ Anular</option>
     </select>`;
@@ -3442,12 +3473,12 @@ function renderObs(){
   document.getElementById('tbody-obs').innerHTML=html||'<tr><td colspan="21" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
 
   // Gráficos observados
-  const accMap2={COMPRAR:0,ARRIBAR:0,CAMBIAR:0,STOCK:0,ANULAR:0};
+  const accMap2={COMPRAR:0,ARRIBAR:0,CAMBIAR:0,CONVERTIR:0,STOCK:0,ANULAR:0};
   D.obs.forEach(i=>accMap2[i.accion]=(accMap2[i.accion]||0)+1);
   mkChart('ch-ob-acc','doughnut',
-    ['🔴 Por Comprar','🔵 OC Arribar','🟡 Cambiar','🟢 Con Stock','⚫ Anular'],
-    [accMap2.COMPRAR,accMap2.ARRIBAR,accMap2.CAMBIAR,accMap2.STOCK,accMap2.ANULAR],
-    ['#b91c1c','#1d4ed8','#d97706','#059669','#6b7280'],'SKUs');
+    ['🔴 Por Comprar','🔵 OC Arribar','🟡 Cambiar','📦 Por Convertir','🟢 Con Stock','⚫ Anular'],
+    [accMap2.COMPRAR,accMap2.ARRIBAR,accMap2.CAMBIAR,accMap2.CONVERTIR,accMap2.STOCK,accMap2.ANULAR],
+    ['#b91c1c','#1d4ed8','#d97706','#5b21b6','#059669','#6b7280'],'SKUs');
 
   const catMapO={};
   D.obs.forEach(i=>catMapO[i.cat]=(catMapO[i.cat]||0)+i.monto);
@@ -3474,7 +3505,7 @@ function filtrarObs(){renderObs();}
 function cambiarAccion(cod,acc,sel){
   D.obs.forEach(it=>{if(it.cod===cod)it.accion=acc;});
   D.obsAcc[cod]=acc;
-  const accClsMap={COMPRAR:'comprar',ARRIBAR:'recibir',CAMBIAR:'cambiar',ANULAR:'anular',STOCK:'stock'};
+  const accClsMap={COMPRAR:'comprar',ARRIBAR:'recibir',CAMBIAR:'cambiar',CONVERTIR:'convertir',ANULAR:'anular',STOCK:'stock'};
   sel.className='acc-sel '+(accClsMap[acc]||'');
   guardarLS();
   actualizarKpisObs();
@@ -3737,10 +3768,16 @@ function actualizarFiltrosStock(){
 function actualizarFiltrosObs(){
   const cats=[...new Set(D.obs.map(i=>i.cat))].sort();
   const resps=[...new Set(D.obs.map(i=>i.resp||'—'))].sort();
-  const accs=['COMPRAR','ARRIBAR','ANALIZAR','SUSTITUIR','ANULAR'];
+  // 30-sep-2026: esta lista estaba desactualizada (traía ANALIZAR/SUSTITUIR,
+  // valores que la app nunca asigna) y por eso el filtro de Acción nunca
+  // dejaba filtrar por CAMBIAR ni STOCK. Se corrige a los valores reales que
+  // usa cambiarAccion()/calcObsDerivados(), sumando la nueva "CONVERTIR"
+  // (Por convertir — productos que se atenderán como parte de un pack).
+  const accs=['COMPRAR','ARRIBAR','CAMBIAR','CONVERTIR','STOCK','ANULAR'];
   const ACC_LABELS={
     'COMPRAR':'🔴 Por Comprar','ARRIBAR':'🔵 OC por Arribar',
-    'ANALIZAR':'🟡 En Análisis','SUSTITUIR':'🟢 Sustituir','ANULAR':'⚫ Anular'
+    'CAMBIAR':'🟡 Por Cambiar','CONVERTIR':'📦 Por Convertir',
+    'STOCK':'🟢 Con Stock','ANULAR':'⚫ Anular'
   };
   poblarSelect('os-cat',cats,'Todas');
   poblarSelect('os-resp',resps,'Todos resp.');
@@ -4077,26 +4114,20 @@ function expObs(){
   // mismo filtro por defecto de "solo pendientes" (checkbox Ver todos) y las
   // 3 listas múltiples, e incluye las 21 columnas que se ven en la tabla
   // (antes solo exportaba 14). Pedido explícito de Dante.
+  // 30-sep-2026: ahora reusa filtrarDataObs() (misma función que renderObs())
+  // en vez de repetir la cadena de filtros aquí — evita que las dos copias
+  // se desalineen a futuro. Las variables de abajo solo sirven ya para
+  // armar el texto descriptivo de "filtros aplicados" del Excel.
   const q=(document.getElementById('os-q')||{}).value||'';
   const catS=getMultiSel('ms-cat-o'), accS=getMultiSel('ms-acc-o'), respS=getMultiSel('ms-resp-o');
   const acc=(document.getElementById('os-acc')||{}).value||'';
   const cat=(document.getElementById('os-cat')||{}).value||'';
   const resp=(document.getElementById('os-resp')||{}).value||'';
-
-  let data=calcObsDerivados();
-
   const verTodosObs=(document.getElementById('cb-todos-obs')||{}).checked;
-  if(!verTodosObs) data=data.filter(i=>i.unidPend>0);
 
-  if(q) data=data.filter(i=>i.cod.includes(q)||i.desc.toLowerCase().includes(q.toLowerCase()));
-  if(accS.length) data=data.filter(i=>accS.includes(i.accion||''));
-  else if(acc) data=data.filter(i=>i.accion===acc);
-  if(catS.length) data=data.filter(i=>catS.includes(i.cat||''));
-  else if(cat) data=data.filter(i=>i.cat===cat);
-  if(respS.length) data=data.filter(i=>respS.includes(i.resp||'—'));
-  else if(resp) data=data.filter(i=>i.resp===resp);
+  let data=filtrarDataObs();
 
-  const ord={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,STOCK:4,ANULAR:5};
+  const ord={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,CONVERTIR:4,STOCK:5,ANULAR:6};
   data=[...data].sort((a,b)=>(ord[a.accion]||9)-(ord[b.accion]||9)||(b.monto-a.monto));
 
   const partes=[];
@@ -4109,7 +4140,7 @@ function expObs(){
   if(respS.length) partes.push('Resp:'+respS.join(','));
   else if(resp) partes.push('Resp:'+resp);
 
-  const ACC_LABEL_X={COMPRAR:'Por Comprar',ARRIBAR:'OC por Arribar',CAMBIAR:'Por Cambiar',ANULAR:'Anulado',STOCK:'Con Stock'};
+  const ACC_LABEL_X={COMPRAR:'Por Comprar',ARRIBAR:'OC por Arribar',CAMBIAR:'Por Cambiar',CONVERTIR:'Por Convertir',ANULAR:'Anulado',STOCK:'Con Stock'};
   const totalMonto=data.reduce((s,o)=>s+(o.montoIGV||0),0);
   const pendientes=data.filter(o=>(o.unidPend||0)>0).length;
 
@@ -4891,8 +4922,20 @@ function construirReportePedidos(){
   derivados.forEach(d=>{codMap[d.cod]=d;});
   const cliByNum={};
   (D.obsClientes||[]).forEach(c=>{cliByNum[c.numero]=c;});
-  const ACC_LABEL={COMPRAR:'🔴 Por Comprar',ARRIBAR:'🔵 OC por Arribar',CAMBIAR:'🟡 Por Cambiar',ANULAR:'⚫ Anulado',STOCK:'🟢 Con Stock'};
-  return (D.obsProductos||[]).map(p=>{
+  const ACC_LABEL={COMPRAR:'🔴 Por Comprar',ARRIBAR:'🔵 OC por Arribar',CAMBIAR:'🟡 Por Cambiar',CONVERTIR:'📦 Por Convertir',ANULAR:'⚫ Anulado',STOCK:'🟢 Con Stock'};
+  // 30-sep-2026: este reporte ahora replica los filtros de la tabla superior
+  // (Productos Observados) — Categoría/Acción/Responsable, búsqueda y el
+  // checkbox "Ver todos" — a pedido explícito de Dante ("si en la parte de
+  // arriba quitan las motos de los filtros, abajo también se oculten todos
+  // los pedidos de las motos"). Un SKU cuyo código no aparece en absoluto en
+  // Productos Observados (p.cod no está en codMap) no está sujeto a esos
+  // filtros y se mantiene siempre visible, igual que antes.
+  const codsFiltrados=codigosFiltradosObs();
+  const hoyMs=Date.now();
+  const PENDIENTES_SET=new Set(['COMPRAR','ARRIBAR','CAMBIAR','CONVERTIR']);
+  return (D.obsProductos||[])
+    .filter(p=>!codMap[p.cod]||codsFiltrados.has(p.cod))
+    .map(p=>{
     const c=cliByNum[p.numero]||{};
     const d=codMap[p.cod];
     // Estatus reactivo (18-sep-2026 parte 6): se toma de la ⚡ ACCIÓN que el
@@ -4906,8 +4949,18 @@ function construirReportePedidos(){
     const tSt=d?(d.stockActual>0):false;
     const tipoSurtido=(enSurt&&tSt)?'ACT_STOCK':enSurt?'ACT_NOSTOCK':tSt?'INACT_STOCK':'INACT_NOSTOCK';
     const surtido=(enCal&&enMyb)?'AMBOS':enCal?'CALIDDA':enMyb?'MYBEES':'NINGUNO';
+    // Fecha del pedido (30-sep-2026): F. Docum del reporte "Observados —
+    // Clientes" (fecha en que se generó/registró el pedido/documento).
+    const fecha=c.fDocum||'';
+    const diasDesdePedido=fecha?Math.floor((hoyMs-new Date(fecha).getTime())/86400000):null;
+    // "Antiguo" = pedido con más de 7 días desde su fecha y que todavía
+    // sigue sin atender (no está en Con Stock ni Anulado).
+    const esAntiguo=diasDesdePedido!==null&&diasDesdePedido>7&&PENDIENTES_SET.has(estatus);
     return {
       numero:p.numero,
+      fecha,
+      diasDesdePedido,
+      esAntiguo,
       dni:c.ruc||'',
       cliente:c.razonSocial||'',
       distrito:c.distrito||'',
@@ -4930,7 +4983,7 @@ function actualizarFiltrosRepPedidos(){
   const rows=construirReportePedidos();
   const comps=[...new Set(rows.map(r=>r.comprador))].sort();
   const canales=[...new Set(rows.map(r=>r.canal))].sort();
-  const ESTATUS_LABELS={COMPRAR:'🔴 Por Comprar',ARRIBAR:'🔵 OC por Arribar',CAMBIAR:'🟡 Por Cambiar',STOCK:'🟢 Con Stock',ANULAR:'⚫ Anulado'};
+  const ESTATUS_LABELS={COMPRAR:'🔴 Por Comprar',ARRIBAR:'🔵 OC por Arribar',CAMBIAR:'🟡 Por Cambiar',CONVERTIR:'📦 Por Convertir',STOCK:'🟢 Con Stock',ANULAR:'⚫ Anulado'};
   buildMultiDropdown('ms-rp-est',Object.keys(ESTATUS_LABELS),'Estatus','filtrarRepPedidos',ESTATUS_LABELS);
   buildMultiDropdown('ms-rp-comp',comps,'Comprador','filtrarRepPedidos');
   buildMultiDropdown('ms-rp-canal',canales,'Canal','filtrarRepPedidos');
@@ -4947,19 +5000,31 @@ function renderRepPedidos(){
   if(!tbody) return;
   const cEl=document.getElementById('rp-count');
   if(!D.obsProductos||D.obsProductos.length===0){
-    tbody.innerHTML='<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr>';
     if(cEl) cEl.textContent='';
+    const acEl=document.getElementById('rp-antiguos-count'); if(acEl) acEl.textContent='0';
     return;
   }
   const rows=construirReportePedidos();
+
+  // 30-sep-2026: tarjeta/contador de pedidos antiguos (>7 días sin atender),
+  // calculado sobre `rows` (ya con los filtros de la tabla superior
+  // aplicados) para que la cifra se mantenga estable mientras se escribe en
+  // el buscador de este reporte.
+  const antiguosCount=rows.filter(r=>r.esAntiguo).length;
+  const acEl=document.getElementById('rp-antiguos-count');
+  if(acEl) acEl.textContent=antiguosCount;
+
   const q=((document.getElementById('rp-q')||{}).value||'').trim().toLowerCase();
   const estS=getMultiSel('ms-rp-est');
   const compS=getMultiSel('ms-rp-comp');
   const canalS=getMultiSel('ms-rp-canal');
   const surtS=getMultiSel('ms-rp-surt');
   const tsurtS=getMultiSel('ms-rp-tsurt');
+  const soloAntiguos=(document.getElementById('cb-rp-antiguos')||{}).checked;
 
   let data=rows;
+  if(soloAntiguos) data=data.filter(r=>r.esAntiguo);
   if(q) data=data.filter(r=>
     r.numero.toLowerCase().includes(q) ||
     r.cliente.toLowerCase().includes(q) ||
@@ -4974,13 +5039,14 @@ function renderRepPedidos(){
   if(surtS.length) data=surtS[0]==='__NONE__'?[]:data.filter(r=>surtS.includes(r.surtido));
   if(tsurtS.length) data=tsurtS[0]==='__NONE__'?[]:data.filter(r=>tsurtS.includes(r.tipoSurtido));
 
-  const ordEst={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,STOCK:4,ANULAR:5};
+  const ordEst={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,CONVERTIR:4,STOCK:5,ANULAR:6};
   data=[...data].sort((a,b)=>(ordEst[a.estatus]||9)-(ordEst[b.estatus]||9)||(a.cliente||'').localeCompare(b.cliente||''));
 
   const CHIP_RP={
     COMPRAR:'<span class="chip c-rojo" style="font-size:8px;">🔴 Por Comprar</span>',
     ARRIBAR:'<span class="chip c-azul" style="font-size:8px;">🔵 OC por Arribar</span>',
     CAMBIAR:'<span class="chip c-amber" style="font-size:8px;">🟡 Por Cambiar</span>',
+    CONVERTIR:'<span class="chip c-morado" style="font-size:8px;">📦 Por Convertir</span>',
     ANULAR: '<span class="chip c-gris" style="font-size:8px;">⚫ Anulado</span>',
     STOCK:  '<span class="chip c-verde" style="font-size:8px;">🟢 Con Stock</span>',
   };
@@ -4988,6 +5054,7 @@ function renderRepPedidos(){
   data.slice(0,500).forEach(r=>{
     const chip=CHIP_RP[r.estatus]||('<span class="chip c-gris" style="font-size:8px;">'+(r.estatusLbl||r.estatus)+'</span>');
     html+=`<tr>
+      <td style="font-size:9px;white-space:nowrap;${r.esAntiguo?'color:#b91c1c;font-weight:700;':''}" title="${r.diasDesdePedido!==null?r.diasDesdePedido+' día(s) desde el pedido':''}">${r.fecha||'—'}${r.esAntiguo?' ⏳':''}</td>
       <td class="mono fw7" style="font-size:10px;">${r.numero}</td>
       <td class="mono" style="font-size:10px;white-space:nowrap;">${r.dni||'—'}</td>
       <td style="font-size:10px;max-width:170px;">${r.cliente||'—'}</td>
@@ -5002,7 +5069,7 @@ function renderRepPedidos(){
       <td style="font-size:10px;">${r.comprador}</td>
     </tr>`;
   });
-  tbody.innerHTML=html||'<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
+  tbody.innerHTML=html||'<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
   if(cEl) cEl.textContent=data.length+' de '+rows.length+' líneas';
 }
 
@@ -5020,8 +5087,10 @@ function expRepComercial(){
   const canalS=getMultiSel('ms-rp-canal');
   const surtS=getMultiSel('ms-rp-surt');
   const tsurtS=getMultiSel('ms-rp-tsurt');
+  const soloAntiguos=(document.getElementById('cb-rp-antiguos')||{}).checked;
 
   let data=rows;
+  if(soloAntiguos) data=data.filter(r=>r.esAntiguo);
   if(q) data=data.filter(r=>
     r.numero.toLowerCase().includes(q)||r.cliente.toLowerCase().includes(q)||
     r.cod.toLowerCase().includes(q)||(r.desc||'').toLowerCase().includes(q)||
@@ -5032,10 +5101,11 @@ function expRepComercial(){
   if(surtS.length) data=surtS[0]==='__NONE__'?[]:data.filter(r=>surtS.includes(r.surtido));
   if(tsurtS.length) data=tsurtS[0]==='__NONE__'?[]:data.filter(r=>tsurtS.includes(r.tipoSurtido));
 
-  const ordEst={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,STOCK:4,ANULAR:5};
+  const ordEst={COMPRAR:1,ARRIBAR:2,CAMBIAR:3,CONVERTIR:4,STOCK:5,ANULAR:6};
   data=[...data].sort((a,b)=>(ordEst[a.estatus]||9)-(ordEst[b.estatus]||9)||(a.cliente||'').localeCompare(b.cliente||''));
 
   const partes=[];
+  if(soloAntiguos) partes.push('Solo antiguos (>7 días)');
   if(q) partes.push('Búsqueda:"'+q+'"');
   if(estS.length&&estS[0]!=='__NONE__') partes.push('Estatus:'+estS.join(','));
   if(compS.length&&compS[0]!=='__NONE__') partes.push('Comprador:'+compS.join(','));
@@ -5043,24 +5113,24 @@ function expRepComercial(){
   if(surtS.length&&surtS[0]!=='__NONE__') partes.push('Surtido:'+surtS.join(','));
   if(tsurtS.length&&tsurtS[0]!=='__NONE__') partes.push('Tipo Surtido:'+tsurtS.join(','));
 
-  const ACC_LABEL_X={COMPRAR:'Por Comprar',ARRIBAR:'OC por Arribar',CAMBIAR:'Por Cambiar',ANULAR:'Anulado',STOCK:'Con Stock'};
-  const pendCount=data.filter(r=>r.estatus==='COMPRAR'||r.estatus==='CAMBIAR').length;
-  const stockCount=data.filter(r=>r.estatus==='STOCK').length;
+  const ACC_LABEL_X={COMPRAR:'Por Comprar',ARRIBAR:'OC por Arribar',CAMBIAR:'Por Cambiar',CONVERTIR:'Por Convertir',ANULAR:'Anulado',STOCK:'Con Stock'};
+  const pendCount=data.filter(r=>r.estatus==='COMPRAR'||r.estatus==='CAMBIAR'||r.estatus==='CONVERTIR').length;
+  const antiguosCount=data.filter(r=>r.esAntiguo).length;
 
   exportarExcelMerpes({
-    datos:data.map(r=>[r.numero,r.dni,r.cliente,r.telefono,r.canal,r.distrito,r.cod,r.desc,
-      ACC_LABEL_X[r.estatus]||r.estatus,r.fechaArribo||'',r.fechaAtencion||'',r.comprador]),
-    cabeceras:['N° Pedido','DNI','Cliente','Teléfono','Canal CC2','Distrito','SKU','Descripción',
-      'Estatus','Fecha Est. Arribo','Fecha Est. Atención','Comprador'],
+    datos:data.map(r=>[r.fecha||'',r.numero,r.dni,r.cliente,r.telefono,r.canal,r.distrito,r.cod,r.desc,
+      ACC_LABEL_X[r.estatus]||r.estatus,r.fechaArribo||'',r.fechaAtencion||'',r.comprador,r.esAntiguo?'Sí':'No']),
+    cabeceras:['Fecha Pedido','N° Pedido','DNI','Cliente','Teléfono','Canal CC2','Distrito','SKU','Descripción',
+      'Estatus','Fecha Est. Arribo','Fecha Est. Atención','Comprador','Antiguo (>7d)'],
     titulo:'ESTATUS DE PEDIDOS OBSERVADOS', subtitulo:'Reporte Comercial — estimados de arribo por cliente y canal',
     filtros:partes.join(' | ')||'Todos',
     archivo:'Estatus_Pedidos_Observados_'+new Date().toISOString().slice(0,10),
     sheetName:'Estatus Pedidos',
     kpis:[{val:data.length,lbl:'Líneas de pedido',color:'blue'},
-          {val:pendCount,lbl:'Pendientes (comprar/cambiar)',color:'red'},
-          {val:stockCount,lbl:'Con stock',color:'green'},
+          {val:pendCount,lbl:'Pendientes (comprar/cambiar/convertir)',color:'red'},
+          {val:antiguosCount,lbl:'Antiguos (>7 días)',color:'amber'},
           {val:[...new Set(data.map(r=>r.numero))].length,lbl:'Pedidos únicos',color:'amber'}],
-    colWidths:[14,13,32,14,18,16,12,35,16,14,14,16],
+    colWidths:[13,14,13,32,14,18,16,12,35,16,14,14,16,12],
   });
 }
 
