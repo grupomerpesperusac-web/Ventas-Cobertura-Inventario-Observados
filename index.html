@@ -1912,6 +1912,14 @@ function parsearKardexDinamico(wb, fname) {
       const ctCom  = iIngCT > -1 ? num(row[iIngCT])  : 0;
       const prov   = iProv > -1 ? String(row[iProv] == null ? '' : row[iProv]).trim() : '—';
       if (qtyCom > 0 && cuCom > 0) {
+        // 30-sep-2026: el Kardex Dinámico del SIG trae Costo Unitario/Costo
+        // Total de INGRESOS SIN IGV (mismo criterio que el resto del costeo
+        // del Kardex) — pero la pestaña "Últimas Compras" siempre etiquetó
+        // esos valores como "con IGV" (igual que el resto de la app, ej.
+        // montoIGV=costoUnit*1.18 en Productos Observados) sin aplicar
+        // realmente el ×1.18. Pedido explícito de Dante: mostrar el precio
+        // de compra TOTAL con IGV incluido, sin separarlo, en ambos campos
+        // (unitario y total) de Últimas Compras.
         comprasHist.push({
           fechaStr, fechaObj,
           cod, desc,
@@ -1919,9 +1927,9 @@ function parsearKardexDinamico(wb, fname) {
           gama:     inferirGama(cod, desc),
           marca:    'S/M',
           prov:     prov || '—',
-          costoUnit: Math.round(cuCom  * 100) / 100,
+          costoUnit: Math.round(cuCom * 1.18 * 100) / 100,
           cant:     qtyCom,
-          total:    Math.round(ctCom * 100) / 100
+          total:    Math.round(ctCom * 1.18 * 100) / 100
         });
       }
     }
@@ -5347,13 +5355,29 @@ async function chequearYSincronizar() {
     const res = await fetch(GH_RAW + '?t=' + Date.now());
     if (!res.ok) { setSyncStatus('err', 'Sin estado publicado todavía'); return; }
     const data = await res.json();
-    actualizarKpisGH(data); // mantiene vivas las tarjetas de Publicar/Ver aunque no se esté en esa pestaña
+    // 30-sep-2026: bug encontrado — antes se llamaba a actualizarKpisGH(data)
+    // aquí SIEMPRE, con lo que haya devuelto GH_RAW en este tick, incluso
+    // cuando ese archivo resulta ser una copia vieja servida por el caché de
+    // la CDN de raw.githubusercontent.com (que puede tardar unos minutos en
+    // reflejar un push recién hecho). Eso pisaba las tarjetas "ESTADO
+    // PUBLICADO ACTUALMENTE" con la fecha/hora/autor/conteo ANTERIORES justo
+    // después de publicar, aunque D y el localStorage ya tenían lo correcto
+    // — exactamente el retraso que reportó Dante. Ahora solo se actualizan
+    // esas tarjetas cuando el estado remoto realmente se va a aplicar (ver
+    // aplicarEstadoGitHub, que ya llama a actualizarKpisGH internamente) o
+    // cuando coincide exactamente con lo que ya se tiene (mismo ts = ya es
+    // la versión vigente, no hay riesgo de mostrar algo desactualizado).
     const remoteTs = data.ts ? new Date(data.ts).getTime() : 0;
     const localTs  = _tsLocalEfectivo();
     if (remoteTs > localTs) {
       aplicarEstadoGitHub(data);
       setSyncStatus('ok', 'Actualizado automáticamente · ' + new Date().toLocaleTimeString('es-PE') + (data.autor ? ' (por ' + data.autor + ')' : ''));
+    } else if (remoteTs === localTs) {
+      actualizarKpisGH(data);
+      setSyncStatus('ok', 'Al día · ' + new Date().toLocaleTimeString('es-PE'));
     } else {
+      // El remoto sigue desactualizado (probable caché de GitHub aún no
+      // renovado) — no se toca ni D ni las tarjetas, se reintenta en 30s.
       setSyncStatus('ok', 'Al día · ' + new Date().toLocaleTimeString('es-PE'));
     }
   } catch(e) {
