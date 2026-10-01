@@ -479,7 +479,10 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <div>
         <div class="kv" id="vk-skus" style="font-size:18px;font-weight:800;color:var(--blue);line-height:1;">—</div>
         <div style="font-size:9px;color:var(--text3);">SKUs activos</div>
-        <div id="vk-skus-pct" style="font-size:10px;font-weight:700;color:var(--blue);">—%</div>
+        <div style="display:flex;align-items:baseline;gap:3px;" title="% sobre el total de SKUs filtrados en pantalla, no sobre sí mismo">
+          <span id="vk-skus-pct" style="font-size:10px;font-weight:700;color:var(--blue);">—%</span>
+          <span style="font-size:8px;color:var(--text3);">del total</span>
+        </div>
       </div>
       <div>
         <div class="kv" id="vk-total3m" style="font-size:18px;font-weight:800;color:var(--blue);line-height:1;">—</div>
@@ -488,9 +491,9 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <div style="border-top:1px dashed #cbd5e1;padding-top:7px;">
         <div style="display:flex;align-items:baseline;gap:4px;">
           <span class="kv" id="vk-constock" style="font-size:14px;font-weight:800;color:#166534;">—</span>
-          <span id="vk-constock-pct" style="font-size:9px;font-weight:700;color:#166534;">—%</span>
+          <span id="vk-constock-pct" style="font-size:9px;font-weight:700;color:#166534;" title="% sobre SKUs activos">—%</span>
         </div>
-        <div style="font-size:8px;color:var(--text3);">SKU con stock</div>
+        <div style="font-size:8px;color:var(--text3);">Activo con stock</div>
       </div>
       <div style="border-top:1px dashed #cbd5e1;padding-top:7px;">
         <span class="kv" id="vk-constock-3m" style="font-size:13px;font-weight:800;color:#166534;">—</span>
@@ -499,7 +502,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <div>
         <div style="display:flex;align-items:baseline;gap:4px;">
           <span class="kv" id="vk-actsinstock" style="font-size:14px;font-weight:800;color:#991b1b;">—</span>
-          <span id="vk-actsinstock-pct" style="font-size:9px;font-weight:700;color:#991b1b;">—%</span>
+          <span id="vk-actsinstock-pct" style="font-size:9px;font-weight:700;color:#991b1b;" title="% sobre SKUs activos">—%</span>
         </div>
         <div style="font-size:8px;color:var(--text3);">Activo sin stock</div>
       </div>
@@ -756,16 +759,28 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--blue);">
     <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📦 Principal</div>
     <div style="margin-bottom:8px;">
-      <div class="kv" id="sk-monto" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Valor total S/</div>
+      <div class="kv" id="sk-monto-gral" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Valor TOTAL S/ (todos los almacenes)</div>
     </div>
-    <div style="margin-bottom:8px;">
+    <div style="border-top:1px dashed #cbd5e1;padding-top:7px;margin-bottom:6px;" title="Stock válido para venta — es el que se usa en el resto de la pestaña (cobertura, matriz, sugerido)">
+      <div class="kv" id="sk-monto" style="font-size:14px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Principal (001) S/</div>
+    </div>
+    <div style="margin-bottom:6px;" title="Stock NO disponible para venta — se muestra solo como referencia">
+      <div class="kv" id="sk-monto-alm2" style="font-size:14px;font-weight:800;color:#92400e;line-height:1;">—</div>
+      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. 2da Cond. (002) S/</div>
+    </div>
+    <div style="margin-bottom:8px;" title="Stock NO disponible para venta — se muestra solo como referencia">
+      <div class="kv" id="sk-monto-alm3" style="font-size:14px;font-weight:800;color:#991b1b;line-height:1;">—</div>
+      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Averías (003) S/</div>
+    </div>
+    <div style="border-top:1px dashed #cbd5e1;padding-top:7px;margin-bottom:8px;">
       <div class="kv" id="sk-total" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
       <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total SKUs</div>
     </div>
     <div>
       <div class="kv" id="sk-items" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total ítems</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total ítems (Alm. Principal)</div>
     </div>
   </div>
 
@@ -2863,14 +2878,19 @@ function renderVentas(){
   setElV('vk-total3m-per',_P+'M');
   // % en función de los SKU ACTIVOS (no del total filtrado) — pedido de
   // Dante 30-sep-2026, ej: 1000 activos y 800 con stock → 80%.
+  // 1-oct-2026: "Activo con stock" y "Activo sin stock" deben ser las DOS
+  // mitades de "SKUs activos" (se tienen que sumar exacto al total activos
+  // y sus % tienen que sumar 100%) — antes "con stock" se calculaba sobre
+  // TODO el dataset filtrado (incl. apagados con stock), no solo sobre los
+  // activos, así que ambas cifras no cuadraban entre sí. Ver bitácora.
   const _pctSobreActivosV=(n)=>nActivosV>0?(n/nActivosV*100).toFixed(1)+'%':'—%';
-  // SKUs con stock (del set filtrado) + sus salidas del período
-  const dataConStockV=data.filter(i=>(i.stock||0)>0);
+  // Activos CON stock (subconjunto de activos) + sus salidas del período
+  const dataConStockV=data.filter(i=>i.activo==='ACTIVO'&&(i.stock||0)>0);
   setElV('vk-constock',dataConStockV.length.toLocaleString());
   setElV('vk-constock-pct',_pctSobreActivosV(dataConStockV.length));
   setElV('vk-constock-3m',dataConStockV.reduce((s,i)=>s+i._3m,0).toLocaleString());
   setElV('vk-constock-per',_P+'M');
-  // SKU activos pero SIN stock + sus salidas del período
+  // Activos SIN stock (el otro subconjunto, complementario al de arriba) + sus salidas del período
   const dataActSinStockV=data.filter(i=>i.activo==='ACTIVO'&&(i.stock||0)<=0);
   setElV('vk-actsinstock',dataActSinStockV.length.toLocaleString());
   setElV('vk-actsinstock-pct',_pctSobreActivosV(dataActSinStockV.length));
@@ -3118,10 +3138,25 @@ function renderStock(){
 
   // KPIs reactivos al filtro activo
   const total=data.length;
+  // monto = SOLO Alm. Principal (001, stock vendible) — igual que antes, es
+  // el que usa el resto de esta pestaña (matriz, cobertura, sugerido).
   const monto=data.reduce((s,i)=>s+(i.costoTotal||0),0);
+  // 1-oct-2026: desglose por almacén pedido por Dante (el "Valor total S/"
+  // de antes solo incluía Alm. Principal — Alm. 2da Condición y Averías no
+  // están disponibles para venta pero sí tienen valor de inventario; sin
+  // mostrarlos por separado, el total de la herramienta no cuadraba con el
+  // total del Excel del Stock Actual, que sí los suma). costoUnit es el
+  // mismo costo unitario que ya trae cada SKU (de Stock Actual si se cargó,
+  // si no del Kardex) — no se vuelve a pedir ni se asume otro precio.
+  const montoAlm2=data.reduce((s,i)=>s+((i.stk2||0)*(i.costoUnit||0)),0);
+  const montoAlm3=data.reduce((s,i)=>s+((i.stk3||0)*(i.costoUnit||0)),0);
+  const montoGral=monto+montoAlm2+montoAlm3;
   const withCob=data.map(s=>s.cobDias!==undefined?s.cobDias:null);
   document.getElementById('sk-total').textContent=total.toLocaleString();
   document.getElementById('sk-monto').textContent='S/'+Math.round(monto).toLocaleString('es-PE');
+  document.getElementById('sk-monto-alm2').textContent='S/'+Math.round(montoAlm2).toLocaleString('es-PE');
+  document.getElementById('sk-monto-alm3').textContent='S/'+Math.round(montoAlm3).toLocaleString('es-PE');
+  document.getElementById('sk-monto-gral').textContent='S/'+Math.round(montoGral).toLocaleString('es-PE');
   const nCrit=withCob.filter(c=>c!==null&&c<7).length;
   const nWarn=withCob.filter(c=>c!==null&&c>=7&&c<30).length;
   const nOk=withCob.filter(c=>c!==null&&c>=30).length;
