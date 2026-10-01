@@ -753,38 +753,58 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   Stock actual ordenado de <b>mayor a menor valor</b>. Criterios de análisis: <b>Rotación</b> (Vtas3M/Stock), <b>Cobertura</b> (Stock/Vta30D). <b>Gan. Unit.</b> = promedio (V.Venta − V.Costo) de ventas históricas. 🟢 ≥S/500 · 🟡 S/0–699 · 🔴 negativa (vendido bajo costo).
 </div>
 <!-- KPI INVENTARIO v3 -->
-<div style="display:grid;grid-template-columns:140px 1fr 180px;gap:10px;margin-bottom:12px;align-items:start;">
+<div style="display:grid;grid-template-columns:140px 1fr 180px;gap:10px;margin-bottom:12px;align-items:stretch;">
 
-  <!-- ① PRINCIPAL -->
-  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--blue);">
+  <!-- ① PRINCIPAL — 01-oct-2026 (2da ronda): reestructurado a pedido de Dante para que
+       se vea igual que su propio pivote de Excel (Total arriba, desagregado abajo con
+       % de cada almacén sobre el total) y para que la tarjeta ocupe la misma altura que
+       las demás columnas (antes quedaba más corta, "align-items:start" la dejaba con su
+       alto natural en vez de estirarse). -->
+  <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;border-left:4px solid var(--blue);display:flex;flex-direction:column;">
     <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">📦 Principal</div>
+    <div id="sk-warn-dup" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:5px 6px;margin-bottom:8px;font-size:8px;color:#991b1b;font-weight:600;line-height:1.3;">
+      ⚠️ Dos almacenes muestran el mismo valor — probable error de lectura de columnas del Stock Actual. No confíes en este desglose hasta revisar.
+    </div>
     <div style="margin-bottom:8px;">
       <div class="kv" id="sk-monto-gral" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Valor TOTAL S/ (todos los almacenes)</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Valor TOTAL S/ (todos los almacenes) · 100%</div>
     </div>
-    <div style="border-top:1px dashed #cbd5e1;padding-top:7px;margin-bottom:6px;" title="Stock válido para venta — es el que se usa en el resto de la pestaña (cobertura, matriz, sugerido)">
-      <div class="kv" id="sk-monto" style="font-size:14px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Principal (001) S/</div>
+    <div style="border-top:1px dashed #cbd5e1;padding-top:7px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;gap:4px;" title="Stock válido para venta — es el que se usa en el resto de la pestaña (cobertura, matriz, sugerido)">
+      <div>
+        <div class="kv" id="sk-monto" style="font-size:14px;font-weight:800;color:var(--blue);line-height:1;">—</div>
+        <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Principal (001) S/</div>
+      </div>
+      <span id="sk-monto-pct" style="font-size:9px;font-weight:700;color:var(--blue);white-space:nowrap;">—%</span>
     </div>
-    <div style="margin-bottom:6px;" title="Stock NO disponible para venta — se muestra solo como referencia">
-      <div class="kv" id="sk-monto-alm2" style="font-size:14px;font-weight:800;color:#92400e;line-height:1;">—</div>
-      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. 2da Cond. (002) S/</div>
+    <div style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;gap:4px;" title="Stock NO disponible para venta — se muestra solo como referencia">
+      <div>
+        <div class="kv" id="sk-monto-alm2" style="font-size:14px;font-weight:800;color:#92400e;line-height:1;">—</div>
+        <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. 2da Cond. (002) S/</div>
+      </div>
+      <span id="sk-monto-alm2-pct" style="font-size:9px;font-weight:700;color:#92400e;white-space:nowrap;">—%</span>
     </div>
-    <div style="margin-bottom:6px;" title="Stock NO disponible para venta — se muestra solo como referencia">
-      <div class="kv" id="sk-monto-alm3" style="font-size:14px;font-weight:800;color:#991b1b;line-height:1;">—</div>
-      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Averías (003) S/</div>
+    <div style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:baseline;gap:4px;" title="Stock NO disponible para venta — se muestra solo como referencia">
+      <div>
+        <div class="kv" id="sk-monto-alm3" style="font-size:14px;font-weight:800;color:#991b1b;line-height:1;">—</div>
+        <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Averías (003) S/</div>
+      </div>
+      <span id="sk-monto-alm3-pct" style="font-size:9px;font-weight:700;color:#991b1b;white-space:nowrap;">—%</span>
     </div>
-    <div style="margin-bottom:8px;" title="Resto de almacenes del SIG (código 4, 20, etc.) no identificados como Principal/2da Cond./Averías — residual para que la suma de todas las líneas cuadre exacto con el Valor TOTAL del Stock Actual">
-      <div class="kv" id="sk-monto-otros" style="font-size:14px;font-weight:800;color:#6b7280;line-height:1;">—</div>
-      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Otros almacenes S/</div>
+    <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:baseline;gap:4px;" title="Resto de almacenes del SIG (código 4, 20, etc.) no identificados como Principal/2da Cond./Averías — residual para que la suma de todas las líneas cuadre exacto con el Valor TOTAL del Stock Actual">
+      <div>
+        <div class="kv" id="sk-monto-otros" style="font-size:14px;font-weight:800;color:#6b7280;line-height:1;">—</div>
+        <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Otros almacenes S/</div>
+      </div>
+      <span id="sk-monto-otros-pct" style="font-size:9px;font-weight:700;color:#6b7280;white-space:nowrap;">—%</span>
     </div>
+    <div style="flex:1;"></div>
     <div style="border-top:1px dashed #cbd5e1;padding-top:7px;margin-bottom:8px;">
       <div class="kv" id="sk-total" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
       <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total SKUs</div>
     </div>
-    <div>
+    <div title="Incluye Almacén Principal (001) + Almacén 020, a pedido de Dante. El resto de la pestaña (stock vendible/disponible) usa SOLO el 001.">
       <div class="kv" id="sk-items" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
-      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total ítems (Alm. Principal)</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:1px;">Total ítems (Alm. Principal 001+020)</div>
     </div>
   </div>
 
@@ -959,6 +979,10 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <select class="sel" id="ss-mca" onchange="filtrarStock()" title="Filtrar por marca">
         <option value="">Todas las marcas</option>
       </select>
+      <!-- 01-oct-2026 (2da ronda): filtros Surtido/Canal surtido, a pedido de Dante,
+           mismos nombres/criterios que en Ventas & Cobertura (ms-surt-v/ms-canal-v). -->
+      <div class="ms-wrap" id="ms-surt-s"></div>
+      <div class="ms-wrap" id="ms-canal-s"></div>
       <button class="btn btn-o" onclick="expStock()">⬇ Excel</button>
     </div>
   </div>
@@ -2591,6 +2615,23 @@ function parsearStockActual(wb, fname) {
   if (iPrin < 0) iPrin = colAlmacenPorCodigo(1);
   if (i2da  < 0) i2da  = colAlmacenPorCodigo(2);
   if (iAver < 0) iAver = colAlmacenPorCodigo(3);
+  // 01-oct-2026 (2da ronda): Dante indicó que, SOLO para la tarjeta "Total ítems
+  // (Alm. Principal)", el almacén 020 del SIG debe sumarse junto al 001 (es una
+  // ubicación que Dante considera parte operativa del Almacén Principal) — pero el
+  // resto de la herramienta (stock "vendible": cobertura, matriz, sugerido de compra)
+  // debe seguir usando EXCLUSIVAMENTE el almacén 001, sin el 020. Por eso el código 20
+  // se trackea aparte (i20/alm20/stk20) y nunca se mezcla con `prin`/`stock`.
+  const i20 = colAlmacenPorCodigo(20);
+
+  // 01-oct-2026 (2da ronda): verificación defensiva — si dos almacenes distintos
+  // (Principal/2da Cond./Averías) resuelven a LA MISMA columna del archivo, es señal
+  // de que el formato del SIG volvió a cambiar y el detector enganchó mal (ya pasó
+  // una vez, ver bug #16). En ese caso se invalida la columna repetida en vez de
+  // arrastrar un número duplicado en silencio, y se avisa en el estado de carga.
+  let _colisionAlmacenes = false;
+  if (iPrin>-1 && iPrin===i2da)  { i2da  = -1; _colisionAlmacenes = true; }
+  if (iPrin>-1 && iPrin===iAver) { iAver = -1; _colisionAlmacenes = true; }
+  if (i2da >-1 && i2da ===iAver) { iAver = -1; _colisionAlmacenes = true; }
 
   const num = v => parseFloat(String(v==null?'0':v).replace(/,/g,''))||0;
 
@@ -2609,6 +2650,7 @@ function parsearStockActual(wb, fname) {
     const prin = iPrin>-1 ? num(row[iPrin]) : 0;
     const sda  = i2da >-1 ? num(row[i2da])  : 0;
     const aver = iAver>-1 ? num(row[iAver]) : 0;
+    const alm20 = i20>-1 ? num(row[i20]) : 0; // solo para "Total ítems (Alm. Principal)" — ver nota arriba
     const cat  = iGrup > -1 ? String(row[iGrup]||'').trim() : inferirCat(cod,desc);
     const cu   = num(row[iCU   > -1 ? iCU   : 7]);
     // 01-oct-2026: "Valor TOTAL (todos los almacenes)" se toma DIRECTO de la columna
@@ -2625,6 +2667,7 @@ function parsearStockActual(wb, fname) {
       kMap[cod].stock      = prin;          // solo alm. principal
       kMap[cod].stk2       = sda;           // referencia 2da condición
       kMap[cod].stk3       = aver;          // referencia averías
+      kMap[cod].stk20      = alm20;         // referencia alm. 020 — SOLO para "Total ítems", nunca para stock vendible
       kMap[cod].stockReal  = true;
       kMap[cod].costoTotal = prin * (cu > 0 ? cu : kMap[cod].costoUnit || 0);
       kMap[cod].costoTotalArchivo = ctArchivo; // valor real del SKU en TODOS los almacenes, tal cual el Excel
@@ -2643,7 +2686,7 @@ function parsearStockActual(wb, fname) {
       if (stockTotal !== 0 || sda !== 0 || aver !== 0 || ctArchivo !== 0) {
         D.kardex.push({ cod, desc, linea: inferirLinea(cod,desc),
           cat: cat||inferirCat(cod,desc), marca:'S/M', gama:inferirGama(cod,desc),
-          meses: new Array(14).fill(0), stock:stockTotal, stk2:sda, stk3:aver,
+          meses: new Array(14).fill(0), stock:stockTotal, stk2:sda, stk3:aver, stk20:alm20,
           cobDias:null, activo:'ACTIVO', stockReal:true,
           costoUnit:cu, costoTotal:stockTotal*cu, costoTotalArchivo:ctArchivo });
       }
@@ -2662,7 +2705,14 @@ function parsearStockActual(wb, fname) {
       act6m:i.meses.slice(-6).filter(v=>v>0).length,
       share:(i.costoTotalArchivo!=null?i.costoTotalArchivo:i.costoTotal)/totalVal}));
 
-  setSt('stock',`✅ Stock real cargado · ${enriquecidos} SKUs actualizados · cobertura y sugerido calculados sobre stock oficial`,true);
+  if (_colisionAlmacenes) {
+    // No debería pasar con el formato ya conocido del SIG, pero si el reporte cambia de
+    // layout otra vez (como ya pasó una vez, ver bug #16), mejor avisar en pantalla que
+    // mostrar dos almacenes distintos con el mismo número en silencio.
+    setSt('stock',`⚠️ Stock cargado, pero el detector de columnas de almacén encontró una colisión (dos almacenes resolvieron a la misma columna) — revisa el desglose por almacén en Inventario Actual, puede no ser confiable con este archivo. Avisar a soporte si persiste.`,false);
+  } else {
+    setSt('stock',`✅ Stock real cargado · ${enriquecidos} SKUs actualizados · cobertura y sugerido calculados sobre stock oficial`,true);
+  }
   document.getElementById('ck-stock').textContent = D.stock.length.toLocaleString();
 
   // Banner verde en pane-ventas indicando que el stock real está activo
@@ -3177,6 +3227,32 @@ function renderStock(){
 
   // Filtro de marca
   if(mca) data=data.filter(i=>(i.marca||'S/M')===mca);
+
+  // 01-oct-2026 (2da ronda): filtros de Surtido / Canal Surtido, pedido explícito de
+  // Dante para que Inventario Actual tenga los mismos filtros que Ventas & Cobertura.
+  // Misma lógica/labels que allá (ver actualizarFiltrosVentas/filtrarVentas) para que
+  // "Surtido" y "Canal surtido" signifiquen exactamente lo mismo en ambas pestañas.
+  const surtSelS=getMultiSel('ms-surt-s');
+  if(surtSelS.length) data=surtSelS[0]==='__NONE__'?[]:data.filter(i=>{
+    const enCal=SURTIDO_CALIDDA[i.cod]||null;
+    const enMyb=SURTIDO_MYBEES[i.cod]||null;
+    const tSt=(i.stock||0)>0;
+    const activo=enCal==='ACTIVO'||enMyb==='ACTIVO';
+    const estado=activo&&tSt?'ACT_STOCK':activo?'ACT_NOSTOCK':tSt?'INACT_STOCK':'INACT_NOSTOCK';
+    return surtSelS.includes(estado);
+  });
+  const canalSelS=getMultiSel('ms-canal-s');
+  if(canalSelS.length) data=canalSelS[0]==='__NONE__'?[]:data.filter(i=>{
+    const enCal=SURTIDO_CALIDDA[i.cod]==='ACTIVO';
+    const enMyb=SURTIDO_MYBEES[i.cod]==='ACTIVO';
+    return canalSelS.some(c=>
+      c==='CALIDDA'?(enCal&&!enMyb):
+      c==='MYBEES' ?(enMyb&&!enCal):
+      c==='AMBOS'  ?(enCal&&enMyb) :
+      c==='NINGUNO'?(!enCal&&!enMyb):false
+    );
+  });
+
   // Aplicar matriz rotación × valor ANTES del filtro de tipo
   data = calcMatriz(data);
   if(mat) data=data.filter(i=>i.tipo===mat);
@@ -3204,12 +3280,29 @@ function renderStock(){
   const montoGral=data.reduce((s,i)=>s+(i.costoTotalArchivo!=null?i.costoTotalArchivo:(i.costoTotal||0)),0);
   const montoOtros=Math.max(0,montoGral-monto-montoAlm2-montoAlm3);
   const withCob=data.map(s=>s.cobDias!==undefined?s.cobDias:null);
+  const _baseGral=montoGral||1;
+  const _pctG=v=>(v/_baseGral*100).toFixed(1)+'%';
   document.getElementById('sk-total').textContent=total.toLocaleString();
   document.getElementById('sk-monto').textContent='S/'+Math.round(monto).toLocaleString('es-PE');
   document.getElementById('sk-monto-alm2').textContent='S/'+Math.round(montoAlm2).toLocaleString('es-PE');
   document.getElementById('sk-monto-alm3').textContent='S/'+Math.round(montoAlm3).toLocaleString('es-PE');
   document.getElementById('sk-monto-otros').textContent='S/'+Math.round(montoOtros).toLocaleString('es-PE');
   document.getElementById('sk-monto-gral').textContent='S/'+Math.round(montoGral).toLocaleString('es-PE');
+  // 01-oct-2026 (2da ronda): % de cada línea sobre el Valor TOTAL — pedido de Dante
+  // ("estructura similar [a su Excel] en donde se indique el total arriba y luego el
+  // desagregado con sus porcentajes").
+  const setPctEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=_pctG(v);};
+  setPctEl('sk-monto-pct',monto);
+  setPctEl('sk-monto-alm2-pct',montoAlm2);
+  setPctEl('sk-monto-alm3-pct',montoAlm3);
+  setPctEl('sk-monto-otros-pct',montoOtros);
+  // 01-oct-2026 (2da ronda): aviso visual si dos almacenes distintos muestran el mismo
+  // valor exacto (>0) — señal de que el detector de columnas del Stock Actual volvió a
+  // confundir dos almacenes (ya pasó una vez, bug #16). Mejor avisar en pantalla que
+  // dejar pasar un número duplicado sin que se note.
+  const _warnDup = monto>0 && (Math.abs(monto-montoAlm2)<0.5 || Math.abs(monto-montoAlm3)<0.5 || (montoAlm2>0 && Math.abs(montoAlm2-montoAlm3)<0.5));
+  const _warnEl = document.getElementById('sk-warn-dup');
+  if (_warnEl) _warnEl.style.display = _warnDup ? 'block' : 'none';
   const nCrit=withCob.filter(c=>c!==null&&c<7).length;
   const nWarn=withCob.filter(c=>c!==null&&c>=7&&c<30).length;
   const nOk=withCob.filter(c=>c!==null&&c>=30).length;
@@ -3220,8 +3313,12 @@ function renderStock(){
   setEl('sk-warn',nWarn); setEl('sk-warn-pct',(nWarn/totalCob*100).toFixed(1)+'%');
   setEl('sk-ok',nOk);     setEl('sk-ok-pct',(nOk/totalCob*100).toFixed(1)+'%');
   setEl('sk-svtas',nSvtas); setEl('sk-svtas-pct',(nSvtas/totalCob*100).toFixed(1)+'%');
-  // Total ítems = suma de cantidades
-  const totalItems = data.reduce((s,d)=>s+(d.cant||0),0);
+  // Total ítems (Alm. Principal) = suma de cantidades del almacén 001 **+ almacén 020**.
+  // 01-oct-2026 (2da ronda): a pedido explícito de Dante, SOLO esta tarjeta combina 001+020
+  // (él considera el 020 parte operativa del Almacén Principal) — el resto de la pestaña
+  // (stock "vendible" para cobertura/matriz/sugerido) sigue siendo EXCLUSIVAMENTE 001
+  // (campo `cant`/`stock`, sin tocar). Ver `stk20` en parsearStockActual().
+  const totalItems = data.reduce((s,d)=>s+(d.cant||0)+(d.stk20||0),0);
   setEl('sk-items', totalItems.toLocaleString('es-PE'));
   // Clases: SKUs + Montos S/
   const fmtS=v=>Math.round(v).toLocaleString('es-PE');
@@ -3910,6 +4007,22 @@ function actualizarFiltrosStock(){
   poblarSelect('ss-mca',mcas,'Todas las marcas');;
   poblarSelect('ss-lin',lins,'Todas las líneas');
   poblarSelect('ss-cat',cats,'Todas las categorías');
+  // 01-oct-2026 (2da ronda): Surtido / Canal surtido en Inventario Actual — mismos
+  // labels/criterios que ya usa Ventas & Cobertura (ver actualizarFiltrosVentas).
+  const SURT_LABELS_S={
+    'ACT_STOCK':    '✅ Activo con stock',
+    'ACT_NOSTOCK':  '🔴 Activo sin stock',
+    'INACT_STOCK':  '🟡 Fuera de surtido + con stock',
+    'INACT_NOSTOCK':'⚫ Fuera de surtido + sin stock'
+  };
+  buildMultiDropdown('ms-surt-s',Object.keys(SURT_LABELS_S),'Surtido','filtrarStock',SURT_LABELS_S);
+  const CANAL_SURT_S = {
+    'CALIDDA': '🔵 Solo Calidda',
+    'MYBEES':  '🟠 Solo Mybees',
+    'AMBOS':   '✅ Calidda + Mybees',
+    'NINGUNO': '⚪ Sin surtido activo'
+  };
+  buildMultiDropdown('ms-canal-s', Object.keys(CANAL_SURT_S), 'Canal surtido', 'filtrarStock', CANAL_SURT_S);
 }
 
 function actualizarFiltrosObs(){
@@ -4220,13 +4333,49 @@ function _cfgStock(){
   const q=(document.getElementById('ss-q')||{}).value||'';
   const lin=(document.getElementById('ss-lin')||{}).value||'';
   const cat=(document.getElementById('ss-cat')||{}).value||'';
+  const cob=(document.getElementById('ss-cob')||{}).value||'';
   const mca=(document.getElementById('ss-mca')||{}).value||'';
   const mat=(document.getElementById('ss-mat')||{}).value||'';
-  let data=[...D.stock];
+  // 01-oct-2026 (2da ronda): el export no replicaba TODOS los filtros activos en pantalla
+  // (faltaba el de Cobertura por completo, y los nuevos de Surtido/Canal surtido) —
+  // Dante reportó que el Excel no reflejaba lo que se veía filtrado en la tabla. Ahora
+  // _cfgStock() aplica exactamente la misma cadena de filtros que renderStock(), en el
+  // mismo orden, para que sea estructuralmente imposible que vuelvan a divergir.
+  let data=D.stock.map(s=>{
+    const k=(D.kardex.find(kk=>kk.cod===s.cod))||null;
+    const vta3m=s.vta3m!==undefined?s.vta3m:(k?k.meses.slice(-3).reduce((a,b)=>a+b,0):0);
+    const vtaMes=s.vtaMes!==undefined?s.vtaMes:Math.round(vta3m/3*10)/10;
+    const cobDias=s.cobDias!==undefined?s.cobDias:(vtaMes>0?Math.round(s.cant/vtaMes*30):null);
+    return {...s,vta3m,vtaMes,cobDias};
+  });
   if(q)   data=data.filter(i=>i.cod.includes(q)||i.desc.toLowerCase().includes(q.toLowerCase()));
   if(lin) data=data.filter(i=>i.linea===lin);
   if(cat) data=data.filter(i=>i.cat===cat);
+  if(cob==='crit') data=data.filter(i=>i.cobDias!==null&&i.cobDias<7);
+  else if(cob==='warn') data=data.filter(i=>i.cobDias!==null&&i.cobDias>=7&&i.cobDias<30);
+  else if(cob==='ok') data=data.filter(i=>i.cobDias!==null&&i.cobDias>=30);
+  else if(cob==='svtas') data=data.filter(i=>i.cobDias===null||i.vta3m===0);
   if(mca) data=data.filter(i=>(i.marca||'S/M')===mca);
+  const surtSelS=getMultiSel('ms-surt-s');
+  if(surtSelS.length) data=surtSelS[0]==='__NONE__'?[]:data.filter(i=>{
+    const enCal=SURTIDO_CALIDDA[i.cod]||null;
+    const enMyb=SURTIDO_MYBEES[i.cod]||null;
+    const tSt=(i.stock||0)>0;
+    const activo=enCal==='ACTIVO'||enMyb==='ACTIVO';
+    const estado=activo&&tSt?'ACT_STOCK':activo?'ACT_NOSTOCK':tSt?'INACT_STOCK':'INACT_NOSTOCK';
+    return surtSelS.includes(estado);
+  });
+  const canalSelS=getMultiSel('ms-canal-s');
+  if(canalSelS.length) data=canalSelS[0]==='__NONE__'?[]:data.filter(i=>{
+    const enCal=SURTIDO_CALIDDA[i.cod]==='ACTIVO';
+    const enMyb=SURTIDO_MYBEES[i.cod]==='ACTIVO';
+    return canalSelS.some(c=>
+      c==='CALIDDA'?(enCal&&!enMyb):
+      c==='MYBEES' ?(enMyb&&!enCal):
+      c==='AMBOS'  ?(enCal&&enMyb) :
+      c==='NINGUNO'?(!enCal&&!enMyb):false
+    );
+  });
   // Calcular clasificación antes del filtro por tipo (igual que renderStock)
   data = calcMatriz(data);
   if(mat) data=data.filter(i=>i.tipo===mat);
@@ -4234,7 +4383,10 @@ function _cfgStock(){
   const partes=[];
   if(q) partes.push('Búsqueda:"'+q+'"');
   if(lin) partes.push('Línea:'+lin); if(cat) partes.push('Cat:'+cat);
+  if(cob) partes.push('Cobertura:'+cob);
   if(mca) partes.push('Marca:'+mca); if(mat) partes.push('Clasif:'+mat);
+  if(surtSelS.length) partes.push('Surtido:'+(surtSelS[0]==='__NONE__'?'ninguno':surtSelS.join(',')));
+  if(canalSelS.length) partes.push('Canal surtido:'+(canalSelS[0]==='__NONE__'?'ninguno':canalSelS.join(',')));
   return {
     datos:data.map(i=>[i.cod,i.desc,i.linea||'',i.cat,i.marca||'S/M',
       i.tipo||'—',i.cant||0,i.costoUnit||0,
