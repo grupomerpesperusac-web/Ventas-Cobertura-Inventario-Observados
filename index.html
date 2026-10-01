@@ -475,7 +475,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <!-- Volumen -->
   <div style="background:var(--bg2);border-radius:8px;padding:10px 14px;border-left:4px solid var(--blue);">
     <div style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📦 Volumen</div>
-    <div style="display:flex;gap:16px;">
+    <div style="display:grid;grid-template-columns:auto 1fr;column-gap:32px;row-gap:9px;align-items:end;">
       <div>
         <div class="kv" id="vk-skus" style="font-size:18px;font-weight:800;color:var(--blue);line-height:1;">—</div>
         <div style="font-size:9px;color:var(--text3);">SKUs activos</div>
@@ -484,6 +484,28 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <div>
         <div class="kv" id="vk-total3m" style="font-size:18px;font-weight:800;color:var(--blue);line-height:1;">—</div>
         <div style="font-size:9px;color:var(--text3);">Unid. salidas <span id="vk-total3m-per">6M</span></div>
+      </div>
+      <div style="border-top:1px dashed #cbd5e1;padding-top:7px;">
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span class="kv" id="vk-constock" style="font-size:14px;font-weight:800;color:#166534;">—</span>
+          <span id="vk-constock-pct" style="font-size:9px;font-weight:700;color:#166534;">—%</span>
+        </div>
+        <div style="font-size:8px;color:var(--text3);">SKU con stock</div>
+      </div>
+      <div style="border-top:1px dashed #cbd5e1;padding-top:7px;">
+        <span class="kv" id="vk-constock-3m" style="font-size:13px;font-weight:800;color:#166534;">—</span>
+        <div style="font-size:8px;color:var(--text3);">Salidas <span id="vk-constock-per">6M</span></div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span class="kv" id="vk-actsinstock" style="font-size:14px;font-weight:800;color:#991b1b;">—</span>
+          <span id="vk-actsinstock-pct" style="font-size:9px;font-weight:700;color:#991b1b;">—%</span>
+        </div>
+        <div style="font-size:8px;color:var(--text3);">Activo sin stock</div>
+      </div>
+      <div>
+        <span class="kv" id="vk-actsinstock-3m" style="font-size:13px;font-weight:800;color:#991b1b;">—</span>
+        <div style="font-size:8px;color:var(--text3);">Salidas <span id="vk-actsinstock-per">6M</span></div>
       </div>
     </div>
   </div>
@@ -606,13 +628,13 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
         <span style="font-size:9px;font-weight:600;color:var(--text2);">Período:</span>
         <button id="btn-p3" data-p="3" class="btn-ms" onclick="setPeriodo(3)" style="background:#e2e8f0;">3M</button>
         <button id="btn-p6" data-p="6" class="btn-ms" onclick="setPeriodo(6)" style="background:var(--blue);color:#fff;">6M</button>
-        <button id="btn-p12" data-p="12" class="btn-ms" onclick="setPeriodo(12)">12M</button>
+        <button id="btn-p9" data-p="9" class="btn-ms" onclick="setPeriodo(9)">9M</button>
         <select class="sel" id="sv-cob" onchange="filtrarVentas()" title="Filtrar por rango de cobertura" style="font-size:9px;">
           <option value="">⏱ Cobertura: Todas</option>
-          <option value="crit">🔴 &lt;7d — Crítico</option>
-          <option value="norm">🔵 8–90d — Normal</option>
-          <option value="exc">⚫ &gt;90d — Exceso</option>
-          <option value="svta">⬜ Sin ventas</option>
+          <option value="crit">🔴 &lt;7d — Crítica</option>
+          <option value="norm">🟡 7–30d — Baja</option>
+          <option value="exc">🟢 ≥30d — OK</option>
+          <option value="svta">⬜ Sin cobertura</option>
         </select>
         <label style="display:flex;align-items:center;gap:4px;font-size:9px;cursor:pointer;padding:3px 8px;border:1px solid #c084fc;border-radius:4px;background:#fdf4ff;color:#7e22ce;white-space:nowrap;" title="Solo SKUs que requieren reposición (Compra Sug. > 0)"><input type="checkbox" id="cb-compra-sug" onchange="filtrarVentas()" style="accent-color:#7e22ce;width:12px;height:12px;"> ▲ Necesitan reposición</label>
         <button class="btn btn-o" onclick="expVentas()">⬇ Excel</button>
@@ -2709,7 +2731,15 @@ function procesarTodo(){
       // Recalcular cobertura con el stock correcto del archivo Stock Actual
       const vtaMes = k.meses.slice(-6).reduce((a,b)=>a+b,0)/6;
       k.cobDias = vtaMes > 0 ? Math.round(k.stock / vtaMes * 30) : null;
-      k.activo  = k.stock > 0 ? 'ACTIVO' : (k.meses.slice(-6).some(v=>v>0) ? 'ACTIVO' : 'APAGADO');
+      // 30-sep-2026: k.activo YA NO se fija aquí de forma estática (antes:
+      // ACTIVO si stock>0 O si vendió algo en los últimos 6 meses fijos).
+      // Esa definición ignoraba el período elegido en pantalla (3M/6M/9M) y,
+      // al considerar el stock, casi todo salía "ACTIVO" (con el quiebre/
+      // sobre-stock de Merpes casi cualquier SKU tiene stock>0), dejando el
+      // filtro "Apagados" prácticamente vacío siempre — bug reportado por
+      // Dante (30-sep-2026). Ahora activo/apagado se recalcula en cada
+      // renderVentas() en función exclusivamente de las ventas del período
+      // seleccionado (ver bloque "Recalcular según período" más abajo).
     }
   });
 
@@ -2736,6 +2766,29 @@ function renderVentas(){
   const cat=(document.getElementById('sv-cat')||{}).value||'';
   const est=(document.getElementById('sv-est')||{}).value||'';
   const ord=(document.getElementById('sv-ord')||{}).value||'total3m';
+
+  // Recalcular SIEMPRE sobre TODO D.kardex y ANTES de aplicar cualquier
+  // filtro — incluido el de Activos/Apagados (sv-est), que depende
+  // directamente de esto. 30-sep-2026: antes esto corría DESPUÉS del
+  // filtro de estado, usando el i.activo de la renderización anterior (o,
+  // en la primera carga, uno fijo por stock que casi nunca marcaba
+  // "APAGADO" — ver nota en el parser). Eso dejaba "Apagados" vacío en la
+  // práctica y desincronizaba el filtro de categorías cuando se combinaba
+  // con él. Ahora activo/apagado es 100% función de las ventas del
+  // período elegido (3M/6M/9M): sin venta en ese período = APAGADO.
+  const _P=PERIODO_BASE;
+  D.kardex.forEach(i=>{
+    i._3m=i.meses.slice(-_P).reduce((a,b)=>a+b,0);
+    i._prom=Math.round(i._3m/_P*10)/10;
+    // Cobertura días desde stock y venta mensual
+    i.cob=i.cobDias||(i.stock>0&&i._prom>0?Math.round(i.stock/i._prom*30):null);
+    // Stock mínimo = 50% del consumo promedio mensual del período
+    i.stkMin=Math.ceil(i._prom*0.5);
+    // Compra sugerida = max(0, stkMin - stock actual)
+    i.compraSug=Math.max(0,i.stkMin-(i.stock||0));
+    // Activo/Apagado — puramente por ventas en el período elegido
+    i.activo=i._3m>0?'ACTIVO':'APAGADO';
+  });
 
   let data=[...D.kardex];
   if(q)   data=data.filter(i=>i.cod.includes(q)||i.desc.toLowerCase().includes(q.toLowerCase()));
@@ -2774,26 +2827,17 @@ function renderVentas(){
 
   if(cat) data=data.filter(i=>i.cat===cat);
   if(est) data=data.filter(i=>i.activo===est);
-  const _P=PERIODO_BASE;
-  data.forEach(i=>{
-    i._3m=i.meses.slice(-_P).reduce((a,b)=>a+b,0);
-    i._prom=Math.round(i._3m/_P*10)/10;
-    // Cobertura días desde stock y venta mensual
-    i.cob=i.cobDias||(i.stock>0&&i._prom>0?Math.round(i.stock/i._prom*30):null);
-    // Stock mínimo = 50% del consumo promedio mensual del período
-    i.stkMin=Math.ceil(i._prom*0.5);
-    // Compra sugerida = max(0, stkMin - stock actual)
-    i.compraSug=Math.max(0,i.stkMin-(i.stock||0));
-  });
 
-  // Filtro cobertura — DESPUÉS del forEach donde i.cob ya está calculado
+  // Filtro cobertura — mismos 4 rangos que la tarjeta "Cobertura" de arriba
+  // (antes el dropdown usaba 7/90 y la tarjeta 7/30 — rangos distintos
+  // para el mismo dato; unificado a 7/30 el 30-sep-2026, pedido de Dante).
   const _cobFilt=(document.getElementById('sv-cob')||{}).value||'';
   if(_cobFilt){
     data=data.filter(i=>{
       const _c=i.cob||0;
       if(_cobFilt==='crit') return _c>0&&_c<7;
-      if(_cobFilt==='norm') return _c>=7&&_c<=90;
-      if(_cobFilt==='exc')  return _c>90;
+      if(_cobFilt==='norm') return _c>=7&&_c<30;
+      if(_cobFilt==='exc')  return _c>=30;
       if(_cobFilt==='svta') return !_c||_c<=0;
       return true;
     });
@@ -2817,6 +2861,21 @@ function renderVentas(){
   const tot3m=data.reduce((s,i)=>s+i._3m,0);
   setElV('vk-total3m',tot3m.toLocaleString());
   setElV('vk-total3m-per',_P+'M');
+  // % en función de los SKU ACTIVOS (no del total filtrado) — pedido de
+  // Dante 30-sep-2026, ej: 1000 activos y 800 con stock → 80%.
+  const _pctSobreActivosV=(n)=>nActivosV>0?(n/nActivosV*100).toFixed(1)+'%':'—%';
+  // SKUs con stock (del set filtrado) + sus salidas del período
+  const dataConStockV=data.filter(i=>(i.stock||0)>0);
+  setElV('vk-constock',dataConStockV.length.toLocaleString());
+  setElV('vk-constock-pct',_pctSobreActivosV(dataConStockV.length));
+  setElV('vk-constock-3m',dataConStockV.reduce((s,i)=>s+i._3m,0).toLocaleString());
+  setElV('vk-constock-per',_P+'M');
+  // SKU activos pero SIN stock + sus salidas del período
+  const dataActSinStockV=data.filter(i=>i.activo==='ACTIVO'&&(i.stock||0)<=0);
+  setElV('vk-actsinstock',dataActSinStockV.length.toLocaleString());
+  setElV('vk-actsinstock-pct',_pctSobreActivosV(dataActSinStockV.length));
+  setElV('vk-actsinstock-3m',dataActSinStockV.reduce((s,i)=>s+i._3m,0).toLocaleString());
+  setElV('vk-actsinstock-per',_P+'M');
 
   // ② Cobertura — 4 criterios
   const cobs=data.filter(i=>i.cob>0).map(i=>i.cob);
@@ -3896,7 +3955,7 @@ function setPeriodo(p){
   const lblV=document.getElementById('vk-total3m-per');
   if(lblV)lblV.textContent=p+'M';
   // Resaltar botón activo
-  ['btn-p3','btn-p6','btn-p12'].forEach(id=>{
+  ['btn-p3','btn-p6','btn-p9'].forEach(id=>{
     const b=document.getElementById(id);
     if(b)b.style.background=b.dataset.p==p?'var(--blue)':'var(--bg2)';
     if(b)b.style.color=b.dataset.p==p?'#fff':'var(--text1)';
@@ -5507,9 +5566,15 @@ function aplicarEstadoGitHub(data) {
       s.vta3m=ult3;s.vtaMes=Math.round(ult3/3*10)/10;s.cobDias=s.vtaMes>0?Math.round(s.cant/s.vtaMes*30):null;}
     });
     if(D.oc&&D.oc.length>0){const ocCods=new Set(D.oc.map(o=>o.cod));D.obs.forEach(it=>{if(ocCods.has(it.cod)){const ocs=D.oc.filter(o=>o.cod===it.cod);it.ocActiva=ocs.map(o=>o.noc||'OC').filter(Boolean);if(it.accion==='COMPRAR')it.accion='ARRIBAR';}});}
+    // 30-sep-2026: reconstruir las listas de filtros (categorías, líneas,
+    // etc.) ANTES de renderizar — antes era al revés, y cada sync remoto
+    // reconstruía los checkboxes de los multi-select (todos marcados de
+    // nuevo) DESPUÉS de haber filtrado/pintado la tabla con la selección
+    // previa del usuario, dejando esa selección "huérfana" (checkboxes
+    // reseteados visualmente pero sin volver a filtrar). Pedido de Dante.
+    actualizarFiltrosVentas();actualizarFiltrosStock();actualizarFiltrosObs();actualizarFiltrosCompras();
     renderVentas();renderSugerido();renderStock();renderObs();renderCompras();
     if(D.sust&&D.sust.length>0){cruceObsSust();renderSust();}
-    actualizarFiltrosVentas();actualizarFiltrosStock();actualizarFiltrosObs();actualizarFiltrosCompras();
   } catch(re){console.warn('Re-render:',re);}
   // Deja constancia en este navegador de que ya está al día con este ts
   // exacto de publicación (no "ahora") — así una edición local posterior
