@@ -770,9 +770,13 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
       <div class="kv" id="sk-monto-alm2" style="font-size:14px;font-weight:800;color:#92400e;line-height:1;">—</div>
       <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. 2da Cond. (002) S/</div>
     </div>
-    <div style="margin-bottom:8px;" title="Stock NO disponible para venta — se muestra solo como referencia">
+    <div style="margin-bottom:6px;" title="Stock NO disponible para venta — se muestra solo como referencia">
       <div class="kv" id="sk-monto-alm3" style="font-size:14px;font-weight:800;color:#991b1b;line-height:1;">—</div>
       <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Alm. Averías (003) S/</div>
+    </div>
+    <div style="margin-bottom:8px;" title="Resto de almacenes del SIG (código 4, 20, etc.) no identificados como Principal/2da Cond./Averías — residual para que la suma de todas las líneas cuadre exacto con el Valor TOTAL del Stock Actual">
+      <div class="kv" id="sk-monto-otros" style="font-size:14px;font-weight:800;color:#6b7280;line-height:1;">—</div>
+      <div style="font-size:8px;color:var(--text3);margin-top:1px;">↳ Otros almacenes S/</div>
     </div>
     <div style="border-top:1px dashed #cbd5e1;padding-top:7px;margin-bottom:8px;">
       <div class="kv" id="sk-total" style="font-size:20px;font-weight:800;color:var(--blue);line-height:1;">—</div>
@@ -2550,14 +2554,43 @@ function parsearStockActual(wb, fname) {
     return;
   }
 
-  const hdr   = raw[hdrR].map(v=>String(v==null?'':v).trim());
+  const hdrRaw = raw[hdrR];                           // valores crudos (los códigos de almacén suelen venir como número, no texto)
+  const hdr    = hdrRaw.map(v=>String(v==null?'':v).trim());
   const iCod  = hdr.findIndex(h=>/^c[oó]digo$/i.test(h));
   const iDesc = hdr.findIndex(h=>/descrip/i.test(h));
-  const iPrin = hdr.findIndex(h=>/principal/i.test(h));
-  const i2da  = hdr.findIndex(h=>/2da|segunda/i.test(h));
-  const iAver = hdr.findIndex(h=>/averia/i.test(h));
   const iGrup = hdr.findIndex(h=>/grupo/i.test(h));
   const iCU   = hdr.findIndex(h=>/costo unit/i.test(h));
+  const iCT   = hdr.findIndex(h=>/costo total/i.test(h));
+
+  // 01-oct-2026 (corregido): las columnas de Alm. Principal/2da Condición/Averías casi
+  // nunca vienen rotuladas con texto ("principal"/"2da"/"averia") en el reporte real del
+  // SIG — se exportan con el CÓDIGO NUMÉRICO del almacén (1, 2, 3, 4, 5, 7, ...), y según
+  // la exportación el SIG a veces antepone columnas de resumen (U.Centro/U.Almacen/
+  // Diferencia) ANTES de esas columnas de almacén, lo que desplaza su posición de un
+  // archivo a otro. El código anterior asumía siempre las columnas D/E/F (índice 3/4/5) —
+  // eso coincidía con el almacén 1/2/3 en reportes SIN esas 3 columnas de resumen, pero en
+  // cuanto el SIG las agrega (caso real: REPORTE_DE_STOCK_ACTUAL_AL_30.09.26_v2.xlsx), D/E/F
+  // pasan a ser U.Centro/U.Almacen/Diferencia — y "Alm. Principal" terminaba leyendo
+  // prácticamente el total de TODOS los almacenes, no solo el 001. Ahora se busca primero
+  // por texto (por si el SIG sí nombra la columna alguna vez) y, si no aparece, se ubica la
+  // columna cuyo encabezado sea LITERALMENTE el código numérico del almacén (1/2/3),
+  // restringiendo la búsqueda a ANTES de "Costo Unitario"/"Grupo Materiales" para no
+  // confundirla con un posible bloque de VALOR por almacén repetido más a la derecha.
+  const limiteBusq = iCU>-1 ? iCU : (iGrup>-1 ? iGrup : hdrRaw.length);
+  function colAlmacenPorCodigo(codigo){
+    for (let c=0; c<limiteBusq; c++){
+      const v = hdrRaw[c];
+      if (v==null) continue;
+      if ((typeof v==='number' && v===codigo) || String(v).trim()===String(codigo)) return c;
+    }
+    return -1;
+  }
+  let iPrin = hdr.findIndex(h=>/principal/i.test(h));
+  let i2da  = hdr.findIndex(h=>/2da|segunda/i.test(h));
+  let iAver = hdr.findIndex(h=>/averia/i.test(h));
+  if (iPrin < 0) iPrin = colAlmacenPorCodigo(1);
+  if (i2da  < 0) i2da  = colAlmacenPorCodigo(2);
+  if (iAver < 0) iAver = colAlmacenPorCodigo(3);
 
   const num = v => parseFloat(String(v==null?'0':v).replace(/,/g,''))||0;
 
@@ -2573,18 +2606,20 @@ function parsearStockActual(wb, fname) {
     const desc = String(row[iDesc > -1 ? iDesc : 1]||'').trim();
     if (excluir(cod, desc)) continue;
 
-    const prin = num(row[iPrin > -1 ? iPrin : 3]);
-    const sda  = num(row[i2da  > -1 ? i2da  : 4]);
-    const aver = num(row[iAver > -1 ? iAver : 5]);
+    const prin = iPrin>-1 ? num(row[iPrin]) : 0;
+    const sda  = i2da >-1 ? num(row[i2da])  : 0;
+    const aver = iAver>-1 ? num(row[iAver]) : 0;
     const cat  = iGrup > -1 ? String(row[iGrup]||'').trim() : inferirCat(cod,desc);
     const cu   = num(row[iCU   > -1 ? iCU   : 7]);
-    const total= (prin + sda + aver) * cu;
+    // 01-oct-2026: "Valor TOTAL (todos los almacenes)" se toma DIRECTO de la columna
+    // "Costo Total" del propio Stock Actual (no se recalcula sumando almacenes conocidos)
+    // — así el total de la herramienta siempre hace match exacto con el Excel fuente,
+    // incluso con almacenes no mapeados a Principal/2da/Averías (ej. código 4, 20...).
+    // Si el archivo no trae esa columna, se cae al cálculo por almacenes identificados.
+    const ctArchivo = iCT>-1 ? num(row[iCT]) : (prin+sda+aver)*cu;
 
     if (kMap[cod]) {
       // Enriquecer item existente del kardex con detalle de almacenes
-      kMap[cod].stk1 = prin;
-      kMap[cod].stk2 = sda;
-      kMap[cod].stk3 = aver;
       // *** Stock válido para venta = SOLO Almacén Principal 001 (prin)
       // Alm.002 (2da condición) y Alm.003 (Averías) NO están disponibles para venta
       kMap[cod].stock      = prin;          // solo alm. principal
@@ -2592,30 +2627,40 @@ function parsearStockActual(wb, fname) {
       kMap[cod].stk3       = aver;          // referencia averías
       kMap[cod].stockReal  = true;
       kMap[cod].costoTotal = prin * (cu > 0 ? cu : kMap[cod].costoUnit || 0);
+      kMap[cod].costoTotalArchivo = ctArchivo; // valor real del SKU en TODOS los almacenes, tal cual el Excel
       kMap[cod].cat  = cat || kMap[cod].cat;
       if (cu > 0) kMap[cod].costoUnit = cu;
       enriquecidos++;
     } else {
-      // SKU solo en stock (sin movimiento en kardex)
-      const stockTotal = prin; // solo alm. principal 001
-      if (stockTotal > 0) {
+      // SKU solo en stock (sin movimiento en kardex). 01-oct-2026: antes solo se daba de
+      // alta si tenía stock en Almacén Principal (prin>0) — un SKU con valor únicamente en
+      // 2da Condición/Averías/otro almacén quedaba invisible en TODA la herramienta, lo que
+      // impedía que el total cuadrara con el Excel. Ahora se da de alta con cualquier valor.
+      const stockTotal = prin; // solo alm. principal 001 (stock "vendible")
+      // !==0 (no solo >0): hay SKUs con Costo Total NEGATIVO en el Stock Actual (error de
+      // captura del SIG en algún almacén fuera de Principal/2da/Averías) — si se exige >0
+      // esas líneas se pierden silenciosamente y el total deja de cuadrar con el Excel.
+      if (stockTotal !== 0 || sda !== 0 || aver !== 0 || ctArchivo !== 0) {
         D.kardex.push({ cod, desc, linea: inferirLinea(cod,desc),
           cat: cat||inferirCat(cod,desc), marca:'S/M', gama:inferirGama(cod,desc),
           meses: new Array(14).fill(0), stock:stockTotal, stk2:sda, stk3:aver,
           cobDias:null, activo:'ACTIVO', stockReal:true,
-          costoUnit:cu, costoTotal:stockTotal*cu });
+          costoUnit:cu, costoTotal:stockTotal*cu, costoTotalArchivo:ctArchivo });
       }
     }
   }
 
-  // Recalcular D.stock
-  const totalVal = D.kardex.reduce((s,i)=>s+i.costoTotal,0)||1;
-  D.stock = D.kardex.filter(i=>i.stock>0).sort((a,b)=>b.costoTotal-a.costoTotal)
+  // Recalcular D.stock. 01-oct-2026: ya no exige stock>0 en Almacén Principal — un SKU con
+  // valor solo en 2da Condición/Averías/otro almacén (ctArchivo>0) también debe aparecer en
+  // Inventario Actual, si no, nunca se puede reconciliar el total con el Excel del Stock
+  // Actual (quedaría value fuera de la tabla sin que se note en ningún KPI).
+  const totalVal = D.kardex.reduce((s,i)=>s+(i.costoTotalArchivo!=null?i.costoTotalArchivo:i.costoTotal),0)||1;
+  D.stock = D.kardex.filter(i=>i.stock!==0||i.stk2!==0||i.stk3!==0||(i.costoTotalArchivo||0)!==0).sort((a,b)=>b.costoTotal-a.costoTotal)
     .map(i=>({...i, cant:i.stock,
       vta3m:i.meses.slice(-3).reduce((a,b)=>a+b,0),
       vtaMes:Math.round(i.meses.slice(-6).reduce((a,b)=>a+b,0)/6*10)/10,
       act6m:i.meses.slice(-6).filter(v=>v>0).length,
-      share:i.costoTotal/totalVal}));
+      share:(i.costoTotalArchivo!=null?i.costoTotalArchivo:i.costoTotal)/totalVal}));
 
   setSt('stock',`✅ Stock real cargado · ${enriquecidos} SKUs actualizados · cobertura y sugerido calculados sobre stock oficial`,true);
   document.getElementById('ck-stock').textContent = D.stock.length.toLocaleString();
@@ -3150,12 +3195,20 @@ function renderStock(){
   // si no del Kardex) — no se vuelve a pedir ni se asume otro precio.
   const montoAlm2=data.reduce((s,i)=>s+((i.stk2||0)*(i.costoUnit||0)),0);
   const montoAlm3=data.reduce((s,i)=>s+((i.stk3||0)*(i.costoUnit||0)),0);
-  const montoGral=monto+montoAlm2+montoAlm3;
+  // 01-oct-2026: "Valor TOTAL" ya no es monto+montoAlm2+montoAlm3 (eso solo cubre los
+  // almacenes 1/2/3 identificados) — se toma DIRECTO de costoTotalArchivo, la columna
+  // "Costo Total" del propio Stock Actual, para garantizar match exacto con el Excel de
+  // Dante incluso si hay valor en otros almacenes (código 4, 20, etc.) no mapeados arriba.
+  // Si el SKU no vino del Stock Actual (solo Kardex, sin ese archivo cargado),
+  // costoTotalArchivo no existe y se cae a costoTotal (el cálculo de siempre).
+  const montoGral=data.reduce((s,i)=>s+(i.costoTotalArchivo!=null?i.costoTotalArchivo:(i.costoTotal||0)),0);
+  const montoOtros=Math.max(0,montoGral-monto-montoAlm2-montoAlm3);
   const withCob=data.map(s=>s.cobDias!==undefined?s.cobDias:null);
   document.getElementById('sk-total').textContent=total.toLocaleString();
   document.getElementById('sk-monto').textContent='S/'+Math.round(monto).toLocaleString('es-PE');
   document.getElementById('sk-monto-alm2').textContent='S/'+Math.round(montoAlm2).toLocaleString('es-PE');
   document.getElementById('sk-monto-alm3').textContent='S/'+Math.round(montoAlm3).toLocaleString('es-PE');
+  document.getElementById('sk-monto-otros').textContent='S/'+Math.round(montoOtros).toLocaleString('es-PE');
   document.getElementById('sk-monto-gral').textContent='S/'+Math.round(montoGral).toLocaleString('es-PE');
   const nCrit=withCob.filter(c=>c!==null&&c<7).length;
   const nWarn=withCob.filter(c=>c!==null&&c>=7&&c<30).length;
