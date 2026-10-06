@@ -1161,9 +1161,9 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   </div>
   <div class="tw">
     <table><thead><tr>
-      <th>Fecha Pedido</th><th>N° Pedido</th><th>DNI</th><th>Cliente</th><th>Teléfono</th><th>Canal CC2</th><th>Distrito</th><th>SKU</th><th>Descripción</th><th>Estatus</th><th>Fecha Est. Arribo</th><th>Fecha Est. Atención</th><th>Comprador</th>
+      <th>Fecha Pedido</th><th>N° Pedido</th><th>DNI</th><th>Cliente</th><th>Teléfono</th><th>Canal CC2</th><th>Distrito</th><th>SKU</th><th>Descripción</th><th>Estatus</th><th>SKU Reemplazo</th><th>Desc. Reemplazo</th><th>Fecha Est. Arribo</th><th>Fecha Est. Atención</th><th>Comprador</th>
     </tr></thead>
-    <tbody id="tbody-rep-pedidos"><tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr></tbody>
+    <tbody id="tbody-rep-pedidos"><tr><td colspan="15" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -3812,6 +3812,9 @@ function cambiarReemplazo(cod, nuevoCodRem){
   });
   if(!D.obsAcc) D.obsAcc={};
   D.obsAcc[cod+'_rem']=nuevoCodRem;
+  // 06-oct-2026 (v12): el Reporte Comercial (abajo) ahora muestra SKU/Desc. de
+  // Reemplazo — debe reflejar al instante lo que el comprador edite arriba.
+  renderRepPedidos();
   guardarLS();
 }
 
@@ -4483,7 +4486,11 @@ function _cfgObs(){
       'Reemplazo','Desc. Reemplazo','Stock Reempl.',
       'Comentarios','Sustitución hist.','Fecha Est. Arribo','Fecha Est. Atención','Pedidos/Clientes'],
     titulo:'PRODUCTOS OBSERVADOS', subtitulo:'Gestión de quiebres de stock',
-    filtros:partes.join(' | ')||'Todos',
+    // 05-oct-2026 (v11): línea de cuadre — aquí 1 fila = 1 SKU, pero cada SKU puede
+    // tener varios pedidos de clientes; el Excel "Estatus de Pedidos" trae 1 fila
+    // por pedido. Sin esta nota las compradoras creían que "faltaban" filas.
+    filtros:(partes.join(' | ')||'Todos')+'   ·   Cuadre: '+data.length+' SKUs = '+
+      data.reduce((s,o)=>s+(o.numPed||0),0)+' líneas de pedido en "Estatus de Pedidos Observados" (1 SKU puede tener varios pedidos)',
     archivo:'Observados_'+new Date().toISOString().slice(0,10),
     sheetName:'Observados',
     kpis:[{val:data.length,lbl:'Total observados',color:'red'},
@@ -5297,6 +5304,11 @@ function construirReportePedidos(){
       desc:(d&&d.desc)?d.desc:(p.descrip||''),
       estatus,
       estatusLbl:ACC_LABEL[estatus]||estatus,
+      // 06-oct-2026 (v12): SKU/Descripción de Reemplazo (pedido de María) — mismos
+      // valores que la tabla superior (código ingresado o sugerido por el motor).
+      codRem:(d&&d.codRemEfectivo)?d.codRemEfectivo:'',
+      descRem:(d&&d.descRemEfectivo)?d.descRemEfectivo:'',
+      remSugerido:!!(d&&d.codRemEfectivo&&d.esRemSugerido),
       fechaArribo:(d&&d.fechaArribo)?d.fechaArribo:'',
       fechaAtencion:(d&&d.fechaAtencion)?d.fechaAtencion:'',
       surtido, tipoSurtido,
@@ -5326,7 +5338,7 @@ function renderRepPedidos(){
   if(!tbody) return;
   const cEl=document.getElementById('rp-count');
   if(!D.obsProductos||D.obsProductos.length===0){
-    tbody.innerHTML='<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--text3);">Carga "Observados — Clientes" y "Observados — Productos" en 📥 Carga de Datos para ver este reporte.</td></tr>';
     if(cEl) cEl.textContent='';
     const acEl=document.getElementById('rp-antiguos-count'); if(acEl) acEl.textContent='0';
     return;
@@ -5356,6 +5368,7 @@ function renderRepPedidos(){
     r.cliente.toLowerCase().includes(q) ||
     r.cod.toLowerCase().includes(q) ||
     (r.desc||'').toLowerCase().includes(q) ||
+    (r.codRem||'').toLowerCase().includes(q) || (r.descRem||'').toLowerCase().includes(q) ||
     (r.distrito||'').toLowerCase().includes(q) ||
     (r.telefono||'').toLowerCase().includes(q)
   );
@@ -5390,12 +5403,14 @@ function renderRepPedidos(){
       <td class="mono fw7 blue" style="font-size:10px;cursor:pointer;" onclick="abrirDetalle('${r.cod}','obs')">${r.cod}</td>
       <td style="font-size:10px;max-width:200px;">${r.desc||'—'}</td>
       <td>${chip}</td>
+      <td class="mono fw7" style="font-size:10px;white-space:nowrap;">${r.codRem||'—'}</td>
+      <td style="font-size:10px;max-width:200px;">${r.descRem?(r.descRem+(r.remSugerido?' <span class="chip c-gris" style="font-size:7px;">sugerido</span>':'')):'—'}</td>
       <td style="font-size:9px;">${r.fechaArribo||'—'}</td>
       <td style="font-size:9px;">${r.fechaAtencion||'—'}</td>
       <td style="font-size:10px;">${r.comprador}</td>
     </tr>`;
   });
-  tbody.innerHTML=html||'<tr><td colspan="13" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
+  tbody.innerHTML=html||'<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--text3);">Sin resultados con ese filtro</td></tr>';
   if(cEl) cEl.textContent=data.length+' de '+rows.length+' líneas';
 }
 
@@ -5420,6 +5435,7 @@ function expRepComercial(){
   if(q) data=data.filter(r=>
     r.numero.toLowerCase().includes(q)||r.cliente.toLowerCase().includes(q)||
     r.cod.toLowerCase().includes(q)||(r.desc||'').toLowerCase().includes(q)||
+    (r.codRem||'').toLowerCase().includes(q)||(r.descRem||'').toLowerCase().includes(q)||
     (r.distrito||'').toLowerCase().includes(q)||(r.telefono||'').toLowerCase().includes(q));
   if(estS.length) data=estS[0]==='__NONE__'?[]:data.filter(r=>estS.includes(r.estatus));
   if(compS.length) data=compS[0]==='__NONE__'?[]:data.filter(r=>compS.includes(r.comprador));
@@ -5459,18 +5475,20 @@ function expRepComercial(){
 
   exportarExcelMerpes({
     datos:data.map(r=>[r.fecha||'',r.numero,r.dni,r.cliente,r.telefono,r.canal,r.distrito,r.cod,r.desc,
-      ACC_LABEL_X[r.estatus]||r.estatus,r.fechaArribo||'',r.fechaAtencion||'',r.comprador,r.esAntiguo?'Sí':'No']),
+      ACC_LABEL_X[r.estatus]||r.estatus,r.codRem||'—',r.descRem||'—',r.fechaArribo||'',r.fechaAtencion||'',r.comprador,r.esAntiguo?'Sí':'No']),
     cabeceras:['Fecha Pedido','N° Pedido','DNI','Cliente','Teléfono','Canal CC2','Distrito','SKU','Descripción',
-      'Estatus','Fecha Est. Arribo','Fecha Est. Atención','Comprador','Antiguo (>7d)'],
+      'Estatus','SKU Reemplazo','Desc. Reemplazo','Fecha Est. Arribo','Fecha Est. Atención','Comprador','Antiguo (>7d)'],
     titulo:'ESTATUS DE PEDIDOS OBSERVADOS', subtitulo:'Reporte Comercial — estimados de arribo por cliente y canal',
-    filtros:partes.join(' | ')||'Todos',
+    // 05-oct-2026 (v11): línea de cuadre con "Productos Observados" (1 fila = 1 pedido-SKU).
+    filtros:(partes.join(' | ')||'Todos')+'   ·   Cuadre: '+data.length+' líneas de pedido = '+
+      new Set(data.map(r=>r.cod)).size+' SKUs distintos de "Productos Observados" (1 SKU puede tener varios pedidos)',
     archivo:'Estatus_Pedidos_Observados_'+new Date().toISOString().slice(0,10),
     sheetName:'Estatus Pedidos',
     kpis:[{val:data.length,lbl:'Líneas de pedido',color:'blue'},
           {val:pendCount,lbl:'Pendientes (comprar/cambiar/convertir)',color:'red'},
           {val:antiguosCount,lbl:'Antiguos (>7 días)',color:'amber'},
           {val:[...new Set(data.map(r=>r.numero))].length,lbl:'Pedidos únicos',color:'amber'}],
-    colWidths:[13,14,13,32,14,18,16,12,35,16,14,14,16,12],
+    colWidths:[13,14,13,32,14,18,16,12,35,16,13,35,14,14,16,12],
   });
 }
 
