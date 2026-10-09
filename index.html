@@ -134,7 +134,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 .pk-ok{color:#065f46;font-weight:700;}
 .pk-bad{color:#b91c1c;font-weight:700;}
 .pk-mini{font-size:9px;color:var(--muted);}
-.pk-form{display:grid;grid-template-columns:minmax(260px,2fr) 90px minmax(150px,1fr) minmax(160px,1.4fr) auto;gap:8px;align-items:end;padding:10px 12px;}
+.pk-form{display:grid;grid-template-columns:minmax(150px,.9fr) minmax(260px,2fr) 90px minmax(150px,1fr) minmax(160px,1.4fr) auto;gap:8px;align-items:end;padding:10px 12px;}
 .pk-form label{display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
 .pk-form .si,.pk-form .sel{width:100%;box-sizing:border-box;}
 @media(max-width:900px){.pk-form{grid-template-columns:1fr 1fr;}}
@@ -1522,6 +1522,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div class="tbox">
   <div class="tbox-h"><h3>➕ Programar conversión de pack</h3><span class="pk-mini" id="pk-stockinfo"></span></div>
   <div class="pk-form">
+    <div><label>👤 Quién registra</label><select class="sel" id="pk-user2" onchange="pkSetUser(this.value)"></select></div>
     <div><label>Pack (SKU final)</label><select class="sel" id="pk-sku" onchange="pkPreview()"></select></div>
     <div><label>Cantidad</label><input class="si" id="pk-cant" type="number" min="1" step="1" value="1" oninput="pkPreview()"></div>
     <div><label>Canal de ventas</label><input class="si" id="pk-canal" list="pk-canales" placeholder="Ej: Calidda"><datalist id="pk-canales"></datalist></div>
@@ -1570,6 +1571,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
       <textarea class="si" id="pk-cfg-can" rows="3" style="width:100%;box-sizing:border-box;"></textarea></div>
   </div>
   <button class="btn btn-b" style="margin-top:8px;" onclick="pkGuardarCfg()">💾 Guardar configuración</button>
+  <button class="btn btn-r" style="margin-top:8px;margin-left:8px;" onclick="pkVaciarConversiones()" title="Elimina todas las conversiones registradas (no toca el catálogo)">🧹 Vaciar todas las conversiones</button>
 </details>
 </div>
 
@@ -7314,17 +7316,57 @@ function expReporteCompleto() {
 var PK={cfg:{ts:'2026-10-09T00:00:00.000Z',
          feriados:['2026-10-08','2026-11-01','2026-12-08','2026-12-09','2026-12-25'],
          canales:['Calidda','Backus / Mybees','Aliados','Tiendas','Web','Corporativo']},
-        cat:{}, ped:{}};
+        cat:{}, ped:{}, rst:''};
 var PKS={ver:'v1',LS:'merpes_packs_v1',LSU:'merpes_packs_user',FILE:'packs_estado.json',BR:'datos-packs',
          sha:null,branchOk:null,dirty:false,busy:false,lastPush:0,lastOk:null,err:null,open:{},started:false,seedDone:false,timer:null};
 var PK_USERS=['María Rojas','Pool Ramírez','Yampier Quispe','Dante Clavijo','Endira Gómez','Cristina Chávez'];
-var PK_SEEDS=[
+var PK_SEEDS_BACKUS=[
+ {sku:"35000048",desc:"PACK CRISTAL (1 MESA CRISTAL + 2 SILLAS CRISTAL)",
+  comps:[{cod:"12000230",cant:1,desc:"MESA CUADRADA KINA LOGO CRISTAL"},{cod:"12000231",cant:2,desc:"SILLAS ZEN - LOGO CRISTAL"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000035",desc:"PACK CRISTAL (1 MESA CRISTAL + 4 SILLAS CRISTAL)",
+  comps:[{cod:"12000230",cant:1,desc:"MESA CUADRADA KINA LOGO CRISTAL"},{cod:"12000231",cant:4,desc:"SILLAS ZEN - LOGO CRISTAL"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000057",desc:"PACK PILSEN (1 MESA PILSEN + 2 SILLAS PILSEN)",
+  comps:[{cod:"12000228",cant:1,desc:"MESA CUADRADA KINA LOGO PILSEN"},{cod:"12000229",cant:2,desc:"SILLAS ZEN - LOGO PILSEN"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000056",desc:"PACK PILSEN (1 MESA PILSEN + 4 SILLAS PILSEN)",
+  comps:[{cod:"12000228",cant:1,desc:"MESA CUADRADA KINA LOGO PILSEN"},{cod:"12000229",cant:4,desc:"SILLAS ZEN - LOGO PILSEN"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000049",desc:"BALANZA COMERCIAL DIGITAL VENTUS B-40 + SET DE CUBIERTOS 16 PIEZAS FACUSA MOD 60. ESCAMA",
+  comps:[{cod:"10000696",cant:1,desc:"BALANZA COMERCIAL DIGITAL VENTUS B-40"},{cod:"15000125",cant:1,desc:"SET DE CUBIERTOS 16 PIEZAS FACUSA MOD 60. ESCAMA"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000061",desc:"OLLA A PRESIÓN FACUSA MOD3 AC 7LT + SET DE CUBIERTOS 16 PIEZAS FACUSA MOD 60. ESCAMA",
+  comps:[{cod:"15000126",cant:1,desc:"OLLA A PRESIÓN FACUSA MOD3 AC 7LT"},{cod:"15000125",cant:1,desc:"SET DE CUBIERTOS 16 PIEZAS FACUSA MOD 60. ESCAMA"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000052",desc:"OLLA A PRESIÓN UNIVERSAL INOX PRO 7LT + SET DE CUBIERTOS 16 PIEZAS FACUSA MOD 60. ESCAMA",
+  comps:[{cod:"15000163",cant:1,desc:"OLLA A PRESIÓN UNIVERSAL INOX PRO 7LT"},{cod:"15000125",cant:1,desc:"SET DE CUBIERTOS 16 PIEZAS FACUSA MOD 60. ESCAMA"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000065",desc:"MINI PARRILLA NEGRA PLEGABLE MEAT MASTER + SET DE UTENSILIOS FACUSA (FT1074) X 03 BBQ (T-E-P) C/MANDIL",
+  comps:[{cod:"15000132",cant:1,desc:"MINI PARRILLA NEGRA PLEGABLE MEAT MASTER"},{cod:"15000144",cant:1,desc:"SET DE UTENSILIOS FACUSA (FT1074) X 03 BBQ (T-E-P) C/MANDIL"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000067",desc:"JUEGO DE OLLAS CASA JOVEN 12 PIEZAS ACERO INOXIDABLE + SET DE UTENSILIOS 12 PIEZAS",
+  comps:[{cod:"15000083",cant:1,desc:"JUEGO DE OLLAS CASA JOVEN 12 PIEZAS ACERO INOXIDABLE"},{cod:"15000140",cant:1,desc:"SET DE UTENSILIOS 12 PIEZAS"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000017",desc:"PACK 6 VASOS CRISTAL+ 1 MANDIL PUBLICITARIO CRISTAL",
+  comps:[{cod:"15000090",cant:6,desc:"VASO CRISTOBAL GDE.LLANO C/LOGO CERVEZA CRISTAL"},{cod:"15000089",cant:1,desc:"MANDIL PUBLICITARIO CON BOLSILLO MATERIAL DRILL 80X50 CM CRISTAL"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000055",desc:"CHALECO DEPORTIVO DRY FIT AZUL/AMARILLO LOGO CRISTAL 6 PIEZAS + PELOTA FIFA WC 26 TRIONDA CLUB JD8028",
+  comps:[{cod:"15000110",cant:6,desc:"CHALECO DEPORTIVO DRY FIT AZUL/AMARILLO LOGO CRISTAL"},{cod:"32000306",cant:1,desc:"PELOTA FIFA WC 26 TRIONDA CLUB JD8028"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'},
+ {sku:"35000066",desc:"TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE TV C32K4HG + PARLANTE RECARGABLE 80CM CO LUCES SZ-8832",
+  comps:[{cod:"10000865",cant:1,desc:"TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE TV C32K4HG"},{cod:"10001015",cant:1,desc:"PARLANTE RECARGABLE 80CM CO LUCES SZ-8832"}],
+  ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'}];
+var PK_SEEDS_PREV=[
  {sku:'35000064',desc:'PACK RIFA MUNDIALISTA PILSEN (3 MESAS PILSEN + 4 BANCOS PILSEN + 5 SILLAS PILSEN + PACK DE 12 VASOS DE VIDRIO + TELEVISOR CAIXUN)',
   comps:[{cod:'10000865',cant:1},{cod:'12000228',cant:3},{cod:'12000229',cant:5},{cod:'12000305',cant:4},{cod:'15000167',cant:2}],
   ts:'2026-10-09T00:00:00.000Z',por:'Sistema (precarga desde correo de María Rojas del 23/09/2026)'},
  {sku:'35000040',desc:'PROYECTOR ANDROID HY300 PRO HD 1280 COD. N496 + PELOTA FIFA WC 26 TRIONDA CLUB JD8028_MABE',
   comps:[{cod:'11011468',cant:1},{cod:'32000306',cant:1}],
   ts:'2026-10-09T00:00:00.000Z',por:'Sistema (precarga desde correo de María Rojas del 21/07/2026)'}];
+var PK_SEEDS=PK_SEEDS_BACKUS.concat(PK_SEEDS_PREV);
+// Reinicio único de pruebas (v16): las conversiones registradas ANTES de este momento se anulan una sola vez.
+var PK_RESET_ID='v16-backus', PK_RESET_CUTOFF='2026-10-09T12:00:00.000Z';
 
 function _pkE(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function _pkNow(){return new Date().toISOString();}
@@ -7361,11 +7403,47 @@ function pkSetUser(v){
   pkRenderUser();
 }
 function pkRenderUser(){
-  var el=document.getElementById('pk-user'); if(!el) return; var u=pkUser();
+  var u=pkUser();
   var opts='<option value="">— elige tu nombre —</option>'+PK_USERS.map(function(n){return '<option'+(n===u?' selected':'')+'>'+_pkE(n)+'</option>';}).join('')+'<option value="__otro">Otro…</option>';
-  el.innerHTML=opts;
+  ['pk-user','pk-user2'].forEach(function(id){var el=document.getElementById(id); if(el){el.innerHTML=opts; el.style.borderColor=u?'':'#b91c1c'; el.style.background=u?'':'#fef2f2';}});
 }
-function pkNeedUser(){var u=pkUser(); if(!u){alert('Primero elige tu nombre en "Estoy trabajando como". Queda registrado quién hizo cada paso.'); return '';} return u;}
+// Si no hay nombre elegido, muestra una ventana grande para elegirlo y CONTINÚA la acción que se estaba haciendo.
+function pkNeedUser(retry){
+  var u=pkUser(); if(u) return u;
+  var old=document.getElementById('pk-ovl'); if(old) old.remove();
+  var d=document.createElement('div'); d.id='pk-ovl';
+  d.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  d.innerHTML='<div style="background:#fff;border-radius:10px;padding:20px 24px;max-width:420px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.35);">'+
+    '<div style="font-size:15px;font-weight:800;color:#1d4ed8;margin-bottom:4px;">👤 ¿Quién eres?</div>'+
+    '<div style="font-size:11px;color:#6b7280;margin-bottom:12px;">Queda registrado quién hizo cada paso. Solo se pregunta una vez en este computador.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'+PK_USERS.map(function(n,i){return '<button class="btn btn-o" style="justify-content:center;padding:9px;font-size:12px;" data-i="'+i+'">'+_pkE(n)+'</button>';}).join('')+
+    '<button class="btn" style="justify-content:center;padding:9px;font-size:12px;border-color:#d1d5db;" data-i="otro">Otro…</button></div>'+
+    '<div style="text-align:right;margin-top:10px;"><a href="#" id="pk-ovl-x" style="font-size:11px;color:#6b7280;">Cancelar</a></div></div>';
+  document.body.appendChild(d);
+  d.addEventListener('click',function(e){
+    var t=e.target; if(t.id==='pk-ovl-x'||t===d){e.preventDefault();d.remove();return;}
+    var i=t.getAttribute&&t.getAttribute('data-i'); if(i==null) return;
+    var nombre=(i==='otro')?(prompt('Escribe tu nombre completo:')||'').trim():PK_USERS[+i]; if(!nombre) return;
+    if(PK_USERS.indexOf(nombre)<0) PK_USERS.push(nombre);
+    try{localStorage.setItem(PKS.LSU,nombre);}catch(err){}
+    d.remove(); pkRenderUser(); if(typeof retry==='function') retry();
+  });
+  return '';
+}
+// Aviso flotante (no bloquea). kind: ok | warn
+function pkToast(html,kind,ms){
+  var t=document.getElementById('pk-toast'); if(t) t.remove();
+  t=document.createElement('div'); t.id='pk-toast';
+  var warn=(kind==='warn');
+  t.style.cssText='position:fixed;right:18px;bottom:18px;z-index:99998;max-width:460px;padding:12px 14px;border-radius:8px;font-size:12px;box-shadow:0 8px 28px rgba(0,0,0,.3);border:2px solid '+(warn?'#b91c1c':'#059669')+';background:'+(warn?'#fef2f2':'#ecfdf5')+';color:'+(warn?'#7f1d1d':'#064e3b')+';';
+  t.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;"><div style="flex:1">'+html+'</div><a href="#" style="color:inherit;font-weight:800;text-decoration:none;" onclick="this.closest(\'#pk-toast\').remove();return false;">✖</a></div>';
+  document.body.appendChild(t);
+  if(ms!==0) setTimeout(function(){var x=document.getElementById('pk-toast'); if(x===t) t.remove();},ms||(warn?30000:3500));
+}
+function pkFaltantesTxt(det,max){
+  var f=(det||[]).filter(function(d){return d.falta>0;});
+  return f.slice(0,max||99).map(function(d){return '<b>'+_pkE(d.cod)+'</b> '+_pkE((d.desc||'').slice(0,40))+' — faltan <b>'+d.falta+'</b>';}).join('<br>');
+}
 
 // ---------- fusión por registro ----------
 function _pkMergeMap(a,b){
@@ -7383,14 +7461,15 @@ function pkMerge(remote){
   PK.cat=_pkMergeMap(PK.cat,remote.cat||{});
   PK.ped=_pkMergeMap(PK.ped,remote.ped||{});
   if(remote.cfg && _pkMs(remote.cfg.ts)>=_pkMs(PK.cfg.ts)) PK.cfg=remote.cfg;
+  if(remote.rst && String(remote.rst)>String(PK.rst||'')) PK.rst=remote.rst;
 }
-function pkSerialize(){return JSON.stringify({v:1,upd:_pkNow(),cfg:PK.cfg,cat:PK.cat,ped:PK.ped});}
+function pkSerialize(){return JSON.stringify({v:1,upd:_pkNow(),cfg:PK.cfg,rst:PK.rst||'',cat:PK.cat,ped:PK.ped});}
 
 // ---------- copia local ----------
 function pkSaveLocal(){try{localStorage.setItem(PKS.LS,JSON.stringify({PK:PK,dirty:PKS.dirty,seedDone:PKS.seedDone}));}catch(e){}}
 function pkLoadLocal(){
   try{var raw=localStorage.getItem(PKS.LS); if(!raw) return;
-    var p=JSON.parse(raw); if(p&&p.PK){PK.cat=p.PK.cat||{};PK.ped=p.PK.ped||{};if(p.PK.cfg)PK.cfg=p.PK.cfg;PKS.dirty=!!p.dirty;PKS.seedDone=!!p.seedDone;}
+    var p=JSON.parse(raw); if(p&&p.PK){PK.cat=p.PK.cat||{};PK.ped=p.PK.ped||{};PK.rst=p.PK.rst||'';if(p.PK.cfg)PK.cfg=p.PK.cfg;PKS.dirty=!!p.dirty;PKS.seedDone=!!p.seedDone;}
   }catch(e){}
 }
 
@@ -7435,6 +7514,28 @@ function pkSetSync(kind,msg){
   el.textContent=ic+' Packs: '+msg;
   el.className='chip '+({ok:'c-verde',busy:'c-amber',err:'c-rojo',off:'c-gris'}[kind]||'c-gris');
 }
+// Precarga idempotente: agrega cada pack semilla que NO exista aún en el catálogo (ni siquiera como eliminado),
+// y aplica una sola vez el reinicio de conversiones de prueba. Se ejecuta tras fusionar con lo último del servidor.
+function pkAplicarPrecarga(){
+  PK_SEEDS.forEach(function(sd){ if(!PK.cat[sd.sku]){ PK.cat[sd.sku]=JSON.parse(JSON.stringify(sd)); PKS.dirty=true; } });
+  if(String(PK.rst||'')<PK_RESET_ID){
+    var n=0, now=_pkNow();
+    Object.keys(PK.ped).forEach(function(i){ var o=PK.ped[i]; if(o.del) return;
+      if(_pkMs(o.creadoTs)>=_pkMs(PK_RESET_CUTOFF)) return; // creadas después del despliegue v16 se respetan
+      o.del=true; o.delPor='Sistema (reinicio de pruebas v16)'; o.delTs=now; o.ts=now; n++; });
+    PK.rst=PK_RESET_ID; PKS.dirty=true; PKS.reseteadas=n;
+  }
+}
+// Vaciado manual de todas las conversiones (catálogo y configuración no se tocan).
+function pkVaciarConversiones(){
+  var u=pkNeedUser(function(){pkVaciarConversiones();}); if(!u) return;
+  var vivas=Object.keys(PK.ped).filter(function(i){return !PK.ped[i].del;});
+  if(!vivas.length){alert('No hay conversiones registradas.');return;}
+  var t=prompt('Se eliminarán TODAS las conversiones ('+vivas.length+') para todos los usuarios. El catálogo de packs no se toca.\n\nEscribe VACIAR para confirmar:');
+  if(t===null||t.trim().toUpperCase()!=='VACIAR') return;
+  var now=_pkNow(); vivas.forEach(function(i){var o=PK.ped[i]; o.del=true; o.delPor=u; o.delTs=now; o.ts=now;});
+  PKS.edit=null; pkMutated(); pkToast('🧹 Conversiones vaciadas ('+vivas.length+').','ok');
+}
 // Descarga lo último, lo fusiona con lo local y, si hay cambios locales, lo sube.
 async function pkSyncNow(manual){
   if(PKS.busy) return; PKS.busy=true;
@@ -7443,8 +7544,7 @@ async function pkSyncNow(manual){
     for(var intento=0; intento<4; intento++){
       var rem=await pkPull();
       if(rem.exists && rem.data) pkMerge(rem.data);
-      if(!rem.exists && !PKS.seedDone && !Object.keys(PK.cat).length){ PK_SEEDS.forEach(function(s){PK.cat[s.sku]=JSON.parse(JSON.stringify(s));}); PKS.seedDone=true; PKS.dirty=true; }
-      if(rem.exists) PKS.seedDone=true;
+      pkAplicarPrecarga();
       if(PKS.dirty || !rem.exists){
         var res=await pkPush();
         if(res==='CONFLICT') continue;
@@ -7499,7 +7599,12 @@ function pkStockMap(){
 function pkHayStock(){return !!(D.stock&&D.stock.length);}
 function pkDesc(cod){
   var k=(D.kardex||[]).find(function(x){return x.cod===cod;}); if(k) return k.desc;
-  var s=(D.stock||[]).find(function(x){return x.cod===cod;}); return s?s.desc:'';
+  var s=(D.stock||[]).find(function(x){return x.cod===cod;}); if(s) return s.desc;
+  return _pkCompDesc(cod);
+}
+function _pkCompDesc(cod){
+  for(var k in PK.cat){ var cs=(PK.cat[k].comps||[]); for(var i=0;i<cs.length;i++) if(cs[i].cod===cod&&cs[i].desc) return cs[i].desc; }
+  return '';
 }
 function pkPacks(){return Object.keys(PK.cat).map(function(k){return PK.cat[k];}).filter(function(p){return !p.del;}).sort(function(a,b){return a.sku<b.sku?-1:1;});}
 function pkNecesidad(p,cant){return (p.comps||[]).map(function(c){return {cod:c.cod,cant:c.cant,nec:c.cant*cant};});}
@@ -7538,40 +7643,66 @@ function pkHoras(o,ahora){
 function _pkOrden(id){return PK.ped[id];}
 function _pkHist(o,por,ac){o.historial=(o.historial||[]);o.historial.push({ts:_pkNow(),por:por,ac:ac});o.ts=_pkNow();}
 function pkRegistrar(){
-  var u=pkNeedUser(); if(!u) return;
+  var u=pkNeedUser(function(){pkRegistrar();}); if(!u) return;
   var sku=document.getElementById('pk-sku').value, cant=parseInt(document.getElementById('pk-cant').value,10);
   var canal=(document.getElementById('pk-canal').value||'').trim(), nota=(document.getElementById('pk-nota').value||'').trim();
   if(!sku||!PK.cat[sku]){alert('Elige el pack a convertir.');return;}
   if(!(cant>0)){alert('La cantidad debe ser mayor a 0.');return;}
   if(!canal){alert('Indica el canal de ventas.');return;}
-  var p=PK.cat[sku], falt=[];
-  if(pkHayStock()){var st=pkStockMap(); pkNecesidad(p,cant).forEach(function(c){var tot=0;
-      Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(!o.del&&(o.estado==='PENDIENTE'||o.estado==='PROCESO')&&PK.cat[o.sku]){(PK.cat[o.sku].comps||[]).forEach(function(cc){if(cc.cod===c.cod) tot+=cc.cant*o.cant;});}});
-      var disp=(st[c.cod]||0)-tot; if(disp<c.nec) falt.push(c.cod+' ('+pkDesc(c.cod).slice(0,28)+'): faltan '+(c.nec-Math.max(0,disp)));});}
-  if(falt.length && !confirm('No hay stock suficiente de todos los componentes en almacén principal:\n\n'+falt.join('\n')+'\n\n¿Registrar la necesidad igualmente?')) return;
+  var p=PK.cat[sku];
   var id='PK'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();
   var o={id:id,sku:sku,cant:cant,canal:canal,nota:nota,estado:'PENDIENTE',creadoTs:_pkNow(),creadoPor:u,ts:_pkNow(),historial:[{ts:_pkNow(),por:u,ac:'REGISTRÓ la necesidad'}]};
   PK.ped[id]=o;
   if(canal && PK.cfg.canales.indexOf(canal)<0){PK.cfg.canales.push(canal);PK.cfg.ts=_pkNow();}
   document.getElementById('pk-nota').value=''; document.getElementById('pk-cant').value='1';
   pkMutated();
+  var an=pkAnalisis()[id];
+  if(an&&an.estado==='FALTA') pkToast('<div style="font-weight:800;font-size:13px;margin-bottom:4px;">⚠ Necesidad registrada, pero NO hay stock completo</div>'+pkFaltantesTxt(an.det)+'<div style="margin-top:6px;font-size:10px;">Almacén verá este faltante en rojo. Compras debe reponer estos componentes.</div>','warn');
+  else if(an&&an.estado==='SINDATOS') pkToast('✔ Necesidad registrada. <i>(No hay stock cargado: no se pudo validar.)</i>','ok');
+  else pkToast('✔ Necesidad registrada: '+cant+' × '+_pkE(sku)+' · stock completo.','ok');
 }
-function pkTomar(id){var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o||o.estado!=='PENDIENTE') return;
+// Editar una necesidad abierta (cantidad, pack, canal o nota)
+function pkEditarOrden(id){PKS.edit=id; PKS.open[id]=false; renderPacks(); var e=document.getElementById('pk-e-cant'); if(e){e.focus();e.select();}}
+function pkCancelarEdicion(){PKS.edit=null; renderPacks();}
+function pkGuardarOrden(id){
+  var u=pkNeedUser(function(){pkGuardarOrden(id);}); if(!u) return; var o=_pkOrden(id); if(!o) return;
+  var sku=document.getElementById('pk-e-sku').value, cant=parseInt(document.getElementById('pk-e-cant').value,10),
+      canal=(document.getElementById('pk-e-canal').value||'').trim(), nota=(document.getElementById('pk-e-nota').value||'').trim();
+  if(!PK.cat[sku]){alert('Elige el pack.');return;} if(!(cant>0)){alert('La cantidad debe ser mayor a 0.');return;} if(!canal){alert('Indica el canal.');return;}
+  var cambios=[]; if(sku!==o.sku) cambios.push('pack '+o.sku+' → '+sku); if(cant!==o.cant) cambios.push('cantidad '+o.cant+' → '+cant);
+  if(canal!==o.canal) cambios.push('canal '+o.canal+' → '+canal); if(nota!==(o.nota||'')) cambios.push('nota');
+  if(!cambios.length){PKS.edit=null;renderPacks();return;}
+  if(o.estado==='PROCESO'&&!confirm('Almacén ya tomó esta orden ('+(o.tomadoPor||'')+'). ¿Aplicar el cambio igualmente?')) return;
+  o.sku=sku; o.cant=cant; o.canal=canal; o.nota=nota;
+  if(canal && PK.cfg.canales.indexOf(canal)<0){PK.cfg.canales.push(canal);PK.cfg.ts=_pkNow();}
+  _pkHist(o,u,'EDITÓ: '+cambios.join('; ')); PKS.edit=null; pkMutated();
+  var an=pkAnalisis()[id];
+  if(an&&an.estado==='FALTA') pkToast('<div style="font-weight:800;font-size:13px;margin-bottom:4px;">⚠ Necesidad actualizada — falta stock</div>'+pkFaltantesTxt(an.det),'warn'); else pkToast('✔ Necesidad actualizada ('+_pkE(cambios.join('; '))+').','ok');
+}
+// Eliminar una necesidad por completo (queda una marca de baja en el archivo compartido)
+function pkEliminarOrden(id){
+  var u=pkNeedUser(function(){pkEliminarOrden(id);}); if(!u) return; var o=_pkOrden(id); if(!o) return;
+  var msg='¿Eliminar esta necesidad de conversión?\n\n'+o.cant+' × '+o.sku+' · '+o.canal+(o.estado==='CONVERTIDO'?'\n\n⚠ YA FUE CONVERTIDA (mov. '+o.mov+'). Se borrará también ese registro.':'');
+  if(!confirm(msg)) return;
+  o.del=true; o.delPor=u; o.delTs=_pkNow(); o.ts=_pkNow(); if(PKS.edit===id) PKS.edit=null; pkMutated();
+  pkToast('🗑 Necesidad eliminada.','ok');
+}
+function pkTomar(id){var u=pkNeedUser(function(){pkTomar(id);}); if(!u) return; var o=_pkOrden(id); if(!o||o.estado!=='PENDIENTE') return;
   o.estado='PROCESO'; o.tomadoTs=_pkNow(); o.tomadoPor=u; _pkHist(o,u,'TOMÓ la orden (en proceso)'); pkMutated();}
 function pkConvertir(id){
-  var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o||(o.estado!=='PENDIENTE'&&o.estado!=='PROCESO')) return;
+  var u=pkNeedUser(function(){pkConvertir(id);}); if(!u) return; var o=_pkOrden(id); if(!o||(o.estado!=='PENDIENTE'&&o.estado!=='PROCESO')) return;
   var inp=document.querySelector('input[data-mov="'+id+'"]'); var mov=(inp&&inp.value||'').trim();
   if(!mov){alert('Escribe el N° de movimiento con el que se hizo la conversión.');if(inp)inp.focus();return;}
   var an=pkAnalisis()[id]; if(an&&an.estado==='FALTA'&&!confirm('El sistema indica que faltan componentes en stock. ¿Confirmas que ya se convirtió?')) return;
   o.estado='CONVERTIDO'; o.mov=mov; o.convTs=_pkNow(); o.convPor=u; _pkHist(o,u,'CONVIRTIÓ — N° movimiento '+mov); pkMutated();
 }
 function pkAnular(id){
-  var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o) return;
+  var u=pkNeedUser(function(){pkAnular(id);}); if(!u) return; var o=_pkOrden(id); if(!o) return;
   var mot=prompt('Motivo de la anulación:'); if(mot===null) return; mot=mot.trim(); if(!mot){alert('Indica el motivo.');return;}
   o.estado='ANULADO'; o.anuladoTs=_pkNow(); o.motivo=mot; _pkHist(o,u,'ANULÓ — '+mot); pkMutated();
 }
 function pkReabrir(id){
-  var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o) return;
+  var u=pkNeedUser(function(){pkReabrir(id);}); if(!u) return; var o=_pkOrden(id); if(!o) return;
   if(!confirm('¿Reabrir esta orden? Se borrará el N° de movimiento y el reloj seguirá corriendo desde el registro original.')) return;
   var prev=o.mov||''; o.estado='PENDIENTE'; o.mov=''; o.convTs=null; o.convPor=''; o.anuladoTs=null; _pkHist(o,u,'REABRIÓ (mov. anterior: '+(prev||'—')+')'); pkMutated();
 }
@@ -7613,7 +7744,7 @@ function pkEdDesc(){
   if(s&&!d.value){var t=pkDesc(s); if(t) d.value=t;}
 }
 function pkGuardarPack(){
-  var u=pkNeedUser(); if(!u) return;
+  var u=pkNeedUser(function(){pkGuardarPack();}); if(!u) return;
   var sku=(document.getElementById('pk-ed-sku').value||'').trim(), desc=(document.getElementById('pk-ed-desc').value||'').trim();
   if(!/^[A-Za-z0-9._-]+$/.test(sku)){alert('Ingresa el SKU final (solo letras, números, punto, guion).');return;}
   var comps=[], seen={}, bad='';
@@ -7621,7 +7752,7 @@ function pkGuardarPack(){
     var c=r.querySelector('.pk-c-cod').value.trim(), n=parseFloat(r.querySelector('.pk-c-cant').value);
     if(!c&&!(n>0)) return;
     if(!/^[A-Za-z0-9._-]+$/.test(c)||!(n>0)){bad='Revisa los componentes: cada fila necesita código y cantidad > 0.';return;}
-    if(seen[c]){bad='El componente '+c+' está repetido: suma las cantidades en una sola fila.';return;} seen[c]=1; comps.push({cod:c,cant:n});
+    if(seen[c]){bad='El componente '+c+' está repetido: suma las cantidades en una sola fila.';return;} seen[c]=1; comps.push({cod:c,cant:n,desc:pkDesc(c)||''});
   });
   if(bad){alert(bad);return;}
   if(!comps.length){alert('Agrega al menos un componente.');return;}
@@ -7631,7 +7762,7 @@ function pkGuardarPack(){
   document.getElementById('pk-editor').style.display='none'; pkMutated();
 }
 function pkEliminarPack(sku){
-  var u=pkNeedUser(); if(!u) return;
+  var u=pkNeedUser(function(){pkEliminarPack(sku);}); if(!u) return;
   var abiertas=Object.keys(PK.ped).filter(function(i){var o=PK.ped[i];return !o.del&&o.sku===sku&&(o.estado==='PENDIENTE'||o.estado==='PROCESO');}).length;
   if(abiertas){alert('No se puede eliminar: hay '+abiertas+' conversión(es) abierta(s) de este pack.');return;}
   if(!confirm('¿Eliminar el pack '+sku+' del catálogo? (Las conversiones ya registradas se conservan.)')) return;
@@ -7646,12 +7777,13 @@ function pkPreview(){
   var hay=pkHayStock(), st=pkStockMap(), comprometido={};
   Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(o.del||(o.estado!=='PENDIENTE'&&o.estado!=='PROCESO')||!PK.cat[o.sku])return;
     PK.cat[o.sku].comps.forEach(function(c){comprometido[c.cod]=(comprometido[c.cod]||0)+c.cant*o.cant;});});
-  var okAll=true, rows=pkNecesidad(p,cant).map(function(c){
-    var disp=(st[c.cod]||0)-(comprometido[c.cod]||0), falta=Math.max(0,c.nec-Math.max(0,disp)); if(falta>0) okAll=false;
+  var okAll=true, faltList=[], rows=pkNecesidad(p,cant).map(function(c){
+    var disp=(st[c.cod]||0)-(comprometido[c.cod]||0), falta=Math.max(0,c.nec-Math.max(0,disp)); if(falta>0){okAll=false; faltList.push({cod:c.cod,desc:pkDesc(c.cod),falta:falta});}
     return '<tr><td class="mono">'+_pkE(c.cod)+'</td><td>'+_pkE(pkDesc(c.cod)||'—')+'</td><td style="text-align:right">'+c.cant+'</td><td style="text-align:right;font-weight:700">'+c.nec+'</td>'+
       '<td style="text-align:right">'+(hay?(st[c.cod]||0):'—')+'</td><td style="text-align:right">'+(hay?(comprometido[c.cod]||0):'—')+'</td>'+
       '<td style="text-align:right">'+(hay?Math.max(0,disp):'—')+'</td><td>'+(!hay?'<span class="pk-mini">sin stock cargado</span>':(falta>0?'<span class="pk-bad">⚠ faltan '+falta+'</span>':'<span class="pk-ok">✔ alcanza</span>'))+'</td></tr>';}).join('');
-  box.innerHTML='<div style="font-size:11px;font-weight:700;margin:4px 0;">'+(hay?(okAll?'<span class="pk-ok">✔ Hay stock suficiente en almacén principal para convertir '+cant+' pack(s)</span>':'<span class="pk-bad">⚠ Stock insuficiente en almacén principal para '+cant+' pack(s)</span>'):'<span class="pk-mini">Sin stock cargado: sincroniza o carga el Stock Actual para validar.</span>')+'</div>'+
+  var faltTxt=pkFaltantesTxt(faltList);
+  box.innerHTML='<div style="font-size:11px;font-weight:700;margin:4px 0;">'+(hay?(okAll?'<span class="pk-ok">✔ Hay stock suficiente en almacén principal para convertir '+cant+' pack(s)</span>':'<div style="background:#fee2e2;border:2px solid #b91c1c;border-radius:6px;padding:8px 10px;color:#7f1d1d;font-size:12px;"><b>⚠ FALTA STOCK en almacén principal para '+cant+' pack(s):</b><br>'+faltTxt+'<div style="font-size:10px;margin-top:3px;">Igual puedes registrar la necesidad: quedará marcada con el faltante.</div></div>'):'<span class="pk-mini">Sin stock cargado: sincroniza o carga el Stock Actual para validar.</span>')+'</div>'+
     '<div class="tw" style="max-height:240px;"><table><thead><tr><th>Código</th><th>Componente</th><th>Por pack</th><th>Necesario</th><th>Stock almacén</th><th>Ya comprometido</th><th>Disponible</th><th>Resultado</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
@@ -7677,8 +7809,8 @@ function _pkFiltradas(an,ahora){
 function renderPacks(){
   var tb=document.getElementById('pk-tbody'); if(!tb) return;
   // preservar lo que alguien esté escribiendo en la tabla
-  var keep={}, act=document.activeElement, actId=act&&act.getAttribute?act.getAttribute('data-mov'):null, sel=null;
-  tb.querySelectorAll('input[data-mov]').forEach(function(i){keep[i.getAttribute('data-mov')]=i.value;});
+  var keep={}, act=document.activeElement, actId=(act&&act.id&&act.hasAttribute&&act.hasAttribute('data-keep'))?act.id:null, sel=null;
+  tb.querySelectorAll('[data-keep]').forEach(function(i){keep[i.id]=i.value;});
   if(actId&&act.selectionStart!=null) sel=act.selectionStart;
   var ahora=Date.now(), an=pkAnalisis(), packs=pkPacks();
   // --- selector de packs y canales (sin pisar la selección)
@@ -7720,12 +7852,12 @@ function renderPacks(){
     else if(o.estado==='CONVERTIDO') tiempo='<div style="font-weight:700;color:'+(h<=24?'#065f46':'#b91c1c')+'">'+pkFmtH(h)+'</div><div class="pk-mini">'+(h<=24?'✔ en plazo':'✖ fuera de plazo')+'</div>';
     else tiempo='<span class="pk-mini">—</span>';
     var stk='<span class="pk-mini">—</span>';
-    if(abierto&&a){ if(a.estado==='OK') stk='<span class="pk-ok">✔ Stock completo</span>'; else if(a.estado==='FALTA') stk='<span class="pk-bad">⚠ Faltan '+a.det.filter(function(d){return d.falta>0;}).length+' componente(s)</span>'; else if(a.estado==='SINDATOS') stk='<span class="pk-mini">sin stock cargado</span>'; else stk='<span class="pk-bad">pack sin definir</span>'; }
-    var mov=abierto?'<input class="si" data-mov="'+o.id+'" placeholder="N° movimiento" style="width:130px;" value="'+_pkE(keep[o.id]||'')+'">':(o.estado==='CONVERTIDO'?'<b class="mono">'+_pkE(o.mov)+'</b>':'<span class="pk-mini">'+_pkE(o.motivo||'—')+'</span>');
+    if(abierto&&a){ if(a.estado==='OK') stk='<span class="pk-ok">✔ Stock completo</span>'; else if(a.estado==='FALTA') stk='<div style="background:#fee2e2;border:1.5px solid #b91c1c;border-radius:5px;padding:4px 6px;color:#7f1d1d;font-size:10px;line-height:1.35;"><b>⚠ FALTA STOCK</b><br>'+pkFaltantesTxt(a.det,3)+(a.det.filter(function(d){return d.falta>0;}).length>3?'<br>…y más':'')+'</div>'; else if(a.estado==='SINDATOS') stk='<span class="pk-mini">sin stock cargado</span>'; else stk='<span class="pk-bad">pack sin definir</span>'; }
+    var mov=abierto?'<input class="si" id="pk-mov-'+o.id+'" data-keep="1" data-mov="'+o.id+'" placeholder="N° movimiento" style="width:130px;" value="'+_pkE(keep['pk-mov-'+o.id]||'')+'">':(o.estado==='CONVERTIDO'?'<b class="mono">'+_pkE(o.mov)+'</b>':'<span class="pk-mini">'+_pkE(o.motivo||'—')+'</span>');
     var acc='';
     if(o.estado==='PENDIENTE') acc+='<button class="btn btn-o" onclick="pkTomar(\''+o.id+'\')">▶ Tomar</button> ';
-    if(abierto) acc+='<button class="btn btn-g" onclick="pkConvertir(\''+o.id+'\')">✔ Convertido</button> <button class="btn btn-r" onclick="pkAnular(\''+o.id+'\')">✖</button>';
-    else acc+='<button class="btn btn-o" onclick="pkReabrir(\''+o.id+'\')">↩ Reabrir</button>';
+    if(abierto) acc+='<button class="btn btn-g" onclick="pkConvertir(\''+o.id+'\')">✔ Convertido</button> <button class="btn btn-o" title="Editar cantidad, pack, canal o nota" onclick="pkEditarOrden(\''+o.id+'\')">✏ Editar</button> <button class="btn btn-r" title="Eliminar esta necesidad" onclick="pkEliminarOrden(\''+o.id+'\')">🗑</button>';
+    else acc+='<button class="btn btn-o" onclick="pkReabrir(\''+o.id+'\')">↩ Reabrir</button> <button class="btn btn-r" title="Eliminar esta necesidad" onclick="pkEliminarOrden(\''+o.id+'\')">🗑</button>';
     var estTxt={PENDIENTE:'PENDIENTE',PROCESO:'EN PROCESO',CONVERTIDO:'CONVERTIDO',ANULADO:'ANULADO'}[o.estado];
     var cls=(abierto&&sem==='ROJO')?'pk-r-venc':((abierto&&sem==='AMBAR')?'pk-r-riesgo':'');
     rows.push('<tr class="'+cls+'"><td class="mono">'+r.rank[o.id]+'</td><td>'+pkFmtFecha(o.creadoTs)+'<div class="pk-mini">'+_pkE(o.creadoPor)+'</div></td>'+
@@ -7733,6 +7865,16 @@ function renderPacks(){
       '<td style="text-align:center;font-weight:800">'+o.cant+'</td><td>'+_pkE(o.canal)+'</td><td>'+stk+' <a href="#" onclick="pkToggle(\''+o.id+'\');return false;" class="pk-mini">'+(PKS.open[o.id]?'▲ ocultar':'▼ detalle')+'</a></td>'+
       '<td><span class="pk-chip-est pk-e-'+o.estado+'">'+estTxt+'</span>'+(o.tomadoPor&&o.estado==='PROCESO'?'<div class="pk-mini">'+_pkE(o.tomadoPor)+'</div>':'')+'</td><td>'+tiempo+'</td><td>'+mov+'</td>'+
       '<td>'+(o.convTs?pkFmtFecha(o.convTs)+'<div class="pk-mini">'+_pkE(o.convPor)+'</div>':'<span class="pk-mini">—</span>')+'</td><td style="white-space:nowrap">'+acc+'</td></tr>');
+    if(PKS.edit===o.id){
+      var kv=function(id,def){return (keep[id]!=null)?keep[id]:def;};
+      rows.push('<tr style="background:#eff6ff;"><td></td><td colspan="10"><div style="display:grid;grid-template-columns:minmax(260px,2fr) 90px minmax(140px,1fr) minmax(160px,1.4fr) auto;gap:8px;align-items:end;padding:6px 0;">'+
+        '<div><label class="pk-mini">PACK</label><select class="sel" id="pk-e-sku" data-keep="1" style="width:100%">'+packs.map(function(q){return '<option value="'+_pkE(q.sku)+'"'+((kv('pk-e-sku',o.sku)===q.sku)?' selected':'')+'>'+_pkE(q.sku)+' — '+_pkE(q.desc.slice(0,60))+'</option>';}).join('')+'</select></div>'+
+        '<div><label class="pk-mini">CANTIDAD</label><input class="si" id="pk-e-cant" data-keep="1" type="number" min="1" step="1" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-cant',o.cant))+'"></div>'+
+        '<div><label class="pk-mini">CANAL</label><input class="si" id="pk-e-canal" data-keep="1" list="pk-canales" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-canal',o.canal))+'"></div>'+
+        '<div><label class="pk-mini">NOTA</label><input class="si" id="pk-e-nota" data-keep="1" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-nota',o.nota||''))+'"></div>'+
+        '<div style="white-space:nowrap"><button class="btn btn-b" onclick="pkGuardarOrden(\''+o.id+'\')">💾 Guardar cambios</button> <button class="btn btn-r" onclick="pkCancelarEdicion()">Cancelar</button></div></div>'+
+        '<div class="pk-mini">Editando la necesidad registrada por '+_pkE(o.creadoPor)+' el '+pkFmtFecha(o.creadoTs)+'. El reloj de 24 h útiles NO se reinicia.</div></td></tr>');
+    }
     if(PKS.open[o.id]){
       var det=(a&&a.det&&a.det.length)?a.det:pkNecesidad(p,o.cant).map(function(c){return {cod:c.cod,desc:pkDesc(c.cod),porPack:c.cant,nec:c.nec,stock:null,disp:null,falta:0};});
       var h2=(o.historial||[]).map(function(x){return '<div class="pk-mini">'+pkFmtFecha(x.ts)+' · <b>'+_pkE(x.por)+'</b> · '+_pkE(x.ac)+'</div>';}).join('');
@@ -7742,7 +7884,7 @@ function renderPacks(){
     }
   });
   tb.innerHTML=rows.join('')||'<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:18px;">Sin conversiones en esta vista.</td></tr>';
-  if(actId){var el=tb.querySelector('input[data-mov="'+actId+'"]'); if(el){el.focus(); if(sel!=null){try{el.setSelectionRange(sel,sel);}catch(e){}}}}
+  if(actId){var el=document.getElementById(actId); if(el){el.focus(); if(sel!=null){try{el.setSelectionRange(sel,sel);}catch(e){}}}}
   // --- catálogo
   var cb=document.getElementById('pk-cat-body');
   if(cb) cb.innerHTML=packs.map(function(p){var arm=pkArmables(p);
