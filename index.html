@@ -116,6 +116,29 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 .acc-sel.anular{background:#f3f4f6;color:#374151;border-color:#d1d5db;}
 .acc-sel.stock{background:#d1fae5;color:#065f46;border-color:#6ee7b7;}
 .acc-sel.convertir{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd;}
+/* ══ PACKS (v14) ══ */
+@keyframes pkblink{0%,100%{opacity:1}50%{opacity:.45}}
+.pk-venc{animation:pkblink 1.2s infinite;}
+.pk-bar{height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden;min-width:70px;margin-top:3px;}
+.pk-bar>i{display:block;height:100%;border-radius:3px;}
+tr.pk-r-venc{background:#fef2f2;box-shadow:inset 4px 0 0 #b91c1c;}
+tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
+.pk-chip-est{display:inline-block;font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px;letter-spacing:.3px;}
+.pk-e-PENDIENTE{background:#dbeafe;color:#1d4ed8;}
+.pk-e-PROCESO{background:#ede9fe;color:#5b21b6;}
+.pk-e-CONVERTIDO{background:#d1fae5;color:#065f46;}
+.pk-e-ANULADO{background:#f3f4f6;color:#6b7280;text-decoration:line-through;}
+.pk-det{background:#f8fafc;}
+.pk-det table{width:auto;min-width:520px;margin:4px 0;}
+.pk-det td,.pk-det th{padding:3px 10px;font-size:10px;}
+.pk-ok{color:#065f46;font-weight:700;}
+.pk-bad{color:#b91c1c;font-weight:700;}
+.pk-mini{font-size:9px;color:var(--muted);}
+.pk-form{display:grid;grid-template-columns:minmax(260px,2fr) 90px minmax(150px,1fr) minmax(160px,1.4fr) auto;gap:8px;align-items:end;padding:10px 12px;}
+.pk-form label{display:block;font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px;}
+.pk-form .si,.pk-form .sel{width:100%;box-sizing:border-box;}
+@media(max-width:900px){.pk-form{grid-template-columns:1fr 1fr;}}
+
 /* ══ CHART BOX (tamaño fijo) ══ */
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-top:14px;}
 .cbox{background:var(--bg2);border:1.5px solid var(--line);border-radius:var(--r);padding:14px;}
@@ -275,6 +298,8 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
     <span class="badge" id="b-fecha">Sin datos</span>
     <span class="badge" id="b-stock">Stock: —</span>
     <span class="badge danger" id="b-obs">Obs: —</span>
+    <span class="badge" id="b-packs" style="display:none;" onclick="gTab('packs');pkOnOpen()" title="Conversiones de packs pendientes con demora"></span>
+    <span class="badge" id="b-pend" style="display:none;cursor:pointer;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700;" onclick="gTab('compartir')" title="Tienes ediciones en Observados que los demás aún NO ven. Haz clic para ir a Publicar / Ver.">✏️ 0 sin publicar</span>
     <span class="badge" id="b-sync" title="Sincronización automática con el estado publicado en GitHub (cada 30 s)">⚫ Sync: —</span>
     <button class="btn btn-o" onclick="abrirCompradores()" style="font-size:11px;">👤 Compradores</button>
     <button class="btn btn-o" onclick="document.getElementById('modal-guia').classList.remove('hidden')" style="font-size:11px;">📋 Guía de formatos</button>
@@ -290,6 +315,7 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
   <button class="tab"     onclick="gTab('obs')"      id="t-obs">🚨 Productos Observados</button>
   <button class="tab"     onclick="gTab('compras')"  id="t-compras">🛒 Últimas Compras</button>
   <button class="tab"     onclick="gTab('sust');initSust()"   id="t-sust">🔄 Sustituciones</button>
+  <button class="tab"     onclick="gTab('packs');pkOnOpen()"  id="t-packs">🎁 Packs</button>
   <button class="tab"     onclick="gTab('compartir')"  id="t-compartir">🌐 Publicar / Ver</button>
 </div>
 <!-- ═══ TAB: CARGA ═══ -->
@@ -1478,6 +1504,75 @@ td{padding:5px 8px;font-size:11px;vertical-align:middle;}
 </div>
 </div>
 
+<div class="pane" id="pane-packs">
+<div class="tip">
+  <b>Conversión de Packs:</b> María programa el pack (SKU final, cantidad y canal) → la herramienta calcula los componentes y valida el stock del almacén principal →
+  Almacén (Pool / Yampier) toma la orden y registra el <b>N° de movimiento</b> al convertir. El reloj cuenta solo <b>horas útiles</b>
+  (L–V 8:00–18:00 · Sáb 9:00–12:00 · sin feriados) y la meta es <b>≤ 24 h útiles</b>.
+  <span class="chip c-verde">🟢 &lt; 12 h</span> <span class="chip c-amber">🟠 12–24 h</span> <span class="chip c-rojo">🔴 ≥ 24 h = vencido</span>
+</div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+  <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
+  <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
+  <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
+</div>
+<div class="krow" id="pk-kpis"></div>
+
+<div class="tbox">
+  <div class="tbox-h"><h3>➕ Programar conversión de pack</h3><span class="pk-mini" id="pk-stockinfo"></span></div>
+  <div class="pk-form">
+    <div><label>Pack (SKU final)</label><select class="sel" id="pk-sku" onchange="pkPreview()"></select></div>
+    <div><label>Cantidad</label><input class="si" id="pk-cant" type="number" min="1" step="1" value="1" oninput="pkPreview()"></div>
+    <div><label>Canal de ventas</label><input class="si" id="pk-canal" list="pk-canales" placeholder="Ej: Calidda"><datalist id="pk-canales"></datalist></div>
+    <div><label>Nota (opcional)</label><input class="si" id="pk-nota" placeholder="Ej: para la rifa del viernes"></div>
+    <div><button class="btn btn-b" onclick="pkRegistrar()">📨 Registrar necesidad</button></div>
+  </div>
+  <div id="pk-prev" style="padding:0 12px 12px;"></div>
+</div>
+
+<div class="tbox">
+  <div class="tbox-h"><h3>📋 Seguimiento de conversiones</h3>
+    <div class="tbar">
+      <input class="si" id="pk-q" placeholder="Buscar pack, canal, N° mov…" oninput="renderPacks()" style="width:190px;">
+      <select class="sel" id="pk-fest" onchange="renderPacks()">
+        <option value="ABIERTOS">Abiertos (pendientes + en proceso)</option>
+        <option value="VENCIDOS">Solo vencidos (≥ 24 h)</option>
+        <option value="CONVERTIDOS">Convertidos</option>
+        <option value="ANULADOS">Anulados</option>
+        <option value="TODOS">Todos</option>
+      </select>
+      <button class="btn btn-o" onclick="expPacks()">⬇ Excel</button>
+    </div>
+  </div>
+  <div class="tw" style="max-height:640px;"><table>
+    <thead><tr><th>#</th><th>Registrado</th><th>Pack</th><th>Cant.</th><th>Canal</th><th>Stock / componentes</th><th>Estado</th><th>Tiempo útil</th><th>N° movimiento (Almacén)</th><th>Convertido</th><th>Acciones</th></tr></thead>
+    <tbody id="pk-tbody"></tbody>
+  </table></div>
+</div>
+
+<div class="tbox">
+  <div class="tbox-h"><h3>🧩 Catálogo de packs (SKU final = componentes)</h3>
+    <div class="tbar"><button class="btn btn-b" onclick="pkEditarPack('')">＋ Nuevo pack</button></div></div>
+  <div id="pk-editor" style="display:none;padding:12px;border-bottom:1.5px solid var(--line);background:#f8fafc;"></div>
+  <div class="tw" style="max-height:420px;"><table>
+    <thead><tr><th>SKU final</th><th>Descripción</th><th>Componentes (cód. × cant.)</th><th>Armables hoy</th><th></th></tr></thead>
+    <tbody id="pk-cat-body"></tbody>
+  </table></div>
+</div>
+
+<details class="tbox" style="padding:10px 12px;">
+  <summary style="cursor:pointer;font-size:12px;font-weight:700;color:var(--blue);">⚙ Configuración: feriados y canales</summary>
+  <div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;">
+    <div><label class="pk-mini">Feriados (AAAA-MM-DD separados por coma; no cuentan como horas útiles)</label>
+      <textarea class="si" id="pk-cfg-fer" rows="3" style="width:100%;box-sizing:border-box;"></textarea></div>
+    <div><label class="pk-mini">Canales de venta (separados por coma)</label>
+      <textarea class="si" id="pk-cfg-can" rows="3" style="width:100%;box-sizing:border-box;"></textarea></div>
+  </div>
+  <button class="btn btn-b" style="margin-top:8px;" onclick="pkGuardarCfg()">💾 Guardar configuración</button>
+</details>
+</div>
+
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
 
   <!-- BOTÓN EXPORTAR REPORTE COMPLETO -->
@@ -2061,6 +2156,7 @@ function parsearKardexDinamico(wb, fname) {
 
   kardexItems.sort((a,b) => b.meses.slice(-3).reduce((x,y)=>x+y,0) - a.meses.slice(-3).reduce((x,y)=>x+y,0));
   D.kardex  = kardexItems;
+  _marcarProcesadoLocal();
 
   const totalVal = kardexItems.reduce((s,i)=>s+i.costoTotal,0) || 1;
   D.stock = kardexItems.filter(i=>i.stock>0).sort((a,b)=>b.costoTotal-a.costoTotal)
@@ -2221,6 +2317,7 @@ function parsearOCActivas(wb, fname) {
   }
 
   D.oc = ocs;
+  _marcarProcesadoLocal();
   // Cruzar con obs: marcar "OC por Arribar"
   const ocSet = new Set(ocs.map(o=>o.cod));
   D.obs.forEach(it=>{
@@ -2307,6 +2404,10 @@ function parsearObs(wb,fname){
   }
 
   D.obs=items;
+  _marcarProcesadoLocal();
+  // v13: restaurar TODAS las ediciones guardadas (fechas, comentario, resp., reemplazo),
+  // no solo la acción — antes se perdían al cargar el Observados del día siguiente.
+  _aplicarClaves(Object.keys(D.obsAcc||{}));
   setSt('obs',`${items.length} observados (formato ${fmt})`,true);
   actualizarFiltrosObs();
   document.getElementById('ck-obs').textContent=items.length;
@@ -2416,6 +2517,7 @@ function parsearObsClientes(wb,fname){
   }
 
   D.obsClientes=items;
+  _marcarProcesadoLocal();
   setSt('obscli',`${items.length} pedidos/clientes observados`,true);
   if(D.obs&&D.obs.length>0) renderObs();
 }
@@ -2472,6 +2574,7 @@ function parsearObsProductos(wb,fname){
   }
 
   D.obsProductos=items;
+  _marcarProcesadoLocal();
   setSt('obsprod',`${items.length} líneas SKU↔pedido (${new Set(items.map(i=>i.cod)).size} SKUs · ${new Set(items.map(i=>i.numero)).size} pedidos)`,true);
   if(D.obs&&D.obs.length>0) renderObs();
 }
@@ -2549,6 +2652,7 @@ function parsearCompras(wb,fname){
   // Ordenar más reciente primero
   items.sort((a,b)=>(b.fechaObj||0)-(a.fechaObj||0));
   D.compras=items;
+  _marcarProcesadoLocal();
   setSt('oc',`${items.length} líneas de compra cargadas`,true);
   actualizarFiltrosCompras();
 
@@ -2811,6 +2915,9 @@ function exportarExcel(datos, nombreArchivo, cabeceras){
 
 
 function procesarTodo(){
+  _marcarProcesadoLocal();
+  window._procTsMs=Date.now();
+  _aplicarClaves(Object.keys(D.obsAcc||{}));
   const fecha=document.getElementById('fecha-rpt').value||new Date().toISOString().split('T')[0];
   document.getElementById('b-fecha').textContent='📅 '+fecha;
   document.getElementById('proc-msg').textContent='✅ Procesado. Navegando a análisis...';
@@ -3751,9 +3858,141 @@ function renderObs(){
 
 function filtrarObs(){renderObs();}
 
+// ===================================================
+// EDICIONES DE OBSERVADOS COMPARTIDAS (07-oct-2026, v13)
+// ===================================================
+// Problema reportado por María/Cristina: lo que un comprador editaba (acción,
+// fechas, comentario, responsable, reemplazo) (a) solo existía en SU navegador
+// hasta que publicaba, pero el chip decía "Al día"; (b) se borraba en silencio
+// si otra persona publicaba después; (c) se perdía al cargar el Observados del
+// día siguiente (solo la Acción sobrevivía). Ahora cada edición lleva su propia
+// marca de tiempo y se FUSIONA campo por campo (gana la edición más reciente),
+// en vez de reemplazar todo el estado.
+var _lsHidratado=false;
+function _accSet(key,val){
+  if(!D.obsAcc) D.obsAcc={};
+  if(!D.obsAccTs) D.obsAccTs={};
+  if(!D.obsAccPend) D.obsAccPend={};
+  D.obsAcc[key]=val;
+  D.obsAccTs[key]=new Date().toISOString();
+  D.obsAccPend[key]=true;
+  actualizarIndicadorPendiente();
+}
+function _baseCod(k){ const m=/^(.+?)(_fatn|_fa|_com|_resp|_rem)?$/.exec(k); return m?m[1]:k; }
+function _nPendSku(){ return new Set(Object.keys(D.obsAccPend||{}).map(_baseCod)).size; }
+function actualizarIndicadorPendiente(){
+  const n=_nPendSku();
+  const el=document.getElementById('b-pend');
+  if(el){ el.style.display=n?'':'none'; el.textContent='✏️ '+n+' SKU sin publicar'; }
+  if(n&&typeof setSyncStatus==='function') setSyncStatus('busy','⚠ '+n+' SKU con cambios SIN publicar — ve a Publicar / Ver');
+  window.onbeforeunload=n?function(e){e.preventDefault();e.returnValue='Tienes cambios en Observados sin publicar.';return e.returnValue;}:null;
+}
+function _estadoSync(msgOk){
+  const n=_nPendSku();
+  if(n) setSyncStatus('busy','⚠ '+n+' SKU con cambios SIN publicar — ve a Publicar / Ver');
+  else setSyncStatus('ok',msgOk);
+}
+// Fusiona las ediciones publicadas (remAcc/remTs) con las locales. Devuelve las
+// claves cuyo valor pasó a ser el remoto (adopted) y las que conservaron el
+// valor local por ser más reciente (kept). Recalcula qué sigue "sin publicar".
+function _fusionarAcc(remAcc,remTs){
+  remAcc=remAcc||{}; remTs=remTs||{};
+  const locA=D.obsAcc||{}, locT=D.obsAccTs||{}, locP=D.obsAccPend||{};
+  const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+  const outA={},outT={},outP={},adopted=[],kept=[];
+  new Set([...Object.keys(remAcc),...Object.keys(locA)]).forEach(k=>{
+    const inL=has(locA,k), inR=has(remAcc,k);
+    let local;
+    if(inL&&!inR) local=true;
+    else if(!inL&&inR) local=false;
+    else if(locA[k]===remAcc[k]) local=false;
+    else {
+      const tl=locT[k]?Date.parse(locT[k]):0, tr=remTs[k]?Date.parse(remTs[k]):0;
+      local=tl>tr;
+    }
+    if(local){
+      outA[k]=locA[k]; if(locT[k]) outT[k]=locT[k];
+      if(locP[k]||locT[k]){ outP[k]=true; }
+      if(!inR||remAcc[k]!==locA[k]) kept.push(k);
+    } else {
+      outA[k]=remAcc[k];
+      if(remTs[k]) outT[k]=remTs[k]; else if(locT[k]) outT[k]=locT[k];
+      if(!inL||locA[k]!==remAcc[k]) adopted.push(k);
+    }
+  });
+  D.obsAcc=outA; D.obsAccTs=outT; D.obsAccPend=outP;
+  return {adopted,kept};
+}
+// Vuelca en las filas de D.obs las ediciones guardadas en D.obsAcc (todas, o
+// solo las claves indicadas). Se usa al fusionar y al cargar el Observados nuevo.
+function _aplicarClaves(keys){
+  if(!keys||!keys.length||!D.obs) return;
+  const A=D.obsAcc||{}, byCod={};
+  D.obs.forEach(it=>{byCod[it.cod]=it;});
+  keys.forEach(k=>{
+    const m=/^(.+?)(_fatn|_fa|_com|_resp|_rem)?$/.exec(k); if(!m) return;
+    const it=byCod[m[1]]; if(!it||!Object.prototype.hasOwnProperty.call(A,k)) return;
+    const v=A[k], s=m[2]||'';
+    if(s==='')            { if(v) it.accion=v; }
+    else if(s==='_fa')    it.fechaArribo=v||'';
+    else if(s==='_fatn')  it.fechaAtencion=v||'';
+    else if(s==='_com')   it.comentario=v||'';
+    else if(s==='_resp')  { if(v) it.resp=v; }
+    else if(s==='_rem')   {
+      it.codRem=v||'';
+      const kr=v?(D.kardex||[]).find(x=>x.cod===v):null;
+      it.descRem=v?(kr?kr.desc:((D.kardex||[]).length?'(cód. no encontrado en kardex)':'')):'';
+    }
+  });
+}
+function _marcarProcesadoLocal(){ D._procLocal=true; }
+// Al abrir la página D está vacío, pero el localStorage puede traer trabajo sin
+// publicar: lo recuperamos antes de comparar con lo publicado.
+function _hidratarDesdeLSUnaVez(){
+  if(_lsHidratado) return; _lsHidratado=true;
+  try{
+    if(D.kardex&&D.kardex.length) return;
+    const raw=localStorage.getItem(LS_KEY); if(!raw) return;
+    const p=JSON.parse(raw);
+    if(p.procLocal&&p.kardex&&p.kardex.length){ cargarLS(); return; }
+    if(p.obsAcc){ D.obsAcc=p.obsAcc; D.obsAccTs=p.obsAccTs||{}; D.obsAccPend=p.obsAccPend||{}; }
+    window._pubMeta=p.pubMeta||null;
+    window._remoteTsISO=null; // sin datos en memoria: hay que traer lo publicado
+    actualizarIndicadorPendiente();
+  }catch(e){}
+}
+function _remoteTsConocidoMs(){
+  if(window._remoteTsISO) return Date.parse(window._remoteTsISO)||0;
+  if(window._remoteTsISO===null) return 0;
+  try{ const p=JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(p) return Date.parse(p.remoteTs||p.ts)||0; }catch(e){}
+  return 0;
+}
+function _actualizarChips(fecha){
+  const set=(id,t)=>{const e=document.getElementById(id); if(e) e.textContent=t;};
+  const monto=(D.stock||[]).reduce((s,i)=>s+(i.costoTotal||0),0);
+  const mObs=(D.obs||[]).reduce((s,i)=>s+(i.monto||0),0);
+  set('b-fecha',fecha?'📅 '+fecha:'Sin datos');
+  set('b-stock','Stock: S/'+Math.round(monto/1000)+'K');
+  set('b-obs','Obs: '+(D.obs||[]).length+' · S/'+Math.round(mObs/1000)+'K');
+}
+// Sello de trazabilidad que se imprime en la cabecera de TODOS los Excel.
+function _selloExport(){
+  const hh=new Date().toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'});
+  let s='Hora '+hh;
+  const m=window._pubMeta;
+  if(m&&m.ts){
+    const d=new Date(m.ts);
+    s+='  ·  Base publicada '+d.toLocaleDateString('es-PE')+' '+d.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})+(m.autor?' por '+m.autor:'');
+  } else s+='  ·  Base: datos de este navegador (sin publicación conocida)';
+  const n=_nPendSku();
+  if(n) s+='  ·  ⚠ '+n+' SKU con cambios locales SIN publicar';
+  if(D._procLocal) s+='  ·  ⚠ incluye archivos procesados aquí y no publicados';
+  return s;
+}
+
 function cambiarAccion(cod,acc,sel){
   D.obs.forEach(it=>{if(it.cod===cod)it.accion=acc;});
-  D.obsAcc[cod]=acc;
+  _accSet(cod,acc);
   const accClsMap={COMPRAR:'comprar',ARRIBAR:'recibir',CAMBIAR:'cambiar',CONVERTIR:'convertir',ANULAR:'anular',STOCK:'stock'};
   sel.className='acc-sel '+(accClsMap[acc]||'');
   guardarLS();
@@ -3763,28 +4002,24 @@ function cambiarAccion(cod,acc,sel){
 
 function cambiarFechaArribo(cod,fecha){
   D.obs.forEach(it=>{if(it.cod===cod)it.fechaArribo=fecha;});
-  if(!D.obsAcc)D.obsAcc={};
-  D.obsAcc[cod+"_fa"]=fecha;
+  _accSet(cod+"_fa",fecha);
   guardarLS();
   renderRepPedidos();
 }
 function cambiarFechaAtencion(cod,fecha){
   D.obs.forEach(it=>{if(it.cod===cod)it.fechaAtencion=fecha;});
-  if(!D.obsAcc)D.obsAcc={};
-  D.obsAcc[cod+"_fatn"]=fecha;
+  _accSet(cod+"_fatn",fecha);
   guardarLS();
   renderRepPedidos();
 }
 function cambiarComentario(cod,val){
   D.obs.forEach(it=>{if(it.cod===cod)it.comentario=val;});
-  if(!D.obsAcc)D.obsAcc={};
-  D.obsAcc[cod+"_com"]=val;
+  _accSet(cod+"_com",val);
   guardarLS();
 }
 function cambiarResp(cod,resp){
   D.obs.forEach(it=>{if(it.cod===cod)it.resp=resp;});
-  if(!D.obsAcc) D.obsAcc={};
-  D.obsAcc[cod+'_resp']=resp;
+  _accSet(cod+'_resp',resp);
   guardarLS();
   actualizarKpisObs();
   renderRepPedidos();
@@ -3810,8 +4045,7 @@ function cambiarReemplazo(cod, nuevoCodRem){
       }
     }
   });
-  if(!D.obsAcc) D.obsAcc={};
-  D.obsAcc[cod+'_rem']=nuevoCodRem;
+  _accSet(cod+'_rem',nuevoCodRem);
   // 06-oct-2026 (v12): el Reporte Comercial (abajo) ahora muestra SKU/Desc. de
   // Reemplazo — debe reflejar al instante lo que el comprador edite arriba.
   renderRepPedidos();
@@ -4623,6 +4857,8 @@ function construirPayloadLS(tsOverride){
     kardex:D.kardex,stock:D.stock,obs:D.obs,compras:D.compras,
     oc:D.oc,sust:D.sust,obsAcc:D.obsAcc,mesesHdr:D.mesesHdr,compradores:D.COMPRADORES,
     obsClientes:D.obsClientes,obsProductos:D.obsProductos,
+    obsAccTs:D.obsAccTs||{},obsAccPend:D.obsAccPend||{},procLocal:!!D._procLocal,
+    remoteTs:window._remoteTsISO||null,pubMeta:window._pubMeta||null,
     fecha:(document.getElementById('fecha-rpt')||{}).value,
     mes:(document.getElementById('mes-rpt')||{}).value,
     ts:tsOverride||new Date().toISOString()
@@ -4658,6 +4894,8 @@ function cargarLS(){
     D.oc=p.oc||[];
     D.sust=p.sust||[];
     D.obsAcc=p.obsAcc||{};
+    D.obsAccTs=p.obsAccTs||{}; D.obsAccPend=p.obsAccPend||{}; D._procLocal=!!p.procLocal;
+    window._remoteTsISO=p.remoteTs||p.ts||null; window._pubMeta=p.pubMeta||null;
     D.obsClientes=p.obsClientes||[];
     D.obsProductos=p.obsProductos||[];
     if(p.compradores) D.COMPRADORES=p.compradores;
@@ -4696,6 +4934,7 @@ function cargarLS(){
       if(cnt>0) setSt(id,`${cnt} registros (restaurado ${p.ts?p.ts.slice(0,16).replace('T',' '):'—'})`,true);
     });
 
+    actualizarIndicadorPendiente();
     document.getElementById('persist-notice').style.display='flex';
     document.getElementById('persist-txt').textContent=
       `Datos restaurados del ${p.ts?new Date(p.ts).toLocaleString('es-PE'):'—'} — Kardex:${D.kardex.length} · Stock:${D.stock.length} · Obs:${D.obs.length} · Compras:${D.compras.length}`;
@@ -4705,7 +4944,8 @@ function cargarLS(){
 function limpiarTodo(){
   if(!confirm('¿Limpiar TODOS los datos (kardex, stock, observados, compras) del navegador?')) return;
   localStorage.removeItem(LS_KEY);
-  D={kardex:[],stock:[],obs:[],compras:[],oc:[],sust:[],obsAcc:{},obsClientes:[],obsProductos:[],charts:{},mesesHdr:[]};
+  D={kardex:[],stock:[],obs:[],compras:[],oc:[],sust:[],obsAcc:{},obsAccTs:{},obsAccPend:{},obsClientes:[],obsProductos:[],charts:{},mesesHdr:[]};
+  window._remoteTsISO=null; window._pubMeta=null; actualizarIndicadorPendiente();
   ['kard','stock','obs','oc','obscli','obsprod'].forEach(id=>{
     const el=document.getElementById('st-'+id);
     if(el){el.className='ust';el.textContent='';}
@@ -5781,18 +6021,34 @@ async function chequearYSincronizar() {
     // aplicarEstadoGitHub, que ya llama a actualizarKpisGH internamente) o
     // cuando coincide exactamente con lo que ya se tiene (mismo ts = ya es
     // la versión vigente, no hay riesgo de mostrar algo desactualizado).
+    // v13 (07-oct-2026): ya NO se compara contra el "ts local" (que sube con
+    // cada edición y hacía ignorar lo publicado por otros). Se compara contra
+    // la última publicación CONOCIDA (remoteTs) y las ediciones propias se
+    // fusionan campo por campo en vez de descartarse.
+    _hidratarDesdeLSUnaVez();
     const remoteTs = data.ts ? new Date(data.ts).getTime() : 0;
-    const localTs  = _tsLocalEfectivo();
-    if (remoteTs > localTs) {
-      aplicarEstadoGitHub(data);
-      setSyncStatus('ok', 'Actualizado automáticamente · ' + new Date().toLocaleTimeString('es-PE') + (data.autor ? ' (por ' + data.autor + ')' : ''));
-    } else if (remoteTs === localTs) {
-      actualizarKpisGH(data);
-      setSyncStatus('ok', 'Al día · ' + new Date().toLocaleTimeString('es-PE'));
+    const known    = _remoteTsConocidoMs();
+    const hora = new Date().toLocaleTimeString('es-PE');
+    const por  = data.autor ? ' (por ' + data.autor + ')' : '';
+    if (D._procLocal && D.kardex && D.kardex.length) {
+      // Esta persona tiene archivos procesados aquí SIN publicar: no se pisan
+      // sus datos, pero sí se incorporan las ediciones nuevas de los demás.
+      if (remoteTs > known) {
+        const fus = _fusionarAcc(data.obsAcc, data.obsAccTs);
+        _aplicarClaves(fus.adopted.concat(fus.kept));
+        window._remoteTsISO = data.ts; window._pubMeta = {ts:data.ts, autor:data.autor||''};
+        try { renderObs(); } catch(e2) {}
+        guardarLSSilencioso();
+      }
+      setSyncStatus('busy', '⚠ Tienes archivos procesados aquí SIN publicar · ' + hora);
+    } else if (remoteTs > known || !(D.kardex && D.kardex.length)) {
+      if (remoteTs) {
+        aplicarEstadoGitHub(data);
+        _estadoSync('Actualizado automáticamente · ' + hora + por);
+      }
     } else {
-      // El remoto sigue desactualizado (probable caché de GitHub aún no
-      // renovado) — no se toca ni D ni las tarjetas, se reintenta en 30s.
-      setSyncStatus('ok', 'Al día · ' + new Date().toLocaleTimeString('es-PE'));
+      if (remoteTs === known) actualizarKpisGH(data);
+      _estadoSync('Al día · ' + hora);
     }
   } catch(e) {
     setSyncStatus('err', 'Sin conexión a internet');
@@ -5821,7 +6077,13 @@ function aplicarEstadoGitHub(data) {
   D.compras  = data.compras  || [];
   D.oc       = data.oc       || [];
   D.sust     = data.sust     || [];
-  D.obsAcc   = data.obsAcc   || {};
+  // v13: fusionar (no reemplazar) las ediciones de Observados: lo que este
+  // navegador editó DESPUÉS de lo publicado se conserva y sigue "sin publicar".
+  const _fus = _fusionarAcc(data.obsAcc, data.obsAccTs);
+  _aplicarClaves(_fus.kept);
+  D._procLocal = false;
+  window._remoteTsISO = data.ts || null;
+  window._pubMeta = {ts:data.ts||null, autor:data.autor||''};
   D.obsClientes  = data.obsClientes  || [];
   D.obsProductos = data.obsProductos || [];
   D.mesesHdr = data.mesesHdr || [];
@@ -5857,6 +6119,8 @@ function aplicarEstadoGitHub(data) {
   // exacto de publicación (no "ahora") — así una edición local posterior
   // siempre queda con un ts más nuevo que el último publicado conocido,
   // y la sincronización automática nunca la pisa sin querer.
+  _actualizarChips(data.fecha);
+  actualizarIndicadorPendiente();
   guardarLSSilencioso(data.ts||new Date().toISOString());
 }
 
@@ -5907,10 +6171,25 @@ async function publicarGitHub() {
       GH_SHA = apiData.sha;
     }
 
+    // 1b. v13: traer lo último publicado y FUSIONAR las ediciones de Observados
+    // de los demás antes de subir (si no, esta publicación borra lo que otros
+    // compradores publicaron mientras tanto).
+    try {
+      const rr = await fetch(GH_API, {
+        headers: { 'Authorization': 'token ' + obtenerToken(), 'Accept': 'application/vnd.github.raw+json' }
+      });
+      if (rr.ok) {
+        const remoto = await rr.json();
+        const fus = _fusionarAcc(remoto.obsAcc, remoto.obsAccTs);
+        _aplicarClaves(fus.adopted.concat(fus.kept));
+        try { renderObs(); } catch(e3) {}
+      }
+    } catch(e4) { console.warn('No se pudo fusionar con lo publicado:', e4); }
+
     // 2. Preparar payload
     const payload = {
       kardex: D.kardex, stock: D.stock, obs: D.obs, compras: D.compras,
-      oc: D.oc, sust: D.sust, obsAcc: D.obsAcc, mesesHdr: D.mesesHdr,
+      oc: D.oc, sust: D.sust, obsAcc: D.obsAcc, obsAccTs: D.obsAccTs||{}, mesesHdr: D.mesesHdr,
       compradores: D.COMPRADORES,
       obsClientes: D.obsClientes, obsProductos: D.obsProductos,
       fecha: document.getElementById('fecha-rpt').value,
@@ -5956,7 +6235,10 @@ async function publicarGitHub() {
     // remoto como "más nuevo" que el local unos segundos después de publicar
     // y volvería a aplicar (innecesariamente) los mismos datos que ya están
     // en pantalla, en el propio navegador de quien acaba de publicar.
+    D.obsAccPend = {}; D._procLocal = false;
+    window._remoteTsISO = payload.ts; window._pubMeta = {ts:payload.ts, autor:payload.autor};
     guardarLSSilencioso(payload.ts);
+    actualizarIndicadorPendiente();
     setSyncStatus('ok','Publicado y sincronizado · '+new Date().toLocaleTimeString('es-PE'));
 
   } catch(e) {
@@ -6381,7 +6663,7 @@ function exportarExcelMerpes(cfg) {
     mkFont(false,'6B7280',11), null, mkAln('left','middle'));
   ws.getRow(4).height = 13;
   merge(4,3,4,nCols+1,
-    (cfg.subtitulo ? cfg.subtitulo + '  ·  ' : '') + 'Generado el ' + fecha,
+    (cfg.subtitulo ? cfg.subtitulo + '  ·  ' : '') + 'Generado el ' + fecha + '  ·  ' + _selloExport(),
     mkFont(false,'9CA3AF',9), null, mkAln('left','middle'));
 
   // ── Línea azul separadora ──
@@ -6610,7 +6892,7 @@ function exportarExcelConLogo(datos, nombreArchivo, cabeceras, titulo, filtrosSt
 
   ws1.getRow(4).height=13;
   const s2 = ws1.getCell('D4');
-  s2.value=`Generado el ${fecha}  ·  Período base: ${periodo} meses`;
+  s2.value=`Generado el ${fecha}  ·  Período base: ${periodo} meses  ·  `+_selloExport();
   s2.font=mkFont(false,'9CA3AF',9); s2.alignment=mkAln('left','middle');
   ws1.mergeCells('D4:K4');
 
@@ -6937,7 +7219,7 @@ function _agregarHojaAWorkbook(wb, cfg) {
   ws.getRow(3).height=16;
   merge(3,3,3,nCols+1,'GRUPO MERPES PERÚ S.A.C.  ·  Jefatura de Administración y Logística',mkFont(false,'6B7280',10),null,mkAln('left','middle'));
   ws.getRow(4).height=13;
-  merge(4,3,4,nCols+1,(cfg.subtitulo?cfg.subtitulo+'  ·  ':'')+' Generado el '+fecha,mkFont(false,'9CA3AF',9),null,mkAln('left','middle'));
+  merge(4,3,4,nCols+1,(cfg.subtitulo?cfg.subtitulo+'  ·  ':'')+' Generado el '+fecha+'  ·  '+_selloExport(),mkFont(false,'9CA3AF',9),null,mkAln('left','middle'));
   ws.getRow(5).height=5;
   for(let c=2;c<=nCols+1;c++) ws.getCell(5,c).fill=mkFill(AZUL);
   ws.getRow(6).height=5; ws.getRow(7).height=18;
@@ -7020,6 +7302,477 @@ function expReporteCompleto() {
 }
 
 
+
+</script>
+<script>
+// =====================================================================
+// PACKS — conversión de packs con seguimiento y SLA en horas útiles (v14, 09-oct-2026)
+// Datos propios y compartidos: archivo packs_estado.json en GitHub (rama datos-packs,
+// para no disparar un despliegue de la web en cada clic). Copia local de respaldo.
+// Fusión por registro (gana la marca de tiempo más reciente) → nadie pisa a nadie.
+// =====================================================================
+var PK={cfg:{ts:'2026-10-09T00:00:00.000Z',
+         feriados:['2026-10-08','2026-11-01','2026-12-08','2026-12-09','2026-12-25'],
+         canales:['Calidda','Backus / Mybees','Aliados','Tiendas','Web','Corporativo']},
+        cat:{}, ped:{}};
+var PKS={ver:'v1',LS:'merpes_packs_v1',LSU:'merpes_packs_user',FILE:'packs_estado.json',BR:'datos-packs',
+         sha:null,branchOk:null,dirty:false,busy:false,lastPush:0,lastOk:null,err:null,open:{},started:false,seedDone:false,timer:null};
+var PK_USERS=['María Rojas','Pool Ramírez','Yampier Quispe','Dante Clavijo','Endira Gómez','Cristina Chávez'];
+var PK_SEEDS=[
+ {sku:'35000064',desc:'PACK RIFA MUNDIALISTA PILSEN (3 MESAS PILSEN + 4 BANCOS PILSEN + 5 SILLAS PILSEN + PACK DE 12 VASOS DE VIDRIO + TELEVISOR CAIXUN)',
+  comps:[{cod:'10000865',cant:1},{cod:'12000228',cant:3},{cod:'12000229',cant:5},{cod:'12000305',cant:4},{cod:'15000167',cant:2}],
+  ts:'2026-10-09T00:00:00.000Z',por:'Sistema (precarga desde correo de María Rojas del 23/09/2026)'},
+ {sku:'35000040',desc:'PROYECTOR ANDROID HY300 PRO HD 1280 COD. N496 + PELOTA FIFA WC 26 TRIONDA CLUB JD8028_MABE',
+  comps:[{cod:'11011468',cant:1},{cod:'32000306',cant:1}],
+  ts:'2026-10-09T00:00:00.000Z',por:'Sistema (precarga desde correo de María Rojas del 21/07/2026)'}];
+
+function _pkE(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _pkNow(){return new Date().toISOString();}
+function _pkMs(t){return t?Date.parse(t)||0:0;}
+
+// ---------- tiempo: horas ÚTILES (hora de Lima, UTC-5 fijo) ----------
+function pkHorasUtiles(t0,t1,feriados){
+  if(!(t1>t0)) return 0;
+  var fer=(feriados instanceof Set)?feriados:new Set(feriados||PK.cfg.feriados||[]);
+  var OFF=5*3600e3, total=0;
+  var d0=new Date(t0-OFF); d0.setUTCHours(0,0,0,0);
+  for(var day=d0.getTime(); day<t1-OFF; day+=86400000){
+    var d=new Date(day), dow=d.getUTCDay(), iso=d.toISOString().slice(0,10);
+    if(dow===0||fer.has(iso)) continue;
+    var w=dow===6?[9*60,12*60]:[8*60,18*60];
+    var a=day+w[0]*60000+OFF, b=day+w[1]*60000+OFF;
+    var lo=Math.max(a,t0), hi=Math.min(b,t1);
+    if(hi>lo) total+=hi-lo;
+  }
+  return total/3600e3;
+}
+function pkFmtH(h){var m=Math.round(h*60);return Math.floor(m/60)+'h '+('0'+(m%60)).slice(-2)+'m';}
+function pkFmtFecha(t){
+  if(!t) return '—'; var d=new Date(_pkMs(t)-5*3600e3), p=function(n){return ('0'+n).slice(-2);};
+  return p(d.getUTCDate())+'/'+p(d.getUTCMonth()+1)+' '+p(d.getUTCHours())+':'+p(d.getUTCMinutes());
+}
+function pkSem(h){return h>=24?'ROJO':(h>=12?'AMBAR':'VERDE');}
+
+// ---------- usuario ----------
+function pkUser(){try{return localStorage.getItem(PKS.LSU)||'';}catch(e){return '';}}
+function pkSetUser(v){
+  if(v==='__otro'){var n=prompt('Escribe tu nombre completo:'); v=(n||'').trim(); if(v&&PK_USERS.indexOf(v)<0) PK_USERS.push(v);}
+  try{localStorage.setItem(PKS.LSU,v||'');}catch(e){}
+  pkRenderUser();
+}
+function pkRenderUser(){
+  var el=document.getElementById('pk-user'); if(!el) return; var u=pkUser();
+  var opts='<option value="">— elige tu nombre —</option>'+PK_USERS.map(function(n){return '<option'+(n===u?' selected':'')+'>'+_pkE(n)+'</option>';}).join('')+'<option value="__otro">Otro…</option>';
+  el.innerHTML=opts;
+}
+function pkNeedUser(){var u=pkUser(); if(!u){alert('Primero elige tu nombre en "Estoy trabajando como". Queda registrado quién hizo cada paso.'); return '';} return u;}
+
+// ---------- fusión por registro ----------
+function _pkMergeMap(a,b){
+  var out={}, k, ra, rb;
+  for(k in a) out[k]=a[k];
+  for(k in b){ rb=b[k]; ra=out[k];
+    if(!ra){out[k]=rb;continue;}
+    var ta=_pkMs(ra.ts), tb=_pkMs(rb.ts);
+    if(tb>ta) out[k]=rb; else if(tb===ta && JSON.stringify(rb)>JSON.stringify(ra)) out[k]=rb;
+  }
+  return out;
+}
+function pkMerge(remote){
+  if(!remote) return;
+  PK.cat=_pkMergeMap(PK.cat,remote.cat||{});
+  PK.ped=_pkMergeMap(PK.ped,remote.ped||{});
+  if(remote.cfg && _pkMs(remote.cfg.ts)>=_pkMs(PK.cfg.ts)) PK.cfg=remote.cfg;
+}
+function pkSerialize(){return JSON.stringify({v:1,upd:_pkNow(),cfg:PK.cfg,cat:PK.cat,ped:PK.ped});}
+
+// ---------- copia local ----------
+function pkSaveLocal(){try{localStorage.setItem(PKS.LS,JSON.stringify({PK:PK,dirty:PKS.dirty,seedDone:PKS.seedDone}));}catch(e){}}
+function pkLoadLocal(){
+  try{var raw=localStorage.getItem(PKS.LS); if(!raw) return;
+    var p=JSON.parse(raw); if(p&&p.PK){PK.cat=p.PK.cat||{};PK.ped=p.PK.ped||{};if(p.PK.cfg)PK.cfg=p.PK.cfg;PKS.dirty=!!p.dirty;PKS.seedDone=!!p.seedDone;}
+  }catch(e){}
+}
+
+// ---------- GitHub ----------
+function _pkApi(){return 'https://api.github.com/repos/'+GH_OWNER+'/'+GH_REPO;}
+function _pkH(json){var h={'Authorization':'token '+obtenerToken(),'Accept':'application/vnd.github.v3+json'}; if(json)h['Content-Type']='application/json'; return h;}
+async function _pkEnsureBranch(){
+  if(PKS.branchOk!==null) return;
+  try{
+    var r=await fetch(_pkApi()+'/git/ref/heads/'+PKS.BR,{headers:_pkH()});
+    if(r.ok){PKS.branchOk=true;return;}
+    var m=await fetch(_pkApi()+'/git/ref/heads/main',{headers:_pkH()});
+    if(!m.ok) throw new Error('main');
+    var sha=(await m.json()).object.sha;
+    var c=await fetch(_pkApi()+'/git/refs',{method:'POST',headers:_pkH(true),body:JSON.stringify({ref:'refs/heads/'+PKS.BR,sha:sha})});
+    PKS.branchOk=!!c.ok;
+  }catch(e){PKS.branchOk=false;}
+}
+function _pkUrl(){return _pkApi()+'/contents/'+PKS.FILE+(PKS.branchOk?'?ref='+PKS.BR+'&':'?')+'t='+Date.now();}
+function _pkB64d(s){return decodeURIComponent(escape(atob(String(s).replace(/\n/g,''))));}
+async function pkPull(){
+  await _pkEnsureBranch();
+  var r=await fetch(_pkUrl(),{headers:_pkH(),cache:'no-store'});
+  if(r.status===404){PKS.sha=null;return {exists:false};}
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  var j=await r.json(); PKS.sha=j.sha;
+  var txt=j.content?_pkB64d(j.content):'';
+  return {exists:true,data:txt?JSON.parse(txt):null};
+}
+async function pkPush(){
+  var body={message:'Packs: actualización '+new Date().toLocaleString('es-PE'),content:btoa(unescape(encodeURIComponent(pkSerialize())))};
+  if(PKS.branchOk) body.branch=PKS.BR;
+  if(PKS.sha) body.sha=PKS.sha;
+  var r=await fetch(_pkApi()+'/contents/'+PKS.FILE,{method:'PUT',headers:_pkH(true),body:JSON.stringify(body)});
+  if(r.status===409||r.status===422) return 'CONFLICT';
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  var j=await r.json(); PKS.sha=(j.content&&j.content.sha)||PKS.sha; return 'OK';
+}
+function pkSetSync(kind,msg){
+  var el=document.getElementById('pk-sync'); if(!el) return;
+  var ic={ok:'🟢',busy:'🟡',err:'🔴',off:'⚫'}[kind]||'⚫';
+  el.textContent=ic+' Packs: '+msg;
+  el.className='chip '+({ok:'c-verde',busy:'c-amber',err:'c-rojo',off:'c-gris'}[kind]||'c-gris');
+}
+// Descarga lo último, lo fusiona con lo local y, si hay cambios locales, lo sube.
+async function pkSyncNow(manual){
+  if(PKS.busy) return; PKS.busy=true;
+  try{
+    pkSetSync('busy','sincronizando…');
+    for(var intento=0; intento<4; intento++){
+      var rem=await pkPull();
+      if(rem.exists && rem.data) pkMerge(rem.data);
+      if(!rem.exists && !PKS.seedDone && !Object.keys(PK.cat).length){ PK_SEEDS.forEach(function(s){PK.cat[s.sku]=JSON.parse(JSON.stringify(s));}); PKS.seedDone=true; PKS.dirty=true; }
+      if(rem.exists) PKS.seedDone=true;
+      if(PKS.dirty || !rem.exists){
+        var res=await pkPush();
+        if(res==='CONFLICT') continue;
+        PKS.dirty=false; PKS.lastPush=Date.now();
+      }
+      break;
+    }
+    PKS.lastOk=new Date(); PKS.err=null; pkSaveLocal();
+    pkSetSync('ok','guardado y compartido · '+PKS.lastOk.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+  }catch(e){
+    PKS.err=e.message||String(e); pkSaveLocal();
+    pkSetSync('err',(PKS.dirty?'sin conexión — cambios guardados en este equipo y se enviarán solos':'sin conexión')+' ('+PKS.err+')');
+  }finally{PKS.busy=false; renderPacks();}
+}
+var _pkDeb=null;
+function pkMutated(){
+  PKS.dirty=true; pkSaveLocal(); renderPacks();
+  pkSetSync('busy','guardando…');
+  clearTimeout(_pkDeb);
+  _pkDeb=setTimeout(function(){
+    var wait=(PKS.branchOk===false)?Math.max(0,20000-(Date.now()-PKS.lastPush)):0; // sin rama aparte: espaciar commits
+    setTimeout(function(){pkSyncNow(false);},wait);
+  },600);
+}
+function pkIniciar(){
+  if(PKS.started) return; PKS.started=true;
+  pkLoadLocal(); pkRenderUser(); renderPacks();
+  pkSyncNow(false);
+  PKS.timer=setInterval(function(){ if(!document.hidden) pkSyncNow(false); },20000);
+  setInterval(function(){ renderPacks(); },60000);
+}
+function pkOnOpen(){ pkRenderUser(); renderPacks(); pkSyncNow(false); }
+
+// ---------- stock y componentes ----------
+// Momento (ms) al que corresponde el stock cargado: última publicación aplicada o último procesamiento local.
+function pkStockSnapMs(){
+  var a=(window._pubMeta&&window._pubMeta.ts)?_pkMs(window._pubMeta.ts):0, b=window._procTsMs||0;
+  return Math.max(a,b);
+}
+// Stock del almacén principal. El stock solo se refresca con la carga diaria, así que se DESCUENTAN
+// los componentes de las conversiones hechas DESPUÉS de esa carga (si no, seguirían apareciendo como disponibles).
+function pkStockMap(){
+  var m={}; (D.stock||[]).forEach(function(s){m[s.cod]=(s.cant||0);});
+  var snap=pkStockSnapMs(); PKS.deducidas=0;
+  if(snap>0){
+    Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(o.del||o.estado!=='CONVERTIDO'||_pkMs(o.convTs)<=snap) return;
+      var p=PK.cat[o.sku]; if(!p) return; PKS.deducidas++;
+      (p.comps||[]).forEach(function(c){ if(m[c.cod]!=null) m[c.cod]=Math.max(0,m[c.cod]-c.cant*o.cant); });});
+  }
+  return m;
+}
+function pkHayStock(){return !!(D.stock&&D.stock.length);}
+function pkDesc(cod){
+  var k=(D.kardex||[]).find(function(x){return x.cod===cod;}); if(k) return k.desc;
+  var s=(D.stock||[]).find(function(x){return x.cod===cod;}); return s?s.desc:'';
+}
+function pkPacks(){return Object.keys(PK.cat).map(function(k){return PK.cat[k];}).filter(function(p){return !p.del;}).sort(function(a,b){return a.sku<b.sku?-1:1;});}
+function pkNecesidad(p,cant){return (p.comps||[]).map(function(c){return {cod:c.cod,cant:c.cant,nec:c.cant*cant};});}
+// Asigna el stock en orden de registro: cada orden abierta "compromete" componentes para las siguientes.
+function pkAnalisis(){
+  var stock=pkStockMap(), hay=pkHayStock(), rem={}, k, out={};
+  for(k in stock) rem[k]=stock[k];
+  var abiertos=Object.keys(PK.ped).map(function(i){return PK.ped[i];}).filter(function(o){return !o.del&&(o.estado==='PENDIENTE'||o.estado==='PROCESO');})
+    .sort(function(a,b){return _pkMs(a.creadoTs)-_pkMs(b.creadoTs);});
+  abiertos.forEach(function(o){
+    var p=PK.cat[o.sku]; var det=[], ok=true;
+    if(!p){out[o.id]={estado:'SINPACK',det:[]};return;}
+    pkNecesidad(p,o.cant).forEach(function(c){
+      var disp=(rem[c.cod]||0), falta=Math.max(0,c.nec-disp);
+      det.push({cod:c.cod,desc:pkDesc(c.cod),porPack:c.cant,nec:c.nec,stock:(stock[c.cod]||0),disp:disp,falta:falta});
+      if(falta>0) ok=false;
+      rem[c.cod]=Math.max(0,disp-c.nec);
+    });
+    out[o.id]={estado:!hay?'SINDATOS':(ok?'OK':'FALTA'),det:det};
+  });
+  return out;
+}
+function pkArmables(p){
+  if(!pkHayStock()) return null; var st=pkStockMap(), n=Infinity;
+  (p.comps||[]).forEach(function(c){n=Math.min(n,Math.floor((st[c.cod]||0)/c.cant));});
+  return n===Infinity?0:n;
+}
+
+// ---------- métricas de tiempo por orden ----------
+function pkHoras(o,ahora){
+  var t0=_pkMs(o.creadoTs), t1=(o.estado==='CONVERTIDO'&&o.convTs)?_pkMs(o.convTs):(o.estado==='ANULADO'?_pkMs(o.anuladoTs||o.ts):ahora);
+  return pkHorasUtiles(t0,t1);
+}
+
+// ---------- acciones ----------
+function _pkOrden(id){return PK.ped[id];}
+function _pkHist(o,por,ac){o.historial=(o.historial||[]);o.historial.push({ts:_pkNow(),por:por,ac:ac});o.ts=_pkNow();}
+function pkRegistrar(){
+  var u=pkNeedUser(); if(!u) return;
+  var sku=document.getElementById('pk-sku').value, cant=parseInt(document.getElementById('pk-cant').value,10);
+  var canal=(document.getElementById('pk-canal').value||'').trim(), nota=(document.getElementById('pk-nota').value||'').trim();
+  if(!sku||!PK.cat[sku]){alert('Elige el pack a convertir.');return;}
+  if(!(cant>0)){alert('La cantidad debe ser mayor a 0.');return;}
+  if(!canal){alert('Indica el canal de ventas.');return;}
+  var p=PK.cat[sku], falt=[];
+  if(pkHayStock()){var st=pkStockMap(); pkNecesidad(p,cant).forEach(function(c){var tot=0;
+      Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(!o.del&&(o.estado==='PENDIENTE'||o.estado==='PROCESO')&&PK.cat[o.sku]){(PK.cat[o.sku].comps||[]).forEach(function(cc){if(cc.cod===c.cod) tot+=cc.cant*o.cant;});}});
+      var disp=(st[c.cod]||0)-tot; if(disp<c.nec) falt.push(c.cod+' ('+pkDesc(c.cod).slice(0,28)+'): faltan '+(c.nec-Math.max(0,disp)));});}
+  if(falt.length && !confirm('No hay stock suficiente de todos los componentes en almacén principal:\n\n'+falt.join('\n')+'\n\n¿Registrar la necesidad igualmente?')) return;
+  var id='PK'+Date.now().toString(36).toUpperCase()+Math.random().toString(36).slice(2,5).toUpperCase();
+  var o={id:id,sku:sku,cant:cant,canal:canal,nota:nota,estado:'PENDIENTE',creadoTs:_pkNow(),creadoPor:u,ts:_pkNow(),historial:[{ts:_pkNow(),por:u,ac:'REGISTRÓ la necesidad'}]};
+  PK.ped[id]=o;
+  if(canal && PK.cfg.canales.indexOf(canal)<0){PK.cfg.canales.push(canal);PK.cfg.ts=_pkNow();}
+  document.getElementById('pk-nota').value=''; document.getElementById('pk-cant').value='1';
+  pkMutated();
+}
+function pkTomar(id){var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o||o.estado!=='PENDIENTE') return;
+  o.estado='PROCESO'; o.tomadoTs=_pkNow(); o.tomadoPor=u; _pkHist(o,u,'TOMÓ la orden (en proceso)'); pkMutated();}
+function pkConvertir(id){
+  var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o||(o.estado!=='PENDIENTE'&&o.estado!=='PROCESO')) return;
+  var inp=document.querySelector('input[data-mov="'+id+'"]'); var mov=(inp&&inp.value||'').trim();
+  if(!mov){alert('Escribe el N° de movimiento con el que se hizo la conversión.');if(inp)inp.focus();return;}
+  var an=pkAnalisis()[id]; if(an&&an.estado==='FALTA'&&!confirm('El sistema indica que faltan componentes en stock. ¿Confirmas que ya se convirtió?')) return;
+  o.estado='CONVERTIDO'; o.mov=mov; o.convTs=_pkNow(); o.convPor=u; _pkHist(o,u,'CONVIRTIÓ — N° movimiento '+mov); pkMutated();
+}
+function pkAnular(id){
+  var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o) return;
+  var mot=prompt('Motivo de la anulación:'); if(mot===null) return; mot=mot.trim(); if(!mot){alert('Indica el motivo.');return;}
+  o.estado='ANULADO'; o.anuladoTs=_pkNow(); o.motivo=mot; _pkHist(o,u,'ANULÓ — '+mot); pkMutated();
+}
+function pkReabrir(id){
+  var u=pkNeedUser(); if(!u) return; var o=_pkOrden(id); if(!o) return;
+  if(!confirm('¿Reabrir esta orden? Se borrará el N° de movimiento y el reloj seguirá corriendo desde el registro original.')) return;
+  var prev=o.mov||''; o.estado='PENDIENTE'; o.mov=''; o.convTs=null; o.convPor=''; o.anuladoTs=null; _pkHist(o,u,'REABRIÓ (mov. anterior: '+(prev||'—')+')'); pkMutated();
+}
+function pkToggle(id){PKS.open[id]=!PKS.open[id]; renderPacks();}
+function pkGuardarCfg(){
+  var f=(document.getElementById('pk-cfg-fer').value||'').split(',').map(function(s){return s.trim();}).filter(function(s){return /^\d{4}-\d{2}-\d{2}$/.test(s);});
+  var c=(document.getElementById('pk-cfg-can').value||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  PK.cfg={ts:_pkNow(),feriados:f,canales:c}; pkMutated();
+}
+
+// ---------- catálogo ----------
+function pkEditarPack(sku){
+  var p=sku?PK.cat[sku]:null, box=document.getElementById('pk-editor');
+  box.style.display='block';
+  box.innerHTML='<div style="display:grid;grid-template-columns:160px 1fr;gap:8px;max-width:900px;">'+
+    '<div><label class="pk-mini">SKU final del pack</label><input class="si" id="pk-ed-sku" style="width:100%;box-sizing:border-box;" value="'+_pkE(sku)+'"'+(sku?' readonly':'')+' oninput="pkEdDesc()"></div>'+
+    '<div><label class="pk-mini">Descripción (si el SKU existe en el kardex se completa sola)</label><input class="si" id="pk-ed-desc" style="width:100%;box-sizing:border-box;" value="'+_pkE(p?p.desc:'')+'"></div></div>'+
+    '<div style="margin-top:8px;font-size:10px;font-weight:700;color:var(--muted);">COMPONENTES — por cada 1 pack</div>'+
+    '<div id="pk-ed-rows" style="max-width:900px;"></div>'+
+    '<div style="margin-top:6px;display:flex;gap:6px;"><button class="btn btn-o" onclick="pkEdAddRow(\'\',1)">＋ Agregar componente</button>'+
+    '<button class="btn btn-b" onclick="pkGuardarPack()">💾 Guardar pack</button><button class="btn btn-r" onclick="document.getElementById(\'pk-editor\').style.display=\'none\'">Cancelar</button></div>';
+  var comps=(p&&p.comps&&p.comps.length)?p.comps:[{cod:'',cant:1}];
+  comps.forEach(function(c){pkEdAddRow(c.cod,c.cant);});
+  box.scrollIntoView({block:'nearest'});
+}
+function pkEdAddRow(cod,cant){
+  var rows=document.getElementById('pk-ed-rows'); var d=document.createElement('div');
+  d.className='pk-ed-row'; d.style.cssText='display:grid;grid-template-columns:140px 80px 1fr 40px;gap:6px;margin-top:4px;align-items:center;';
+  d.innerHTML='<input class="si pk-c-cod" placeholder="Código SKU" value="'+_pkE(cod)+'" oninput="pkEdRowDesc(this)"><input class="si pk-c-cant" type="number" min="1" step="1" value="'+_pkE(cant)+'">'+
+    '<span class="pk-mini pk-c-desc"></span><button class="btn btn-r" title="Quitar" onclick="this.parentNode.remove()">✖</button>';
+  rows.appendChild(d); pkEdRowDesc(d.querySelector('.pk-c-cod'));
+}
+function pkEdRowDesc(inp){
+  var row=inp.parentNode, cod=inp.value.trim(), d=cod?pkDesc(cod):'';
+  row.querySelector('.pk-c-desc').innerHTML=cod?(d?_pkE(d):'<span class="pk-bad">⚠ código no encontrado en kardex/stock cargado</span>'):'';
+}
+function pkEdDesc(){
+  var s=(document.getElementById('pk-ed-sku').value||'').trim(), d=document.getElementById('pk-ed-desc');
+  if(s&&!d.value){var t=pkDesc(s); if(t) d.value=t;}
+}
+function pkGuardarPack(){
+  var u=pkNeedUser(); if(!u) return;
+  var sku=(document.getElementById('pk-ed-sku').value||'').trim(), desc=(document.getElementById('pk-ed-desc').value||'').trim();
+  if(!/^[A-Za-z0-9._-]+$/.test(sku)){alert('Ingresa el SKU final (solo letras, números, punto, guion).');return;}
+  var comps=[], seen={}, bad='';
+  document.querySelectorAll('#pk-ed-rows .pk-ed-row').forEach(function(r){
+    var c=r.querySelector('.pk-c-cod').value.trim(), n=parseFloat(r.querySelector('.pk-c-cant').value);
+    if(!c&&!(n>0)) return;
+    if(!/^[A-Za-z0-9._-]+$/.test(c)||!(n>0)){bad='Revisa los componentes: cada fila necesita código y cantidad > 0.';return;}
+    if(seen[c]){bad='El componente '+c+' está repetido: suma las cantidades en una sola fila.';return;} seen[c]=1; comps.push({cod:c,cant:n});
+  });
+  if(bad){alert(bad);return;}
+  if(!comps.length){alert('Agrega al menos un componente.');return;}
+  if(comps.some(function(c){return c.cod===sku;})){alert('Un pack no puede ser componente de sí mismo.');return;}
+  if(!desc) desc=pkDesc(sku)||('PACK '+sku);
+  PK.cat[sku]={sku:sku,desc:desc,comps:comps,ts:_pkNow(),por:u};
+  document.getElementById('pk-editor').style.display='none'; pkMutated();
+}
+function pkEliminarPack(sku){
+  var u=pkNeedUser(); if(!u) return;
+  var abiertas=Object.keys(PK.ped).filter(function(i){var o=PK.ped[i];return !o.del&&o.sku===sku&&(o.estado==='PENDIENTE'||o.estado==='PROCESO');}).length;
+  if(abiertas){alert('No se puede eliminar: hay '+abiertas+' conversión(es) abierta(s) de este pack.');return;}
+  if(!confirm('¿Eliminar el pack '+sku+' del catálogo? (Las conversiones ya registradas se conservan.)')) return;
+  var p=PK.cat[sku]; PK.cat[sku]={sku:sku,desc:p?p.desc:'',comps:p?p.comps:[],del:true,ts:_pkNow(),por:u}; pkMutated();
+}
+
+// ---------- vista previa de lo que consume una conversión ----------
+function pkPreview(){
+  var box=document.getElementById('pk-prev'); if(!box) return;
+  var sku=(document.getElementById('pk-sku')||{}).value, cant=parseInt((document.getElementById('pk-cant')||{}).value,10)||0, p=PK.cat[sku];
+  if(!p||!(cant>0)){box.innerHTML='';return;}
+  var hay=pkHayStock(), st=pkStockMap(), comprometido={};
+  Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(o.del||(o.estado!=='PENDIENTE'&&o.estado!=='PROCESO')||!PK.cat[o.sku])return;
+    PK.cat[o.sku].comps.forEach(function(c){comprometido[c.cod]=(comprometido[c.cod]||0)+c.cant*o.cant;});});
+  var okAll=true, rows=pkNecesidad(p,cant).map(function(c){
+    var disp=(st[c.cod]||0)-(comprometido[c.cod]||0), falta=Math.max(0,c.nec-Math.max(0,disp)); if(falta>0) okAll=false;
+    return '<tr><td class="mono">'+_pkE(c.cod)+'</td><td>'+_pkE(pkDesc(c.cod)||'—')+'</td><td style="text-align:right">'+c.cant+'</td><td style="text-align:right;font-weight:700">'+c.nec+'</td>'+
+      '<td style="text-align:right">'+(hay?(st[c.cod]||0):'—')+'</td><td style="text-align:right">'+(hay?(comprometido[c.cod]||0):'—')+'</td>'+
+      '<td style="text-align:right">'+(hay?Math.max(0,disp):'—')+'</td><td>'+(!hay?'<span class="pk-mini">sin stock cargado</span>':(falta>0?'<span class="pk-bad">⚠ faltan '+falta+'</span>':'<span class="pk-ok">✔ alcanza</span>'))+'</td></tr>';}).join('');
+  box.innerHTML='<div style="font-size:11px;font-weight:700;margin:4px 0;">'+(hay?(okAll?'<span class="pk-ok">✔ Hay stock suficiente en almacén principal para convertir '+cant+' pack(s)</span>':'<span class="pk-bad">⚠ Stock insuficiente en almacén principal para '+cant+' pack(s)</span>'):'<span class="pk-mini">Sin stock cargado: sincroniza o carga el Stock Actual para validar.</span>')+'</div>'+
+    '<div class="tw" style="max-height:240px;"><table><thead><tr><th>Código</th><th>Componente</th><th>Por pack</th><th>Necesario</th><th>Stock almacén</th><th>Ya comprometido</th><th>Disponible</th><th>Resultado</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
+// ---------- render ----------
+function _pkFiltradas(an,ahora){
+  var f=(document.getElementById('pk-fest')||{}).value||'ABIERTOS', q=((document.getElementById('pk-q')||{}).value||'').toLowerCase();
+  var list=Object.keys(PK.ped).map(function(i){return PK.ped[i];}).filter(function(o){return !o.del;}).sort(function(a,b){return _pkMs(a.creadoTs)-_pkMs(b.creadoTs);});
+  var rank={}; list.forEach(function(o,i){rank[o.id]=i+1;});
+  list=list.filter(function(o){
+    var abierto=(o.estado==='PENDIENTE'||o.estado==='PROCESO');
+    if(f==='ABIERTOS'&&!abierto) return false;
+    if(f==='VENCIDOS'&&!(abierto&&pkHoras(o,ahora)>=24)) return false;
+    if(f==='CONVERTIDOS'&&o.estado!=='CONVERTIDO') return false;
+    if(f==='ANULADOS'&&o.estado!=='ANULADO') return false;
+    if(q){var p=PK.cat[o.sku]; var hay=[o.sku,p?p.desc:'',o.canal,o.mov||'',o.creadoPor||'',o.nota||''].join(' ').toLowerCase(); if(hay.indexOf(q)<0) return false;}
+    return true;
+  });
+  // abiertos: más urgentes primero; el resto: más recientes primero
+  list.sort(function(a,b){var aa=(a.estado==='PENDIENTE'||a.estado==='PROCESO'), bb=(b.estado==='PENDIENTE'||b.estado==='PROCESO');
+    if(aa&&bb) return pkHoras(b,ahora)-pkHoras(a,ahora); if(aa!==bb) return aa?-1:1; return _pkMs(b.creadoTs)-_pkMs(a.creadoTs);});
+  return {list:list,rank:rank};
+}
+function renderPacks(){
+  var tb=document.getElementById('pk-tbody'); if(!tb) return;
+  // preservar lo que alguien esté escribiendo en la tabla
+  var keep={}, act=document.activeElement, actId=act&&act.getAttribute?act.getAttribute('data-mov'):null, sel=null;
+  tb.querySelectorAll('input[data-mov]').forEach(function(i){keep[i.getAttribute('data-mov')]=i.value;});
+  if(actId&&act.selectionStart!=null) sel=act.selectionStart;
+  var ahora=Date.now(), an=pkAnalisis(), packs=pkPacks();
+  // --- selector de packs y canales (sin pisar la selección)
+  var sk=document.getElementById('pk-sku'); if(sk){var cur=sk.value;
+    sk.innerHTML=packs.map(function(p){return '<option value="'+_pkE(p.sku)+'">'+_pkE(p.sku)+' — '+_pkE(p.desc.slice(0,70))+'</option>';}).join('')||'<option value="">(crea primero un pack en el catálogo)</option>';
+    if(cur&&PK.cat[cur]&&!PK.cat[cur].del) sk.value=cur;}
+  var dl=document.getElementById('pk-canales'); if(dl) dl.innerHTML=(PK.cfg.canales||[]).map(function(c){return '<option value="'+_pkE(c)+'">';}).join('');
+  var fe=document.getElementById('pk-cfg-fer'); if(fe&&document.activeElement!==fe) fe.value=(PK.cfg.feriados||[]).join(', ');
+  var ca=document.getElementById('pk-cfg-can'); if(ca&&document.activeElement!==ca) ca.value=(PK.cfg.canales||[]).join(', ');
+  var si=document.getElementById('pk-stockinfo'); if(si){ pkStockMap(); si.textContent=pkHayStock()?('Stock validado contra almacén principal ('+D.stock.length.toLocaleString('es-PE')+' SKU cargados'+(PKS.deducidas?' · se descontaron '+PKS.deducidas+' conversión(es) hechas después de la última carga':'')+')'):'⚠ Sin stock cargado — no se puede validar'; }
+  pkPreview();
+  // --- KPIs
+  var all=Object.keys(PK.ped).map(function(i){return PK.ped[i];}).filter(function(o){return !o.del;});
+  var ab=all.filter(function(o){return o.estado==='PENDIENTE'||o.estado==='PROCESO';});
+  var venc=ab.filter(function(o){return pkHoras(o,ahora)>=24;}).length, ries=ab.filter(function(o){var h=pkHoras(o,ahora);return h>=12&&h<24;}).length;
+  var falta=ab.filter(function(o){return an[o.id]&&an[o.id].estado==='FALTA';}).length;
+  var h30=ahora-30*86400e3, conv=all.filter(function(o){return o.estado==='CONVERTIDO'&&_pkMs(o.convTs)>=h30;});
+  var enPlazo=conv.filter(function(o){return pkHoras(o,ahora)<=24;}).length, prom=conv.length?conv.reduce(function(s,o){return s+pkHoras(o,ahora);},0)/conv.length:0;
+  var kp=document.getElementById('pk-kpis');
+  if(kp) kp.innerHTML='<div class="kpi k-blue"><div class="kv">'+ab.length+'</div><div class="kl">Conversiones abiertas</div></div>'+
+    '<div class="kpi k-red"><div class="kv '+(venc?'pk-venc':'')+'">'+venc+'</div><div class="kl">Vencidas (≥ 24 h útiles)</div></div>'+
+    '<div class="kpi k-amber"><div class="kv">'+ries+'</div><div class="kl">En riesgo (12–24 h)</div></div>'+
+    '<div class="kpi k-red"><div class="kv">'+falta+'</div><div class="kl">Abiertas sin stock completo</div></div>'+
+    '<div class="kpi k-green"><div class="kv">'+(conv.length?Math.round(enPlazo/conv.length*100)+'%':'—')+'</div><div class="kl">Cumplimiento ≤ 24 h (30 días)</div></div>'+
+    '<div class="kpi k-purple"><div class="kv">'+(conv.length?pkFmtH(prom):'—')+'</div><div class="kl">Tiempo útil promedio ('+conv.length+' conv.)</div></div>';
+  // --- insignias globales
+  var b=document.getElementById('b-packs'), tab=document.getElementById('t-packs');
+  if(b){ if(venc){b.style.display='';b.className='badge pk-venc';b.style.cssText='cursor:pointer;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800;';b.textContent='⏱ '+venc+' pack'+(venc>1?'s':'')+' VENCIDO'+(venc>1?'S':'');}
+    else if(ries){b.style.display='';b.className='badge';b.style.cssText='cursor:pointer;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:700;';b.textContent='⏱ '+ries+' pack'+(ries>1?'s':'')+' por vencer';}
+    else b.style.display='none'; }
+  if(tab){ tab.textContent='🎁 Packs'+(ab.length?' ('+ab.length+')':''); tab.style.color=venc?'#b91c1c':''; }
+  // --- tabla de seguimiento
+  var r=_pkFiltradas(an,ahora), rows=[];
+  r.list.forEach(function(o){
+    var p=PK.cat[o.sku]||{desc:'(pack eliminado del catálogo)',comps:[]}, abierto=(o.estado==='PENDIENTE'||o.estado==='PROCESO'), h=pkHoras(o,ahora), sem=pkSem(h), a=an[o.id];
+    var col={VERDE:'#059669',AMBAR:'#d97706',ROJO:'#b91c1c'}[sem], pct=Math.min(100,Math.round(h/24*100));
+    var tiempo;
+    if(abierto) tiempo='<div style="font-weight:800;color:'+col+'" class="'+(sem==='ROJO'?'pk-venc':'')+'">'+pkFmtH(h)+(sem==='ROJO'?' ⚠ +'+pkFmtH(h-24):'')+'</div><div class="pk-bar"><i style="width:'+pct+'%;background:'+col+'"></i></div><div class="pk-mini">de 24 h útiles</div>';
+    else if(o.estado==='CONVERTIDO') tiempo='<div style="font-weight:700;color:'+(h<=24?'#065f46':'#b91c1c')+'">'+pkFmtH(h)+'</div><div class="pk-mini">'+(h<=24?'✔ en plazo':'✖ fuera de plazo')+'</div>';
+    else tiempo='<span class="pk-mini">—</span>';
+    var stk='<span class="pk-mini">—</span>';
+    if(abierto&&a){ if(a.estado==='OK') stk='<span class="pk-ok">✔ Stock completo</span>'; else if(a.estado==='FALTA') stk='<span class="pk-bad">⚠ Faltan '+a.det.filter(function(d){return d.falta>0;}).length+' componente(s)</span>'; else if(a.estado==='SINDATOS') stk='<span class="pk-mini">sin stock cargado</span>'; else stk='<span class="pk-bad">pack sin definir</span>'; }
+    var mov=abierto?'<input class="si" data-mov="'+o.id+'" placeholder="N° movimiento" style="width:130px;" value="'+_pkE(keep[o.id]||'')+'">':(o.estado==='CONVERTIDO'?'<b class="mono">'+_pkE(o.mov)+'</b>':'<span class="pk-mini">'+_pkE(o.motivo||'—')+'</span>');
+    var acc='';
+    if(o.estado==='PENDIENTE') acc+='<button class="btn btn-o" onclick="pkTomar(\''+o.id+'\')">▶ Tomar</button> ';
+    if(abierto) acc+='<button class="btn btn-g" onclick="pkConvertir(\''+o.id+'\')">✔ Convertido</button> <button class="btn btn-r" onclick="pkAnular(\''+o.id+'\')">✖</button>';
+    else acc+='<button class="btn btn-o" onclick="pkReabrir(\''+o.id+'\')">↩ Reabrir</button>';
+    var estTxt={PENDIENTE:'PENDIENTE',PROCESO:'EN PROCESO',CONVERTIDO:'CONVERTIDO',ANULADO:'ANULADO'}[o.estado];
+    var cls=(abierto&&sem==='ROJO')?'pk-r-venc':((abierto&&sem==='AMBAR')?'pk-r-riesgo':'');
+    rows.push('<tr class="'+cls+'"><td class="mono">'+r.rank[o.id]+'</td><td>'+pkFmtFecha(o.creadoTs)+'<div class="pk-mini">'+_pkE(o.creadoPor)+'</div></td>'+
+      '<td style="min-width:220px"><b class="mono">'+_pkE(o.sku)+'</b><div class="pk-mini">'+_pkE(p.desc.slice(0,80))+'</div>'+(o.nota?'<div class="pk-mini">📝 '+_pkE(o.nota)+'</div>':'')+'</td>'+
+      '<td style="text-align:center;font-weight:800">'+o.cant+'</td><td>'+_pkE(o.canal)+'</td><td>'+stk+' <a href="#" onclick="pkToggle(\''+o.id+'\');return false;" class="pk-mini">'+(PKS.open[o.id]?'▲ ocultar':'▼ detalle')+'</a></td>'+
+      '<td><span class="pk-chip-est pk-e-'+o.estado+'">'+estTxt+'</span>'+(o.tomadoPor&&o.estado==='PROCESO'?'<div class="pk-mini">'+_pkE(o.tomadoPor)+'</div>':'')+'</td><td>'+tiempo+'</td><td>'+mov+'</td>'+
+      '<td>'+(o.convTs?pkFmtFecha(o.convTs)+'<div class="pk-mini">'+_pkE(o.convPor)+'</div>':'<span class="pk-mini">—</span>')+'</td><td style="white-space:nowrap">'+acc+'</td></tr>');
+    if(PKS.open[o.id]){
+      var det=(a&&a.det&&a.det.length)?a.det:pkNecesidad(p,o.cant).map(function(c){return {cod:c.cod,desc:pkDesc(c.cod),porPack:c.cant,nec:c.nec,stock:null,disp:null,falta:0};});
+      var h2=(o.historial||[]).map(function(x){return '<div class="pk-mini">'+pkFmtFecha(x.ts)+' · <b>'+_pkE(x.por)+'</b> · '+_pkE(x.ac)+'</div>';}).join('');
+      rows.push('<tr class="pk-det"><td></td><td colspan="10"><table><thead><tr><th>Componente</th><th>Descripción</th><th>Por pack</th><th>Necesario</th><th>Stock almacén</th><th>Disponible (tras órdenes previas)</th><th>Faltan</th></tr></thead><tbody>'+
+        det.map(function(d){return '<tr><td class="mono">'+_pkE(d.cod)+'</td><td>'+_pkE(d.desc||'—')+'</td><td style="text-align:right">'+d.porPack+'</td><td style="text-align:right"><b>'+d.nec+'</b></td><td style="text-align:right">'+(d.stock==null?'—':d.stock)+'</td><td style="text-align:right">'+(d.disp==null?'—':d.disp)+'</td><td style="text-align:right" class="'+(d.falta>0?'pk-bad':'')+'">'+(d.falta>0?d.falta:'—')+'</td></tr>';}).join('')+
+        '</tbody></table><div style="margin-top:4px;"><b class="pk-mini">Historial</b>'+h2+'</div></td></tr>');
+    }
+  });
+  tb.innerHTML=rows.join('')||'<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:18px;">Sin conversiones en esta vista.</td></tr>';
+  if(actId){var el=tb.querySelector('input[data-mov="'+actId+'"]'); if(el){el.focus(); if(sel!=null){try{el.setSelectionRange(sel,sel);}catch(e){}}}}
+  // --- catálogo
+  var cb=document.getElementById('pk-cat-body');
+  if(cb) cb.innerHTML=packs.map(function(p){var arm=pkArmables(p);
+    return '<tr><td class="mono"><b>'+_pkE(p.sku)+'</b></td><td>'+_pkE(p.desc)+'</td><td>'+p.comps.map(function(c){return '<span class="chip c-gris" title="'+_pkE(pkDesc(c.cod))+'">'+_pkE(c.cod)+' × '+c.cant+'</span>';}).join(' ')+'</td>'+
+      '<td style="font-weight:800;color:'+(arm==null?'#6b7280':(arm>0?'#065f46':'#b91c1c')+'')+'">'+(arm==null?'—':arm)+'</td>'+
+      '<td style="white-space:nowrap"><button class="btn btn-o" onclick="pkEditarPack(\''+_pkE(p.sku)+'\')">✏ Editar</button> <button class="btn btn-r" onclick="pkEliminarPack(\''+_pkE(p.sku)+'\')">🗑</button></td></tr>';}).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px;">Aún no hay packs. Usa "＋ Nuevo pack".</td></tr>';
+}
+
+// ---------- exportación ----------
+function expPacks(){
+  var ahora=Date.now(), an=pkAnalisis(), r=_pkFiltradas(an,ahora);
+  var est={PENDIENTE:'Pendiente',PROCESO:'En proceso',CONVERTIDO:'Convertido',ANULADO:'Anulado'};
+  var datos=r.list.map(function(o){var p=PK.cat[o.sku]||{desc:''}, h=pkHoras(o,ahora), a=an[o.id], ab=(o.estado==='PENDIENTE'||o.estado==='PROCESO');
+    return [r.rank[o.id],pkFmtFecha(o.creadoTs),o.creadoPor||'',o.sku,p.desc,o.cant,o.canal,est[o.estado],Math.round(h*10)/10,
+      ab?(h>=24?'VENCIDO':(h>=12?'En riesgo':'En plazo')):(o.estado==='CONVERTIDO'?(h<=24?'Cumplió':'No cumplió'):'—'),
+      o.mov||'',o.convTs?pkFmtFecha(o.convTs):'',o.convPor||'',
+      ab?(a?(a.estado==='OK'?'Sí':(a.estado==='FALTA'?'NO':'Sin stock cargado')):'—'):'—',
+      ab&&a&&a.estado==='FALTA'?a.det.filter(function(d){return d.falta>0;}).map(function(d){return d.cod+' (faltan '+d.falta+')';}).join('; '):'',
+      o.nota||o.motivo||''];});
+  exportarExcelMerpes({datos:datos,
+    cabeceras:['#','Registrado','Registrado por','SKU pack','Descripción','Cant.','Canal','Estado','Horas útiles','SLA 24 h','N° movimiento','Convertido','Convertido por','Stock completo','Faltantes','Nota / motivo'],
+    titulo:'CONVERSIÓN DE PACKS',subtitulo:'Seguimiento con SLA de 24 horas útiles (L–V 8–18 h · Sáb 9–12 h)',
+    filtros:'Vista: '+((document.getElementById('pk-fest')||{}).selectedOptions?document.getElementById('pk-fest').selectedOptions[0].text:'Abiertos')+'   ·   '+_selloExport(),
+    archivo:'Packs_'+new Date().toISOString().slice(0,10),sheetName:'Packs',
+    kpis:[{val:datos.length,lbl:'Conversiones',color:'blue'},{val:datos.filter(function(x){return x[9]==='VENCIDO';}).length,lbl:'Vencidas',color:'red'},{val:datos.filter(function(x){return x[7]==='Convertido';}).length,lbl:'Convertidas',color:'green'}],
+    colWidths:[5,13,16,11,40,7,14,12,10,12,16,13,16,14,28,28],colFmts:{}});
+}
+
+// arranque (tras cargar la página)
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',pkIniciar); else setTimeout(pkIniciar,0);
 
 </script>
 </body>
