@@ -1514,7 +1514,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
   <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
-  <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v18</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
   <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
 </div>
 <div class="krow" id="pk-kpis"></div>
@@ -1529,7 +1529,14 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
     <div><label>Nota (opcional)</label><input class="si" id="pk-nota" placeholder="Ej: para la rifa del viernes"></div>
     <div><button class="btn btn-b" onclick="pkRegistrar()">📨 Registrar necesidad</button></div>
   </div>
-  <div id="pk-prev" style="padding:0 12px 12px;"></div>
+  <div style="padding:0 12px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+    <span class="pk-mini" style="font-weight:700;">PACK SELECCIONADO:</span>
+    <button class="btn btn-o" onclick="pkEditarPackSel()" title="Editar los componentes o la descripción del pack elegido arriba">✏ Editar este pack</button>
+    <button class="btn btn-r" onclick="pkEliminarPackSel()" title="Eliminar el pack elegido arriba del catálogo">🗑 Eliminar este pack</button>
+    <button class="btn btn-b" onclick="pkEditarPack('')">＋ Nuevo pack</button>
+  </div>
+  <div id="pk-prev" style="padding:0 12px 8px;"></div>
+  <div id="pk-mis" style="padding:0 12px 12px;"></div>
 </div>
 
 <div class="tbox">
@@ -7664,7 +7671,14 @@ function pkRegistrar(){
   else pkToast('✔ Necesidad registrada: '+cant+' × '+_pkE(sku)+' · stock completo.','ok');
 }
 // Editar una necesidad abierta (cantidad, pack, canal o nota)
-function pkEditarOrden(id){PKS.edit=id; PKS.open[id]=false; renderPacks(); var e=document.getElementById('pk-e-cant'); if(e){e.focus();e.select();}}
+function pkEditarOrden(id){
+  PKS.edit=id; PKS.open[id]=false;
+  var f=document.getElementById('pk-fest'), o=PK.ped[id];
+  if(f&&o){ var ab=(o.estado==='PENDIENTE'||o.estado==='PROCESO'); if(f.value==='VENCIDOS'||(f.value==='ABIERTOS'&&!ab)||(f.value==='CONVERTIDOS'&&o.estado!=='CONVERTIDO')||(f.value==='ANULADOS'&&o.estado!=='ANULADO')) f.value='TODOS'; }
+  renderPacks(); var e=document.getElementById('pk-e-cant'); if(e){ try{e.scrollIntoView({block:'center'});}catch(x){} e.focus(); e.select(); }
+}
+function pkEditarPackSel(){ var s=(document.getElementById('pk-sku')||{}).value; if(!s||!PK.cat[s]){alert('No hay un pack seleccionado.');return;} pkEditarPack(s); }
+function pkEliminarPackSel(){ var s=(document.getElementById('pk-sku')||{}).value; if(!s||!PK.cat[s]){alert('No hay un pack seleccionado.');return;} pkEliminarPack(s); }
 function pkCancelarEdicion(){PKS.edit=null; renderPacks();}
 function pkGuardarOrden(id){
   var u=pkNeedUser(function(){pkGuardarOrden(id);}); if(!u) return; var o=_pkOrden(id); if(!o) return;
@@ -7829,6 +7843,17 @@ function renderPacks(){
   var ca=document.getElementById('pk-cfg-can'); if(ca&&document.activeElement!==ca) ca.value=(PK.cfg.canales||[]).join(', ');
   var si=document.getElementById('pk-stockinfo'); if(si){ pkStockMap(); si.textContent=pkHayStock()?('Stock validado contra almacén principal ('+D.stock.length.toLocaleString('es-PE')+' SKU cargados'+(PKS.deducidas?' · se descontaron '+PKS.deducidas+' conversión(es) hechas después de la última carga':'')+')'):'⚠ Sin stock cargado — no se puede validar'; }
   pkPreview();
+  // --- necesidades abiertas, con editar / eliminar junto al formulario
+  var mis=document.getElementById('pk-mis');
+  if(mis){
+    var abiertas=Object.keys(PK.ped).map(function(i){return PK.ped[i];}).filter(function(o){return !o.del&&(o.estado==='PENDIENTE'||o.estado==='PROCESO');}).sort(function(a,b){return _pkMs(a.creadoTs)-_pkMs(b.creadoTs);});
+    mis.innerHTML='<div style="font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:4px 0;">Necesidades abiertas registradas ('+abiertas.length+') — edita o elimina aquí</div>'+
+      (abiertas.length?'<div class="tw" style="max-height:260px;"><table><tbody>'+abiertas.map(function(o){var q=PK.cat[o.sku];
+        return '<tr><td class="mono"><b>'+_pkE(o.sku)+'</b></td><td>'+_pkE(q?q.desc.slice(0,60):'(pack eliminado)')+'</td><td style="text-align:center;font-weight:800">× '+o.cant+'</td><td>'+_pkE(o.canal)+'</td>'+
+          '<td class="pk-mini">'+_pkE(o.creadoPor)+' · '+pkFmtFecha(o.creadoTs)+'</td><td><span class="pk-chip-est pk-e-'+o.estado+'">'+(o.estado==='PROCESO'?'EN PROCESO':'PENDIENTE')+'</span></td>'+
+          '<td style="white-space:nowrap"><button class="btn btn-o" onclick="pkEditarOrden(\''+o.id+'\')">✏ Editar</button> <button class="btn btn-r" onclick="pkEliminarOrden(\''+o.id+'\')">🗑 Eliminar</button></td></tr>';}).join('')+'</tbody></table></div>'
+        :'<div class="pk-mini">Aún no hay necesidades abiertas. Las que registres aparecerán aquí con sus botones ✏ Editar y 🗑 Eliminar.</div>');
+  }
   // --- KPIs
   var all=Object.keys(PK.ped).map(function(i){return PK.ped[i];}).filter(function(o){return !o.del;});
   var ab=all.filter(function(o){return o.estado==='PENDIENTE'||o.estado==='PROCESO';});
