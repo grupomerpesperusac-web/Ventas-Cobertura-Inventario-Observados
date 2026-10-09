@@ -7316,7 +7316,7 @@ function expReporteCompleto() {
 var PK={cfg:{ts:'2026-10-09T00:00:00.000Z',
          feriados:['2026-10-08','2026-11-01','2026-12-08','2026-12-09','2026-12-25'],
          canales:['Calidda','Backus / Mybees','Aliados','Tiendas','Web','Corporativo']},
-        cat:{}, ped:{}, rst:''};
+        cat:{}, ped:{}, rst:'', purge:''};
 var PKS={ver:'v1',LS:'merpes_packs_v1',LSU:'merpes_packs_user',FILE:'packs_estado.json',BR:'datos-packs',
          sha:null,branchOk:null,dirty:false,busy:false,lastPush:0,lastOk:null,err:null,open:{},started:false,seedDone:false,timer:null};
 var PK_USERS=['María Rojas','Pool Ramírez','Yampier Quispe','Dante Clavijo','Endira Gómez','Cristina Chávez'];
@@ -7357,14 +7357,9 @@ var PK_SEEDS_BACKUS=[
  {sku:"35000066",desc:"TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE TV C32K4HG + PARLANTE RECARGABLE 80CM CO LUCES SZ-8832",
   comps:[{cod:"10000865",cant:1,desc:"TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE TV C32K4HG"},{cod:"10001015",cant:1,desc:"PARLANTE RECARGABLE 80CM CO LUCES SZ-8832"}],
   ts:'2026-10-09T12:00:00.000Z',por:'Sistema (precarga desde PACKS BACKUS.xlsx)'}];
-var PK_SEEDS_PREV=[
- {sku:'35000064',desc:'PACK RIFA MUNDIALISTA PILSEN (3 MESAS PILSEN + 4 BANCOS PILSEN + 5 SILLAS PILSEN + PACK DE 12 VASOS DE VIDRIO + TELEVISOR CAIXUN)',
-  comps:[{cod:'10000865',cant:1},{cod:'12000228',cant:3},{cod:'12000229',cant:5},{cod:'12000305',cant:4},{cod:'15000167',cant:2}],
-  ts:'2026-10-09T00:00:00.000Z',por:'Sistema (precarga desde correo de María Rojas del 23/09/2026)'},
- {sku:'35000040',desc:'PROYECTOR ANDROID HY300 PRO HD 1280 COD. N496 + PELOTA FIFA WC 26 TRIONDA CLUB JD8028_MABE',
-  comps:[{cod:'11011468',cant:1},{cod:'32000306',cant:1}],
-  ts:'2026-10-09T00:00:00.000Z',por:'Sistema (precarga desde correo de María Rojas del 21/07/2026)'}];
-var PK_SEEDS=PK_SEEDS_BACKUS.concat(PK_SEEDS_PREV);
+var PK_SEEDS=PK_SEEDS_BACKUS;
+// Depuración única (v17): los 2 packs de ejemplo del arranque (y sus conversiones, si las hubiera) se eliminan una sola vez.
+var PK_PURGE_ID='v17-ejemplos', PK_PURGE_SKUS=['35000064','35000040'];
 // Reinicio único de pruebas (v16): las conversiones registradas ANTES de este momento se anulan una sola vez.
 var PK_RESET_ID='v16-backus', PK_RESET_CUTOFF='2026-10-09T12:00:00.000Z';
 
@@ -7462,14 +7457,15 @@ function pkMerge(remote){
   PK.ped=_pkMergeMap(PK.ped,remote.ped||{});
   if(remote.cfg && _pkMs(remote.cfg.ts)>=_pkMs(PK.cfg.ts)) PK.cfg=remote.cfg;
   if(remote.rst && String(remote.rst)>String(PK.rst||'')) PK.rst=remote.rst;
+  if(remote.purge && String(remote.purge)>String(PK.purge||'')) PK.purge=remote.purge;
 }
-function pkSerialize(){return JSON.stringify({v:1,upd:_pkNow(),cfg:PK.cfg,rst:PK.rst||'',cat:PK.cat,ped:PK.ped});}
+function pkSerialize(){return JSON.stringify({v:1,upd:_pkNow(),cfg:PK.cfg,rst:PK.rst||'',purge:PK.purge||'',cat:PK.cat,ped:PK.ped});}
 
 // ---------- copia local ----------
 function pkSaveLocal(){try{localStorage.setItem(PKS.LS,JSON.stringify({PK:PK,dirty:PKS.dirty,seedDone:PKS.seedDone}));}catch(e){}}
 function pkLoadLocal(){
   try{var raw=localStorage.getItem(PKS.LS); if(!raw) return;
-    var p=JSON.parse(raw); if(p&&p.PK){PK.cat=p.PK.cat||{};PK.ped=p.PK.ped||{};PK.rst=p.PK.rst||'';if(p.PK.cfg)PK.cfg=p.PK.cfg;PKS.dirty=!!p.dirty;PKS.seedDone=!!p.seedDone;}
+    var p=JSON.parse(raw); if(p&&p.PK){PK.cat=p.PK.cat||{};PK.ped=p.PK.ped||{};PK.rst=p.PK.rst||'';PK.purge=p.PK.purge||'';if(p.PK.cfg)PK.cfg=p.PK.cfg;PKS.dirty=!!p.dirty;PKS.seedDone=!!p.seedDone;}
   }catch(e){}
 }
 
@@ -7517,6 +7513,12 @@ function pkSetSync(kind,msg){
 // Precarga idempotente: agrega cada pack semilla que NO exista aún en el catálogo (ni siquiera como eliminado),
 // y aplica una sola vez el reinicio de conversiones de prueba. Se ejecuta tras fusionar con lo último del servidor.
 function pkAplicarPrecarga(){
+  if(String(PK.purge||'')<PK_PURGE_ID){
+    var nowP=_pkNow();
+    PK_PURGE_SKUS.forEach(function(sku){ var c=PK.cat[sku]; if(c&&!c.del){ PK.cat[sku]={sku:sku,desc:c.desc,comps:c.comps,del:true,ts:nowP,por:'Sistema (depuración de ejemplos v17)'}; }
+      Object.keys(PK.ped).forEach(function(i){ var o=PK.ped[i]; if(!o.del&&o.sku===sku){ o.del=true; o.delPor='Sistema (depuración de ejemplos v17)'; o.delTs=nowP; o.ts=nowP; } }); });
+    PK.purge=PK_PURGE_ID; PKS.dirty=true;
+  }
   PK_SEEDS.forEach(function(sd){ if(!PK.cat[sd.sku]){ PK.cat[sd.sku]=JSON.parse(JSON.stringify(sd)); PKS.dirty=true; } });
   if(String(PK.rst||'')<PK_RESET_ID){
     var n=0, now=_pkNow();
@@ -7667,13 +7669,16 @@ function pkCancelarEdicion(){PKS.edit=null; renderPacks();}
 function pkGuardarOrden(id){
   var u=pkNeedUser(function(){pkGuardarOrden(id);}); if(!u) return; var o=_pkOrden(id); if(!o) return;
   var sku=document.getElementById('pk-e-sku').value, cant=parseInt(document.getElementById('pk-e-cant').value,10),
-      canal=(document.getElementById('pk-e-canal').value||'').trim(), nota=(document.getElementById('pk-e-nota').value||'').trim();
+      canal=(document.getElementById('pk-e-canal').value||'').trim(), nota=(document.getElementById('pk-e-nota').value||'').trim(),
+      movEl=document.getElementById('pk-e-mov'), mov=movEl?(movEl.value||'').trim():null;
   if(!PK.cat[sku]){alert('Elige el pack.');return;} if(!(cant>0)){alert('La cantidad debe ser mayor a 0.');return;} if(!canal){alert('Indica el canal.');return;}
   var cambios=[]; if(sku!==o.sku) cambios.push('pack '+o.sku+' → '+sku); if(cant!==o.cant) cambios.push('cantidad '+o.cant+' → '+cant);
   if(canal!==o.canal) cambios.push('canal '+o.canal+' → '+canal); if(nota!==(o.nota||'')) cambios.push('nota');
+  if(mov!==null){ if(!mov){alert('El N° de movimiento no puede quedar vacío en una conversión ya realizada.');return;} if(mov!==(o.mov||'')) cambios.push('mov. '+(o.mov||'—')+' → '+mov); }
   if(!cambios.length){PKS.edit=null;renderPacks();return;}
   if(o.estado==='PROCESO'&&!confirm('Almacén ya tomó esta orden ('+(o.tomadoPor||'')+'). ¿Aplicar el cambio igualmente?')) return;
-  o.sku=sku; o.cant=cant; o.canal=canal; o.nota=nota;
+  if(o.estado==='CONVERTIDO'&&!confirm('Esta conversión YA fue realizada por '+(o.convPor||'Almacén')+' (mov. '+(o.mov||'—')+'). ¿Aplicar el cambio igualmente?')) return;
+  o.sku=sku; o.cant=cant; o.canal=canal; o.nota=nota; if(mov!==null) o.mov=mov;
   if(canal && PK.cfg.canales.indexOf(canal)<0){PK.cfg.canales.push(canal);PK.cfg.ts=_pkNow();}
   _pkHist(o,u,'EDITÓ: '+cambios.join('; ')); PKS.edit=null; pkMutated();
   var an=pkAnalisis()[id];
@@ -7763,9 +7768,11 @@ function pkGuardarPack(){
 }
 function pkEliminarPack(sku){
   var u=pkNeedUser(function(){pkEliminarPack(sku);}); if(!u) return;
-  var abiertas=Object.keys(PK.ped).filter(function(i){var o=PK.ped[i];return !o.del&&o.sku===sku&&(o.estado==='PENDIENTE'||o.estado==='PROCESO');}).length;
-  if(abiertas){alert('No se puede eliminar: hay '+abiertas+' conversión(es) abierta(s) de este pack.');return;}
-  if(!confirm('¿Eliminar el pack '+sku+' del catálogo? (Las conversiones ya registradas se conservan.)')) return;
+  var ab=Object.keys(PK.ped).filter(function(i){var o=PK.ped[i];return !o.del&&o.sku===sku&&(o.estado==='PENDIENTE'||o.estado==='PROCESO');});
+  var msg='¿Eliminar el pack '+sku+' del catálogo? (Las conversiones ya realizadas se conservan.)';
+  if(ab.length) msg='⚠ Este pack tiene '+ab.length+' conversión(es) ABIERTA(S) (pendientes o en proceso).\n\nSi continúas, se eliminarán también esas necesidades.\n\n¿Eliminar el pack '+sku+' y sus necesidades abiertas?';
+  if(!confirm(msg)) return;
+  var nowD=_pkNow(); ab.forEach(function(i){var o=PK.ped[i]; o.del=true; o.delPor=u; o.delTs=nowD; o.ts=nowD; if(PKS.edit===i) PKS.edit=null;});
   var p=PK.cat[sku]; PK.cat[sku]={sku:sku,desc:p?p.desc:'',comps:p?p.comps:[],del:true,ts:_pkNow(),por:u}; pkMutated();
 }
 
@@ -7857,7 +7864,7 @@ function renderPacks(){
     var acc='';
     if(o.estado==='PENDIENTE') acc+='<button class="btn btn-o" onclick="pkTomar(\''+o.id+'\')">▶ Tomar</button> ';
     if(abierto) acc+='<button class="btn btn-g" onclick="pkConvertir(\''+o.id+'\')">✔ Convertido</button> <button class="btn btn-o" title="Editar cantidad, pack, canal o nota" onclick="pkEditarOrden(\''+o.id+'\')">✏ Editar</button> <button class="btn btn-r" title="Eliminar esta necesidad" onclick="pkEliminarOrden(\''+o.id+'\')">🗑</button>';
-    else acc+='<button class="btn btn-o" onclick="pkReabrir(\''+o.id+'\')">↩ Reabrir</button> <button class="btn btn-r" title="Eliminar esta necesidad" onclick="pkEliminarOrden(\''+o.id+'\')">🗑</button>';
+    else acc+='<button class="btn btn-o" onclick="pkReabrir(\''+o.id+'\')">↩ Reabrir</button> <button class="btn btn-o" title="Editar pack, cantidad, canal, nota o N° de movimiento" onclick="pkEditarOrden(\''+o.id+'\')">✏ Editar</button> <button class="btn btn-r" title="Eliminar esta necesidad" onclick="pkEliminarOrden(\''+o.id+'\')">🗑</button>';
     var estTxt={PENDIENTE:'PENDIENTE',PROCESO:'EN PROCESO',CONVERTIDO:'CONVERTIDO',ANULADO:'ANULADO'}[o.estado];
     var cls=(abierto&&sem==='ROJO')?'pk-r-venc':((abierto&&sem==='AMBAR')?'pk-r-riesgo':'');
     rows.push('<tr class="'+cls+'"><td class="mono">'+r.rank[o.id]+'</td><td>'+pkFmtFecha(o.creadoTs)+'<div class="pk-mini">'+_pkE(o.creadoPor)+'</div></td>'+
@@ -7867,11 +7874,12 @@ function renderPacks(){
       '<td>'+(o.convTs?pkFmtFecha(o.convTs)+'<div class="pk-mini">'+_pkE(o.convPor)+'</div>':'<span class="pk-mini">—</span>')+'</td><td style="white-space:nowrap">'+acc+'</td></tr>');
     if(PKS.edit===o.id){
       var kv=function(id,def){return (keep[id]!=null)?keep[id]:def;};
-      rows.push('<tr style="background:#eff6ff;"><td></td><td colspan="10"><div style="display:grid;grid-template-columns:minmax(260px,2fr) 90px minmax(140px,1fr) minmax(160px,1.4fr) auto;gap:8px;align-items:end;padding:6px 0;">'+
+      rows.push('<tr style="background:#eff6ff;"><td></td><td colspan="10"><div style="display:grid;grid-template-columns:minmax(260px,2fr) 90px minmax(140px,1fr) minmax(160px,1.4fr)'+(o.estado==='CONVERTIDO'?' minmax(120px,1fr)':'')+' auto;gap:8px;align-items:end;padding:6px 0;">'+
         '<div><label class="pk-mini">PACK</label><select class="sel" id="pk-e-sku" data-keep="1" style="width:100%">'+packs.map(function(q){return '<option value="'+_pkE(q.sku)+'"'+((kv('pk-e-sku',o.sku)===q.sku)?' selected':'')+'>'+_pkE(q.sku)+' — '+_pkE(q.desc.slice(0,60))+'</option>';}).join('')+'</select></div>'+
         '<div><label class="pk-mini">CANTIDAD</label><input class="si" id="pk-e-cant" data-keep="1" type="number" min="1" step="1" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-cant',o.cant))+'"></div>'+
         '<div><label class="pk-mini">CANAL</label><input class="si" id="pk-e-canal" data-keep="1" list="pk-canales" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-canal',o.canal))+'"></div>'+
         '<div><label class="pk-mini">NOTA</label><input class="si" id="pk-e-nota" data-keep="1" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-nota',o.nota||''))+'"></div>'+
+        (o.estado==='CONVERTIDO'?'<div><label class="pk-mini">N° MOVIMIENTO</label><input class="si" id="pk-e-mov" data-keep="1" style="width:100%;box-sizing:border-box;" value="'+_pkE(kv('pk-e-mov',o.mov||''))+'"></div>':'')+
         '<div style="white-space:nowrap"><button class="btn btn-b" onclick="pkGuardarOrden(\''+o.id+'\')">💾 Guardar cambios</button> <button class="btn btn-r" onclick="pkCancelarEdicion()">Cancelar</button></div></div>'+
         '<div class="pk-mini">Editando la necesidad registrada por '+_pkE(o.creadoPor)+' el '+pkFmtFecha(o.creadoTs)+'. El reloj de 24 h útiles NO se reinicia.</div></td></tr>');
     }
