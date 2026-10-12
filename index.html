@@ -140,6 +140,11 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 .pk-form .si,.pk-form .sel{width:100%;box-sizing:border-box;}
 @media(max-width:900px){.pk-form{grid-template-columns:1fr 1fr;}}
 
+.pk-sub{width:100%;border-collapse:collapse;font-size:10px;}
+.pk-sub th{background:#f1f5f9;color:#475569;font-size:8px;text-transform:uppercase;padding:2px 6px;text-align:left;border-bottom:1px solid #cbd5e1;}
+.pk-sub td{padding:2px 6px;border-bottom:1px dashed #e2e8f0;vertical-align:top;}
+.pk-sub .num,#pane-packs td.num{text-align:right;}
+
 /* ══ CHART BOX (tamaño fijo) ══ */
 .cgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-top:14px;}
 .cbox{background:var(--bg2);border:1.5px solid var(--line);border-radius:var(--r);padding:14px;}
@@ -1515,7 +1520,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
   <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
-  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v20</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v21</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
   <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
 </div>
 <div class="krow" id="pk-kpis"></div>
@@ -1556,10 +1561,10 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 
 <div class="tbox">
   <div class="tbox-h"><h3>🧩 Catálogo de packs (SKU final = componentes)</h3>
-    <div class="tbar"><button class="btn btn-o" onclick="pkRestaurarBackus()" title="Vuelve a cargar al catálogo los 12 combos de Backus que falten o hayan sido eliminados">♻ Restaurar packs de Backus</button> <button class="btn btn-b" onclick="pkEditarPack('')">＋ Nuevo pack</button></div></div>
+    <div class="tbar"><button class="btn btn-g" onclick="expPacksRepos()" title="Excel con los componentes a reponer para convertir la compra sugerida de todos los packs (consolidado)">⬇ Excel: componentes a reponer</button> <button class="btn btn-o" onclick="pkRestaurarBackus()" title="Vuelve a cargar al catálogo los 12 combos de Backus que falten o hayan sido eliminados">♻ Restaurar packs de Backus</button> <button class="btn btn-b" onclick="pkEditarPack('')">＋ Nuevo pack</button></div></div>
   <div id="pk-editor" style="display:none;padding:12px;border-bottom:1.5px solid var(--line);background:#f8fafc;"></div>
-  <div class="tw" style="max-height:420px;"><table>
-    <thead><tr><th>SKU final</th><th>Descripción</th><th>Componentes (cód. × cant.)</th><th>Armables hoy</th><th></th></tr></thead>
+  <div class="tw" style="max-height:640px;"><table>
+    <thead><tr><th>SKU final</th><th>Descripción</th><th>Stock actual</th><th>Compra sugerida (packs)</th><th>Programado (abiertas)</th><th>Componentes (SKU · descripción · stock)</th><th>Armables hoy</th><th></th></tr></thead>
     <tbody id="pk-cat-body"></tbody>
   </table></div>
 </div>
@@ -7617,7 +7622,8 @@ function pkStockMap(){
   if(snap>0){
     Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(o.del||o.estado!=='CONVERTIDO'||_pkMs(o.convTs)<=snap) return;
       var p=PK.cat[o.sku]; if(!p) return; PKS.deducidas++;
-      (p.comps||[]).forEach(function(c){ if(m[c.cod]!=null) m[c.cod]=Math.max(0,m[c.cod]-c.cant*o.cant); });});
+      (p.comps||[]).forEach(function(c){ if(m[c.cod]!=null) m[c.cod]=Math.max(0,m[c.cod]-c.cant*o.cant); });
+      m[o.sku]=(m[o.sku]||0)+o.cant; });
   }
   return m;
 }
@@ -7844,6 +7850,50 @@ function _pkFiltradas(an,ahora){
     if(aa&&bb) return pkHoras(b,ahora)-pkHoras(a,ahora); if(aa!==bb) return aa?-1:1; return _pkMs(b.creadoTs)-_pkMs(a.creadoTs);});
   return {list:list,rank:rank};
 }
+
+// ---------- compra sugerida y reposición de componentes (catálogo) ----------
+// Compra sugerida del pack = misma regla del sistema: stock mínimo (50 % de la venta mensual promedio del período) − stock actual.
+function pkSugerido(cod,st){
+  var k=(D.kardex||[]).find(function(x){return x.cod===cod;});
+  var P=(typeof PERIODO_BASE!=='undefined'&&PERIODO_BASE>0)?PERIODO_BASE:6;
+  if(!k||!k.meses) return {prom:0,stkMin:0,sug:0,sinVentas:true};
+  var prom=Math.round(k.meses.slice(-P).reduce(function(a,b){return a+b;},0)/P*10)/10;
+  var stkMin=Math.ceil(prom*0.5), s=st[cod]||0;
+  return {prom:prom,stkMin:stkMin,sug:Math.max(0,stkMin-s),sinVentas:prom<=0};
+}
+function pkCatCalc(){
+  var st=pkStockMap(), hay=pkHayStock(), out={}, cons={}, prog={}, consProg={};
+  Object.keys(PK.ped).forEach(function(i){var o=PK.ped[i]; if(o.del||!(o.estado==='PENDIENTE'||o.estado==='PROCESO')) return;
+    prog[o.sku]=(prog[o.sku]||0)+o.cant; var p=PK.cat[o.sku];
+    if(p&&!p.del) (p.comps||[]).forEach(function(c){consProg[c.cod]=(consProg[c.cod]||0)+c.cant*o.cant;});});
+  pkPacks().forEach(function(p){
+    var s=pkSugerido(p.sku,st);
+    var comps=(p.comps||[]).map(function(c){var stock=st[c.cod]||0, req=s.sug*c.cant;
+      return {cod:c.cod,desc:pkDesc(c.cod),cant:c.cant,stock:stock,req:req,falta:Math.max(0,req-stock)};});
+    out[p.sku]={stock:hay?(st[p.sku]||0):null,sug:s.sug,sinVentas:s.sinVentas,prom:s.prom,stkMin:s.stkMin,prog:prog[p.sku]||0,comps:comps};
+    comps.forEach(function(c){ var k=cons[c.cod]||(cons[c.cod]={cod:c.cod,desc:c.desc,stock:c.stock,req:0,packs:[]});
+      k.req+=c.req; if(c.req>0) k.packs.push(p.sku+' ('+s.sug+' × '+c.cant+')'); });
+  });
+  return {packs:out,cons:cons,consProg:consProg,hay:hay,stock:st};
+}
+function expPacksRepos(){
+  if(!pkHayStock()){ pkToast('Carga primero el Stock Actual para calcular la reposición.','warn'); return; }
+  var C=pkCatCalc(), codes={}, k; for(k in C.cons) codes[k]=1; for(k in C.consProg) codes[k]=1;
+  var filas=Object.keys(codes).map(function(cod){
+    var c=C.cons[cod], stock=C.stock[cod]||0, req=c?c.req:0, rp=C.consProg[cod]||0;
+    return {cod:cod,desc:(c&&c.desc)||pkDesc(cod)||'',stock:stock,req:req,rep:Math.max(0,req-stock),rp:rp,fp:Math.max(0,rp-stock),packs:c?c.packs.join('; '):''};
+  }).filter(function(f){return f.rep>0||f.fp>0;}).sort(function(a,b){return (b.rep-a.rep)||(b.fp-a.fp);});
+  if(!filas.length){ pkToast('Con el stock actual no hay componentes por reponer (ni para las cantidades sugeridas ni para las conversiones programadas).','ok'); return; }
+  var datos=filas.map(function(f){return [f.cod,f.desc,f.stock,f.req,f.rep,f.rp,f.fp,f.packs];});
+  exportarExcelMerpes({datos:datos,
+    cabeceras:['Código','Descripción','Stock almacén','Requerido (packs sugeridos)','CANTIDAD SUGERIDA A REPONER','Requerido (conversiones programadas)','Falta para conversiones programadas','Packs que lo usan (cant. sugerida × por pack)'],
+    titulo:'REPOSICIÓN DE COMPONENTES PARA CONVERSIÓN DE PACKS',
+    subtitulo:'Consolida todos los componentes necesarios para convertir la compra sugerida de cada pack del catálogo (stock mínimo = 50 % de la venta mensual − stock actual)',
+    filtros:_selloExport(),
+    archivo:'Reposicion_Componentes_Packs_'+new Date().toISOString().slice(0,10),sheetName:'Reposición',
+    kpis:[{val:filas.filter(function(f){return f.rep>0;}).length,lbl:'Componentes a reponer',color:'red'},{val:filas.reduce(function(a,f){return a+f.rep;},0),lbl:'Unidades sugeridas',color:'blue'},{val:filas.filter(function(f){return f.fp>0;}).length,lbl:'Faltan p/ programadas',color:'amber'}],
+    colWidths:[12,48,12,16,18,18,18,60],colFmts:{}});
+}
 function renderPacks(){
   var tb=document.getElementById('pk-tbody'); if(!tb) return;
   // preservar lo que alguien esté escribiendo en la tabla
@@ -7926,10 +7976,21 @@ function renderPacks(){
   if(actId){var el=document.getElementById(actId); if(el){el.focus(); if(sel!=null){try{el.setSelectionRange(sel,sel);}catch(e){}}}}
   // --- catálogo
   var cb=document.getElementById('pk-cat-body');
-  if(cb) cb.innerHTML=packs.map(function(p){var arm=pkArmables(p);
-    return '<tr><td class="mono"><b>'+_pkE(p.sku)+'</b></td><td>'+_pkE(p.desc)+'</td><td>'+p.comps.map(function(c){return '<span class="chip c-gris" title="'+_pkE(pkDesc(c.cod))+'">'+_pkE(c.cod)+' × '+c.cant+'</span>';}).join(' ')+'</td>'+
-      '<td style="font-weight:800;color:'+(arm==null?'#6b7280':(arm>0?'#065f46':'#b91c1c')+'')+'">'+(arm==null?'—':arm)+'</td>'+
-      '<td style="white-space:nowrap"><button class="btn btn-o" onclick="pkEditarPack(\''+_pkE(p.sku)+'\')">✏ Editar</button> <button class="btn btn-r" onclick="pkEliminarPack(\''+_pkE(p.sku)+'\')">🗑</button></td></tr>';}).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px;">Aún no hay packs. Usa "＋ Nuevo pack".</td></tr>';
+  if(cb){ var CC=pkCatCalc();
+    cb.innerHTML=packs.map(function(p){var arm=pkArmables(p), c=CC.packs[p.sku];
+      var subs=c.comps.map(function(x){var corto=(CC.hay&&x.stock<x.cant);
+        return '<tr><td class="mono">'+_pkE(x.cod)+'</td><td>'+_pkE(x.desc||'—')+'</td><td class="num">× '+x.cant+'</td><td class="num" style="font-weight:800;color:'+(!CC.hay?'#6b7280':(corto?'#b91c1c':'#065f46'))+'">'+(CC.hay?x.stock:'—')+'</td>'+
+          '<td class="num">'+(c.sug>0?x.req:'—')+'</td><td class="num">'+(CC.hay&&c.sug>0&&x.falta>0?'<b class="pk-bad">'+x.falta+'</b>':(c.sug>0&&CC.hay?'✔':'—'))+'</td></tr>';}).join('');
+      var sugTxt=c.sug>0?'<div style="font-weight:800;font-size:14px;color:#7e22ce;">▲ '+c.sug+'</div><div class="pk-mini">mín. '+c.stkMin+' · vende '+c.prom+'/mes</div>'
+        :(c.sinVentas?'<div class="pk-mini">sin ventas<br>en el período</div>':'<div style="font-weight:700;color:#065f46;">0 ✔</div><div class="pk-mini">cubierto (mín. '+c.stkMin+')</div>');
+      return '<tr><td class="mono"><b>'+_pkE(p.sku)+'</b></td><td style="min-width:200px">'+_pkE(p.desc)+'</td>'+
+        '<td class="num" style="font-weight:800;font-size:13px;color:'+(c.stock==null?'#6b7280':(c.stock>0?'#065f46':'#b91c1c'))+'">'+(c.stock==null?'—':c.stock)+'</td>'+
+        '<td class="num" style="background:#fdf4ff">'+sugTxt+'</td>'+
+        '<td class="num" style="font-weight:700">'+(c.prog>0?c.prog:'<span class="pk-mini">—</span>')+'</td>'+
+        '<td style="min-width:430px"><table class="pk-sub"><thead><tr><th>SKU</th><th>Descripción</th><th>Por pack</th><th>Stock</th><th>Req. sugerido</th><th>Falta</th></tr></thead><tbody>'+subs+'</tbody></table></td>'+
+        '<td style="font-weight:800;color:'+(arm==null?'#6b7280':(arm>0?'#065f46':'#b91c1c')+'')+'">'+(arm==null?'—':arm)+'</td>'+
+        '<td style="white-space:nowrap"><button class="btn btn-o" onclick="pkEditarPack(\''+_pkE(p.sku)+'\')">✏ Editar</button> <button class="btn btn-r" onclick="pkEliminarPack(\''+_pkE(p.sku)+'\')">🗑</button></td></tr>';}).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:14px;">Aún no hay packs. Usa "＋ Nuevo pack".</td></tr>';
+  }
 }
 
 // ---------- exportación ----------
