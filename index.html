@@ -1520,7 +1520,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
   <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
-  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v21</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v22</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
   <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
 </div>
 <div class="krow" id="pk-kpis"></div>
@@ -2989,24 +2989,11 @@ function procesarTodo(){
 // RENDER VENTAS
 // ===================================================
 
-function renderVentas(){
-  // Actualizar cabeceras de meses con nombres reales
-  // Cabeceras meses: llenar existentes y ocultar slots sin dato
-  for(var _mi=0;_mi<14;_mi++){var _mEl=document.getElementById('th-m'+(_mi+1));if(!_mEl)continue;if(_mi<D.mesesHdr.length){_mEl.textContent=D.mesesHdr[_mi];_mEl.style.display='';}else{_mEl.textContent='';_mEl.style.display='none';}}
+function _ventasFiltrados(){
   const q=(document.getElementById('sv-q')||{}).value||'';
   const cat=(document.getElementById('sv-cat')||{}).value||'';
   const est=(document.getElementById('sv-est')||{}).value||'';
   const ord=(document.getElementById('sv-ord')||{}).value||'total3m';
-
-  // Recalcular SIEMPRE sobre TODO D.kardex y ANTES de aplicar cualquier
-  // filtro — incluido el de Activos/Apagados (sv-est), que depende
-  // directamente de esto. 30-sep-2026: antes esto corría DESPUÉS del
-  // filtro de estado, usando el i.activo de la renderización anterior (o,
-  // en la primera carga, uno fijo por stock que casi nunca marcaba
-  // "APAGADO" — ver nota en el parser). Eso dejaba "Apagados" vacío en la
-  // práctica y desincronizaba el filtro de categorías cuando se combinaba
-  // con él. Ahora activo/apagado es 100% función de las ventas del
-  // período elegido (3M/6M/9M): sin venta en ese período = APAGADO.
   const _P=PERIODO_BASE;
   D.kardex.forEach(i=>{
     i._3m=i.meses.slice(-_P).reduce((a,b)=>a+b,0);
@@ -3080,6 +3067,28 @@ function renderVentas(){
   if(ord==='total3m') data.sort((a,b)=>b._3m-a._3m);
   else if(ord==='cob') data.sort((a,b)=>(a.cob||9999)-(b.cob||9999));
   else if(ord==='stock') data.sort((a,b)=>b.stock-a.stock);
+  return data;
+}
+function renderVentas(){
+  // Actualizar cabeceras de meses con nombres reales
+  // Cabeceras meses: llenar existentes y ocultar slots sin dato
+  for(var _mi=0;_mi<14;_mi++){var _mEl=document.getElementById('th-m'+(_mi+1));if(!_mEl)continue;if(_mi<D.mesesHdr.length){_mEl.textContent=D.mesesHdr[_mi];_mEl.style.display='';}else{_mEl.textContent='';_mEl.style.display='none';}}
+  const q=(document.getElementById('sv-q')||{}).value||'';
+  const cat=(document.getElementById('sv-cat')||{}).value||'';
+  const est=(document.getElementById('sv-est')||{}).value||'';
+  const ord=(document.getElementById('sv-ord')||{}).value||'total3m';
+
+  // Recalcular SIEMPRE sobre TODO D.kardex y ANTES de aplicar cualquier
+  // filtro — incluido el de Activos/Apagados (sv-est), que depende
+  // directamente de esto. 30-sep-2026: antes esto corría DESPUÉS del
+  // filtro de estado, usando el i.activo de la renderización anterior (o,
+  // en la primera carga, uno fijo por stock que casi nunca marcaba
+  // "APAGADO" — ver nota en el parser). Eso dejaba "Apagados" vacío en la
+  // práctica y desincronizaba el filtro de categorías cuando se combinaba
+  // con él. Ahora activo/apagado es 100% función de las ventas del
+  // período elegido (3M/6M/9M): sin venta en ese período = APAGADO.
+  const _P=PERIODO_BASE;
+  let data=_ventasFiltrados();
 
   // KPIs — siempre del dataset filtrado
   const totalSK=data.length||1;
@@ -4537,22 +4546,22 @@ function _cfgVentas(){
   const q=(document.getElementById('sv-q')||{}).value||'';
   const catsS=getMultiSel('ms-cats-v'), linsS=getMultiSel('ms-lins-v'),
         cc1S=getMultiSel('ms-cc1-v'),   canalS=getMultiSel('ms-canal-v');
-  let data=[...D.kardex];
-  if(q) data=data.filter(i=>i.cod.includes(q)||i.desc.toLowerCase().includes(q.toLowerCase()));
-  if(catsS.length&&catsS[0]!=='__NONE__') data=data.filter(i=>catsS.includes(i.cat));
-  if(linsS.length&&linsS[0]!=='__NONE__') data=data.filter(i=>linsS.includes(i.linea||''));
-  if(cc1S.length&&cc1S[0]!=='__NONE__')   data=data.filter(i=>cc1S.includes(i.cc1||''));
-  if(canalS.length&&canalS[0]!=='__NONE__') data=data.filter(i=>{
-    const enCal=SURTIDO_CALIDDA[i.cod]==='ACTIVO', enMyb=SURTIDO_MYBEES[i.cod]==='ACTIVO';
-    return canalS.some(c=>c==='CALIDDA'?(enCal&&!enMyb):c==='MYBEES'?(enMyb&&!enCal):c==='AMBOS'?(enCal&&enMyb):(!enCal&&!enMyb));
-  });
+  let data=_ventasFiltrados();
+  const surtS=getMultiSel('ms-surt-v');
+  const estV=(document.getElementById('sv-est')||{}).value||'';
+  const cobV=(document.getElementById('sv-cob')||{}).value||'';
+  const repV=!!(document.getElementById('cb-compra-sug')||{}).checked;
   const mH=D.mesesHdr.length?D.mesesHdr:Array.from({length:14},(_,k)=>'M'+(k+1));
   const partes=[];
   if(q) partes.push('Búsqueda:"'+q+'"');
   if(catsS.length&&catsS[0]!=='__NONE__') partes.push('Cat:'+catsS.join(','));
   if(linsS.length&&linsS[0]!=='__NONE__') partes.push('Línea:'+linsS.join(','));
   if(cc1S.length&&cc1S[0]!=='__NONE__')   partes.push('Canal:'+cc1S.join(','));
-  if(canalS.length&&canalS[0]!=='__NONE__') partes.push('Surtido:'+canalS.join(','));
+  if(canalS.length&&canalS[0]!=='__NONE__') partes.push('Canal surtido:'+canalS.join(','));
+  if(surtS.length&&surtS[0]!=='__NONE__') partes.push('Estado surtido:'+surtS.map(k=>({ACT_STOCK:'Activo con stock',ACT_NOSTOCK:'Activo sin stock',INACT_STOCK:'Fuera de surtido con stock',INACT_NOSTOCK:'Fuera de surtido sin stock'}[k]||k)).join(','));
+  if(estV) partes.push('Estado:'+(estV==='ACTIVO'?'Activos':'Apagados'));
+  if(cobV) partes.push('Cobertura:'+({crit:'Crítico <7d',norm:'Normal 7-30d',exc:'Exceso ≥30d',svta:'Sin venta'}[cobV]||cobV));
+  if(repV) partes.push('Necesitan reposición');
   const conStock=data.filter(i=>(i.stock||0)>0).length;
   const conSug=data.filter(i=>Math.max(0,Math.ceil(i.meses.slice(-_P).reduce((a,b)=>a+b,0)/_P*0.5)-(i.stock||0))>0).length;
   return {
