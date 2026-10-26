@@ -1520,7 +1520,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
   <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
-  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v23</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v24</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
   <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
 </div>
 <div class="krow" id="pk-kpis"></div>
@@ -2257,6 +2257,8 @@ function _fi(hdr, pred, fallback){
   const idx = hdr.findIndex(pred);
   return idx>=0 ? idx : (fallback!=null ? fallback : -1);
 }
+// v24 (26-oct-2026): etiqueta de OC = número + ID interno del SIG (columna "ID." del nuevo formato de OCs abiertas)
+function _ocLbl(o){ return (o.noc||'OC')+(o.id?' · ID '+o.id:''); }
 function parsearOCActivas(wb, fname) {
   const ws  = wb.Sheets[wb.SheetNames[0]];
   const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, cellDates:false, raw:true});
@@ -2310,6 +2312,10 @@ function parsearOCActivas(wb, fname) {
     iFCont = _fi(hdr, h=>h.includes('F.CONTAB')||h.includes('CONTAB'), 5);
   }
 
+  // v24: ID interno de la OC en el SIG (col. "ID.") y Estado del documento (col. "Estado")
+  const iIdOC  = _fi(hdr, h=>/^ID\.?$/.test(h), -1);
+  const iEstOC = _fi(hdr, h=>h==='ESTADO', -1);
+  let nAnulOmit = 0;
   const num = v => parseFloat(String(v==null?'0':v).replace(/,/g,''))||0;
   const ocs = [];
 
@@ -2319,6 +2325,9 @@ function parsearOCActivas(wb, fname) {
     const eoc = String(iEOC>=0?(row[iEOC]||''):'').trim().toUpperCase();
     // Solo OC pendientes o en proceso (no entregadas/anuladas)
     if (eoc && (eoc.includes('ENTREGAD') || eoc.includes('ANULAD') || eoc.includes('CERRAD'))) continue;
+    // v24: una OC ANULADA no va a llegar aunque conserve saldo en el SIG → no es "abierta".
+    const eDoc = iEstOC>=0 ? String(row[iEstOC]==null?'':row[iEstOC]).trim().toUpperCase() : '';
+    if (eDoc.includes('ANULAD')) { if (num(iSaldo>=0?row[iSaldo]:null)>0) nAnulOmit++; continue; }
 
     const codRaw = String(iCod>=0?(row[iCod]||''):'').trim().replace(/'/g,'');
     const cod    = codRaw.replace(/[^\d]/g,'');
@@ -2339,7 +2348,7 @@ function parsearOCActivas(wb, fname) {
 
     const prov   = String(iProv>=0?(row[iProv]||''):'').trim()||'—';
     const saldo  = num(iSaldo>=0?row[iSaldo]:null);
-    if (saldo <= 0) continue; // sin cantidad pendiente
+    if (saldo <= 0) continue; // ABIERTA = saldo distinto de cero (col. "Saldo"); saldo 0 = atendida completa
 
     let fechaStr = '', fechaObj = null, diasRest = null;
     const fRaw = iFOC>=0 ? row[iFOC] : null;
@@ -2364,7 +2373,7 @@ function parsearOCActivas(wb, fname) {
         mesContKey = fechaCont.getFullYear()+'-'+(fechaCont.getMonth()+1);
       }
     } catch(e){}
-    ocs.push({ noc:nocRaw, cod, desc, fechaStr, fechaObj, cant:saldo, prov, diasRest, estado:eoc, fechaCont, mesContKey });
+    ocs.push({ noc:nocRaw, id:(iIdOC>=0&&row[iIdOC]!=null?String(row[iIdOC]).trim():''), cod, desc, fechaStr, fechaObj, cant:saldo, prov, diasRest, estado:eoc, estadoDoc:eDoc, fechaCont, mesContKey });
   }
 
   D.oc = ocs;
@@ -2373,12 +2382,12 @@ function parsearOCActivas(wb, fname) {
   const ocSet = new Set(ocs.map(o=>o.cod));
   D.obs.forEach(it=>{
     if (ocSet.has(it.cod)) {
-      it.ocActiva = ocs.filter(o=>o.cod===it.cod).map(o=>o.noc).filter(Boolean);
+      it.ocActiva = [...new Set(ocs.filter(o=>o.cod===it.cod).map(_ocLbl))];
       if (it.accion==='COMPRAR') it.accion='ARRIBAR';
     }
   });
 
-  setSt('oc',`✅ ${ocs.length} líneas OC pendientes · ${new Set(ocs.map(o=>o.cod)).size} SKUs (formato detectado: ${esFormatoB?'Órdenes de Compra Abiertas':'Estados de OC'})`,true);
+  setSt('oc',`✅ ${ocs.length} líneas OC abiertas (saldo ≠ 0) · ${new Set(ocs.map(o=>o.noc)).size} OCs · ${new Set(ocs.map(o=>o.cod)).size} SKUs (formato: ${esFormatoB?'Órdenes de Compra Abiertas':'Estados de OC'}${iIdOC>=0?' · con ID de OC':''})${nAnulOmit?' · '+nAnulOmit+' líneas de OC anuladas omitidas':''}`,true);
   document.getElementById('ck-oc').textContent = ocs.length.toLocaleString();
 }
 
@@ -2979,7 +2988,7 @@ function procesarTodo(){
     D.obs.forEach(it=>{
       if(ocCods.has(it.cod)){
         const ocs=D.oc.filter(o=>o.cod===it.cod);
-        it.ocActiva=ocs.map(o=>o.noc||'OC').filter(Boolean);
+        it.ocActiva=[...new Set(ocs.map(_ocLbl))];
         if(it.accion==='COMPRAR') it.accion='ARRIBAR';
       }
     });
@@ -6164,7 +6173,7 @@ function aplicarEstadoGitHub(data) {
       if(s.vtaMes===undefined){const k=kardMap[s.cod];const ult3=k?k.meses.slice(-3).reduce((a,b)=>a+b,0):0;
       s.vta3m=ult3;s.vtaMes=Math.round(ult3/3*10)/10;s.cobDias=s.vtaMes>0?Math.round(s.cant/s.vtaMes*30):null;}
     });
-    if(D.oc&&D.oc.length>0){const ocCods=new Set(D.oc.map(o=>o.cod));D.obs.forEach(it=>{if(ocCods.has(it.cod)){const ocs=D.oc.filter(o=>o.cod===it.cod);it.ocActiva=ocs.map(o=>o.noc||'OC').filter(Boolean);if(it.accion==='COMPRAR')it.accion='ARRIBAR';}});}
+    if(D.oc&&D.oc.length>0){const ocCods=new Set(D.oc.map(o=>o.cod));D.obs.forEach(it=>{if(ocCods.has(it.cod)){const ocs=D.oc.filter(o=>o.cod===it.cod);it.ocActiva=[...new Set(ocs.map(_ocLbl))];if(it.accion==='COMPRAR')it.accion='ARRIBAR';}});}
     // 30-sep-2026: reconstruir las listas de filtros (categorías, líneas,
     // etc.) ANTES de renderizar — antes era al revés, y cada sync remoto
     // reconstruía los checkboxes de los multi-select (todos marcados de
@@ -6352,7 +6361,7 @@ function ocPorArribar() {
     if (!mesesValidos.has(o.mesContKey)) return; // solo 2 meses recientes
     if (!mapa[o.cod]) mapa[o.cod] = { cant: 0, nocs: new Set() };
     mapa[o.cod].cant += o.cant;
-    if (o.noc) mapa[o.cod].nocs.add(o.noc);
+    if (o.noc) mapa[o.cod].nocs.add(_ocLbl(o));
   });
   return mapa;
 }
