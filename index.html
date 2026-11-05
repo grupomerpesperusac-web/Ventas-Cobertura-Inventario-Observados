@@ -1523,7 +1523,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
   <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
-  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v30</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v32</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
   <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
 </div>
 <div class="krow" id="pk-kpis"></div>
@@ -1612,6 +1612,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr>
     <th>Estado</th><th>Archivo</th><th>Fila</th><th>N° Pedido</th><th>Contrato</th><th>Cliente</th><th>SKU original → SIG</th><th style="text-align:right">Cant.</th><th style="text-align:right">Importe</th><th>Detalle</th></tr></thead>
     <tbody id="val-tbody"></tbody></table></div></div>
+<div id="val-dash"></div>
 </div>
 
 <div class="pane" id="pane-pre">
@@ -1648,6 +1649,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
     <tbody id="pre-tbody"></tbody></table></div></div>
 <div class="tbox"><div class="tbox-h"><h3>🗂 Cortes cargados</h3></div>
   <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Archivo</th><th>Subido por</th><th>Fecha / hora</th><th style="text-align:right">Líneas</th><th></th></tr></thead><tbody id="pre-cortes"></tbody></table></div></div>
+<div id="pre-dash"></div>
 </div>
 
 <div class="pane" id="pane-emb">
@@ -1700,6 +1702,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   </div>
   <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Venta</th><th>Canal</th><th>Pedido</th><th>Cliente</th><th>Estado</th><th style="text-align:right">Importe</th><th>Alertas</th><th>Motivo</th><th>Nota</th><th>Actualizó</th></tr></thead>
     <tbody id="emb-pend"></tbody></table></div></div>
+<div id="emb-dash"></div>
 </div>
 
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
@@ -8638,6 +8641,7 @@ function preRender(){
   if(ct) ct.innerHTML=vis.length?vis.map(function(c){return '<tr><td>'+_preE(c.archivo)+'</td><td>'+_preE(c.por)+'</td><td>'+new Date(c.ts).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</td><td style="text-align:right">'+c.n+' ('+c.peds+' pedidos)</td><td><button class="btn btn-o" style="padding:1px 7px;font-size:9px;" onclick="preQuitar(\''+c.id+'\')">Quitar</button></td></tr>';}).join(''):'<tr><td colspan="5" style="color:#64748b;padding:10px;">Aún no hay cortes. Sube el Excel "Validado SIG" del Validator.</td></tr>';
   var hay=pkHayStock();
   if(!hay){ _preMsgSoft('⚠ Carga primero el <b>Stock Actual</b> en "Carga de Datos": sin stock no se puede cruzar.'); }
+  else { var _pm=document.getElementById('pre-msg'); if(_pm&&_pm.getAttribute('data-soft')){ _pm.innerHTML=''; _pm.removeAttribute('data-soft'); } }
   var A=preAnalisis(), sk=A.sku; PRE.vista=sk;
   var cnt={ROJO:0,OC:0,JUSTO:0,OK:0}, uf=0, pen=0; sk.forEach(function(s){cnt[s.estado]++; uf+=s.falta; pen+=s.penal;});
   document.getElementById('pre-kpis').innerHTML=
@@ -8662,7 +8666,7 @@ function preRender(){
       '<td style="text-align:right;">'+s.rem+'</td><td style="text-align:right;">'+(s.dias==null?'—':s.dias)+'</td><td>'+_preOcTxt(s)+'</td>'+
       '<td>'+(s.sust.length?s.sust.map(function(x){return x.cod+' (stk '+x.stk+')';}).join('<br>'):'—')+'</td><td title="'+_preE(tip)+'" style="cursor:help;">'+s.lines.length+' ped.</td></tr>';}).join(''):'<tr><td colspan="11" style="color:#64748b;padding:12px;">'+(A.lineas?'Nada que mostrar con este filtro.':'Sube un corte del Validator para empezar.')+'</td></tr>';
 }
-function _preMsgSoft(h){var e=document.getElementById('pre-msg'); if(e&&!e.innerHTML){e.innerHTML=h;e.style.color='#92400e';}}
+function _preMsgSoft(h){var e=document.getElementById('pre-msg'); if(e&&!e.innerHTML){e.innerHTML=h;e.style.color='#92400e';e.setAttribute('data-soft','1');}}
 function preExportar(){
   var sk=PRE.vista||[]; if(!sk.length){alert('No hay cortes cargados.');return;}
   var rows=[]; sk.forEach(function(s){ s.lines.forEach(function(l){ rows.push([
@@ -9030,6 +9034,137 @@ function embIniciar(){
   setInterval(function(){ var p=document.getElementById('pane-emb'); if(!document.hidden&&((p&&p.classList.contains('on'))||EMB.dirty)) embSync(false); },180000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',embIniciar); else embIniciar();
+// ===================================================
+// DASHBOARDS v32 — gráficos al pie de ✅ Validador IA, ⚡ Pre-Observados y 📦 Embudo Despacho
+// (el dashboard del Validador recupera el estilo del MERPES AI Validator Demo_v2: estados, monto por archivo,
+//  categorías, canal, tipo de corrección, marcas y financiamiento). Solo LEE datos; no modifica ninguna pestaña.
+// ===================================================
+var DV={ch:{},C:{navy:'#1A2B4A',or:'#E8630A',ok:'#16A34A',bl:'#0369A1',am:'#D97706',rd:'#DC2626',gy:'#9CA3AF',pu:'#7C3AED',pk:'#EC4899',tl:'#0D9488'}};
+(function(){ try{ var st=document.createElement('style'); st.textContent=
+  '.dv-h{display:flex;align-items:center;gap:8px;margin:16px 0 6px;font-size:13px;font-weight:800;color:var(--blue2,#1e40af);}'+
+  '.dv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;margin-bottom:16px;}'+
+  '.dv-box{background:#fff;border:1.5px solid var(--line,#e2e8f0);border-radius:var(--r,10px);padding:12px 14px;min-width:0;}'+
+  '.dv-box h4{margin:0 0 8px;font-size:12px;color:var(--text2,#334155);}'+
+  '.dv-box .cw{position:relative;height:230px;}.dv-box .cw.tall{height:290px;}'+
+  '.dv-empty{color:#64748b;font-size:11px;padding:14px;background:#f8fafc;border:1px dashed var(--line,#e2e8f0);border-radius:8px;margin:12px 0;}';
+  document.head.appendChild(st); }catch(e){} })();
+function _dvN(n){return Math.round(n||0).toLocaleString('es-PE');}
+function _dvPie(){return {id:'dvPie',afterDraw:function(c){ var d=c.data.datasets[0].data, t=d.reduce(function(a,b){return a+b;},0); if(!t) return; var x=c.ctx; x.save();
+  c.getDatasetMeta(0).data.forEach(function(a,i){ var v=d[i]; if(!v) return; var p=Math.round(v/t*100); if(p<4) return; var q=a.tooltipPosition();
+    x.fillStyle='#fff'; x.font='bold 12px sans-serif'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(p+'%',q.x,q.y); }); x.restore(); }};}
+function _dvBar(){return {id:'dvBar',afterDatasetsDraw:function(c){ var x=c.ctx; c.data.datasets.forEach(function(ds,di){ if(ds.type==='line'||ds.noLbl) return; var m=c.getDatasetMeta(di); if(m.hidden) return;
+  m.data.forEach(function(b,i){ var v=ds.data[i]; if(v==null||v===0) return; var p=b.getProps(['x','y'],true), h=c.config.options&&c.config.options.indexAxis==='y';
+    var t=ds.money?('S/'+_dvN(v)):(Math.round(v*10)/10).toLocaleString('es-PE'); x.save(); x.fillStyle='#1F2937'; x.font='bold 10px sans-serif';
+    if(h){x.textAlign='left';x.textBaseline='middle';x.fillText(t,p.x+4,p.y);} else if(ds.stackLbl){x.textAlign='center';x.textBaseline='middle';x.fillStyle='#fff';x.fillText(t,p.x,p.y+(b.base!=null?(b.base-p.y)/2:0)*0);} else {x.textAlign='center';x.textBaseline='bottom';x.fillText(t,p.x,p.y-3);} x.restore(); }); }); }};}
+function dvChart(id,cfg,pl){
+  var el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+  try{ if(DV.ch[id]){DV.ch[id].destroy();delete DV.ch[id];}
+    cfg.options=Object.assign({responsive:true,maintainAspectRatio:false},cfg.options||{}); cfg.plugins=pl||[]; DV.ch[id]=new Chart(el,cfg); }catch(e){}
+}
+function dvKill(prefix){ Object.keys(DV.ch).forEach(function(k){ if(k.indexOf(prefix)===0){ try{DV.ch[k].destroy();}catch(e){} delete DV.ch[k]; } }); }
+// arma (una vez) el esqueleto con los canvas; devuelve false si está vacío
+function dvShell(boxId,prefix,title,boxes,hayDatos,msg){
+  var c=document.getElementById(boxId); if(!c) return false;
+  if(!hayDatos){ dvKill(prefix); c.innerHTML='<div class="dv-h">📊 '+title+'</div><div class="dv-empty">'+msg+'</div>'; c.removeAttribute('data-ok'); return false; }
+  if(!c.getAttribute('data-ok')){ c.innerHTML='<div class="dv-h">📊 '+title+'</div><div id="'+prefix+'-k" class="krow" style="margin-bottom:10px;"></div><div class="dv-grid">'+
+    boxes.map(function(b){return '<div class="dv-box"'+(b.wide?' style="grid-column:1/-1;"':'')+'><h4>'+b.t+'</h4><div class="cw'+(b.tall?' tall':'')+'"><canvas id="'+prefix+'-'+b.id+'"></canvas></div></div>';}).join('')+'</div>'; c.setAttribute('data-ok','1'); }
+  return true;
+}
+function _dvKpi(cls,v,l){return '<div class="kpi '+cls+'"><div class="kv">'+v+'</div><div class="kl">'+l+'</div></div>';}
+function _dvTop(map,n){return Object.keys(map).map(function(k){return [k,map[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,n);}
+function _dvCut(s,n){s=String(s||''); return s.length>n?s.slice(0,n)+'…':s;}
+// ---------- ✅ VALIDADOR IA ----------
+function _valCatOf(r){ try{ return r.categoria||inferirCat(r.raw_sku,r.producto); }catch(e){ return 'OTROS'; } }
+function _valMarcaOf(r){ try{ return r.marca||inferirMarca(r.producto); }catch(e){ return 'S/M'; } }
+function valDash(){
+  var R=(typeof VAL!=='undefined'&&VAL.rows)||[];
+  var boxes=[{id:'estado',t:'📈 Líneas por estado'},{id:'monto',t:'💰 Monto por archivo (S/)'},{id:'cat',t:'📦 Top categorías (líneas)'},{id:'canal',t:'🏢 Ventas por canal (pedidos y S/)'},
+    {id:'corr',t:'🔧 Tipo de corrección'},{id:'marca',t:'🏷️ Top marcas (líneas)'},{id:'fin',t:'💳 Financiamiento vs. saldo al contado'}];
+  if(!dvShell('val-dash','vd','Dashboard de ventas validadas',boxes,R.length>0,'Sube el Excel crudo de FNB o el reporte Mybees para ver el dashboard.')) return;
+  var V=R.filter(function(r){return !r.skip;}), cnt=function(e){return R.filter(function(r){return r.estado===e&&!r.skip;}).length;};
+  var ok=cnt('OK'), fix=cnt('FIX'), warn=cnt('WARN'), err=cnt('ERR'), skip=R.filter(function(r){return r.skip;}).length;
+  var monto=V.reduce(function(s,r){return s+(r.importe||0);},0), peds={}; V.forEach(function(r){peds[r.nroPedido]=1;}); var np=Object.keys(peds).length;
+  var files={}; R.forEach(function(r){files[r.fileName]=1;});
+  document.getElementById('vd-k').innerHTML=_dvKpi('k-green','S/ '+_dvN(monto),'Monto válido')+_dvKpi('k-blue',np.toLocaleString('es-PE'),'Pedidos distintos')+
+    _dvKpi('k-purple','S/ '+_dvN(np?monto/np:0),'Ticket promedio por pedido')+_dvKpi('k-amber',R.length?Math.round((ok+fix)/R.length*100)+'%':'—','Líneas limpias (OK + FIX)')+_dvKpi('k-blue',Object.keys(files).length,'Archivos cargados');
+  var C=DV.C;
+  dvChart('vd-estado',{type:'doughnut',data:{labels:['✅ Válidos','🔧 Corregidos','⚠ Revisar','❌ Errores','⛔ Descartados'],datasets:[{data:[ok,fix,warn,err,skip],backgroundColor:[C.ok,C.bl,C.am,C.rd,C.gy],borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}},[_dvPie()]);
+  var bf={}; V.forEach(function(r){bf[r.fileName]=(bf[r.fileName]||0)+(r.importe||0);});
+  dvChart('vd-monto',{type:'bar',data:{labels:Object.keys(bf).map(function(f){return _dvCut(f,22);}),datasets:[{label:'S/',data:Object.keys(bf).map(function(f){return bf[f];}),backgroundColor:C.or,borderRadius:4,money:true}]},
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return 'S/'+_dvN(v);}}}},layout:{padding:{top:18}}}},[_dvBar()]);
+  var bc={}, bm={}, bk={}; V.forEach(function(r){ var c=_valCatOf(r), m=_valMarcaOf(r); bc[c]=(bc[c]||0)+1; if(m&&m!=='S/M') bm[m]=(bm[m]||0)+1; });
+  var tc=_dvTop(bc,6), tm=_dvTop(bm,6);
+  dvChart('vd-cat',{type:'bar',data:{labels:tc.map(function(x){return x[0];}),datasets:[{data:tc.map(function(x){return x[1];}),backgroundColor:C.navy,borderRadius:3}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}},layout:{padding:{right:34}}}},[_dvBar()]);
+  dvChart('vd-marca',{type:'bar',data:{labels:tm.map(function(x){return x[0];}),datasets:[{data:tm.map(function(x){return x[1];}),backgroundColor:C.bl,borderRadius:3}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true}},layout:{padding:{right:34}}}},[_dvBar()]);
+  var cn={}; V.forEach(function(r){ var c=r.canal||'(sin canal)'; var o=cn[c]||(cn[c]={q:0,m:0}); o.q++; o.m+=(r.importe||0); });
+  var cl=Object.keys(cn).sort(function(a,b){return cn[b].m-cn[a].m;}).slice(0,8);
+  dvChart('vd-canal',{type:'bar',data:{labels:cl.map(function(c){return _dvCut(c,16);}),datasets:[{label:'Líneas',data:cl.map(function(c){return cn[c].q;}),backgroundColor:C.navy,borderRadius:3,yAxisID:'y'},
+    {label:'Monto S/',data:cl.map(function(c){return cn[c].m;}),backgroundColor:C.or,borderColor:C.or,type:'line',tension:.3,yAxisID:'y1',pointRadius:4,noLbl:true}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true,title:{display:true,text:'Líneas'}},y1:{beginAtZero:true,position:'right',title:{display:true,text:'S/'},grid:{drawOnChartArea:false}}},layout:{padding:{top:18}}}},[_dvBar()]);
+  var co={'Dirección':0,'SKU':0,'DNI':0,'Descartado':skip,'Sin error':0};
+  V.forEach(function(r){ if(r.estado==='ERR') co['SKU']++; else if(r.issues&&r.issues.length) co['Dirección']++; else if(r.estado==='WARN') co['DNI']++; else co['Sin error']++; });
+  dvChart('vd-corr',{type:'pie',data:{labels:Object.keys(co),datasets:[{data:Object.keys(co).map(function(k){return co[k];}),backgroundColor:[C.bl,C.rd,C.am,C.gy,C.ok],borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}},[_dvPie()]);
+  var sal=V.reduce(function(s,r){return s+(r.saldoPendiente||0);},0), fin=Math.max(0,monto-sal);
+  dvChart('vd-fin',{type:'pie',data:{labels:['Financiado — S/'+_dvN(fin),'Saldo al contado — S/'+_dvN(sal)],datasets:[{data:[fin,sal>0?sal:0.001],backgroundColor:[C.ok,C.pk],borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}},[_dvPie()]);
+}
+// ---------- ⚡ PRE-OBSERVADOS ----------
+function preDash(){
+  var sk=(typeof PRE!=='undefined'&&PRE.vista)||[];
+  var boxes=[{id:'est',t:'🚦 SKUs por estado'},{id:'top',t:'🔥 Top 10 SKUs con más unidades faltantes',tall:true},{id:'can',t:'🏢 Demanda validada por canal (unidades)'},{id:'dia',t:'📅 Demanda y faltante por día de venta (unidades)'}];
+  if(!dvShell('pre-dash','pd','Dashboard de alerta temprana',boxes,sk.length>0,'Sube un corte del Validator (o valida un archivo en ✅ Validador IA) para ver el dashboard.')) return;
+  var C=DV.C, cnt={ROJO:0,OC:0,JUSTO:0,OK:0}, dem=0, fal=0, pen=0, peds={}, can={}, dia={};
+  sk.forEach(function(s){ cnt[s.estado]++; dem+=s.dem; fal+=s.falta; pen+=s.penal;
+    s.lines.forEach(function(l){ peds[l.ped]=1; var c=l.canal||'(sin canal)'; can[c]=(can[c]||0)+l.cant; var d=l.fv||'—'; var o=dia[d]||(dia[d]={d:0,f:0}); o.d+=l.cant; o.f+=l.falta; }); });
+  document.getElementById('pd-k').innerHTML=_dvKpi('k-blue',Object.keys(peds).length,'Pedidos en demanda')+_dvKpi('k-blue',_dvN(dem),'Unidades demandadas')+_dvKpi('k-red',_dvN(fal),'Unidades sin cobertura')+
+    _dvKpi('k-amber',dem?Math.round(fal/dem*100)+'%':'0%','% de la demanda sin stock')+_dvKpi('k-purple','S/ '+_dvN(pen),'Penalidad Calidda generada');
+  dvChart('pd-est',{type:'doughnut',data:{labels:['🔴 Se observará','🟠 Falta · hay OC','🟡 Justo','🟢 Cubierto'],datasets:[{data:[cnt.ROJO,cnt.OC,cnt.JUSTO,cnt.OK],backgroundColor:[C.rd,C.or,'#EAB308',C.ok],borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}},[_dvPie()]);
+  var top=sk.filter(function(s){return s.falta>0;}).sort(function(a,b){return b.falta-a.falta;}).slice(0,10);
+  dvChart('pd-top',{type:'bar',data:{labels:top.map(function(s){return s.cod+' · '+_dvCut(s.desc,22);}),datasets:[{data:top.map(function(s){return s.falta;}),backgroundColor:top.map(function(s){return s.estado==='ROJO'?C.rd:C.or;}),borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true},y:{ticks:{font:{size:9}}}},layout:{padding:{right:30}}}},[_dvBar()]);
+  var cl=_dvTop(can,8);
+  dvChart('pd-can',{type:'bar',data:{labels:cl.map(function(x){return _dvCut(x[0],16);}),datasets:[{data:cl.map(function(x){return x[1];}),backgroundColor:C.navy,borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}},layout:{padding:{top:18}}}},[_dvBar()]);
+  var dk=Object.keys(dia).sort();
+  dvChart('pd-dia',{type:'bar',data:{labels:dk.map(function(d){return d.length>=10?d.slice(8,10)+'/'+d.slice(5,7):d;}),datasets:[{label:'Demanda',data:dk.map(function(d){return dia[d].d;}),backgroundColor:C.bl,borderRadius:3},{label:'Sin cobertura',data:dk.map(function(d){return dia[d].f;}),backgroundColor:C.rd,borderRadius:3}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}},scales:{y:{beginAtZero:true}},layout:{padding:{top:18}}}},[_dvBar()]);
+}
+// ---------- 📦 EMBUDO DESPACHO ----------
+function embDash(){
+  var hay=!!(typeof EMB!=='undefined'&&EMB.conf), d1=(document.getElementById('emb-d1')||{}).value, d2=(document.getElementById('emb-d2')||{}).value;
+  var boxes=[{id:'dia',t:'📅 Cargado por día de venta — dónde está hoy (pedidos)',wide:true,tall:true},{id:'est',t:'🧭 Distribución por estado'},{id:'can',t:'🏷 % con guía por canal'},
+    {id:'mot',t:'🗂 Pendientes por motivo'},{id:'ant',t:'⏱ Pendientes por antigüedad (días desde la venta)'},{id:'desp',t:'🚚 Valor despachado por fecha de despacho (S/)'}];
+  if(!dvShell('emb-dash','ed','Dashboard del embudo de despacho',boxes,hay&&d1&&d2,'Pulsa ☁️ Actualizar desde Drive para ver el dashboard.')) return;
+  var sel=document.getElementById('emb-canal'), filas=embAnalisis(d1,d2,sel?sel.value:''), C=DV.C;
+  var G={ENT:C.ok,RUTA:C.bl,OTL:C.tl,CPG:C.am,CCF:'#FBBF24',CNC:C.or,CRE:C.rd,REC:'#B91C1C',ANU:C.gy};
+  var days={}, tot={}; filas.forEach(function(r){ var o=days[r.o.f]||(days[r.o.f]={}); o[r.b]=(o[r.b]||0)+1; tot[r.b]=(tot[r.b]||0)+1; });
+  var dk=Object.keys(days).sort(), n=filas.length;
+  var conGuia=(tot.ENT||0)+(tot.RUTA||0)+(tot.OTL||0), pend=(tot.CPG||0)+(tot.CCF||0)+(tot.CNC||0), perd=(tot.CRE||0)+(tot.REC||0)+(tot.ANU||0);
+  document.getElementById('ed-k').innerHTML=_dvKpi('k-blue',n.toLocaleString('es-PE'),'Pedidos en el rango')+_dvKpi('k-green',n?Math.round((tot.ENT||0)/n*100)+'%':'—','Entregados sobre lo cargado')+
+    _dvKpi('k-blue',n?Math.round(conGuia/n*100)+'%':'—','Con guía')+_dvKpi('k-amber',pend,'Pendientes sin guía')+_dvKpi('k-red',perd,'Rechazados / anulados');
+  var order=['ENT','RUTA','OTL','CPG','CCF','CNC','CRE','REC','ANU'];
+  dvChart('ed-dia',{type:'bar',data:{labels:dk.map(function(d){return d.slice(8,10)+'/'+d.slice(5,7);}),datasets:order.filter(function(b){return tot[b];}).map(function(b){return {label:EMB_B[b],data:dk.map(function(d){return days[d][b]||0;}),backgroundColor:G[b],stack:'s',noLbl:true,borderRadius:0};})},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,title:{display:true,text:'Pedidos'}}}}},[]);
+  var ob=order.filter(function(b){return tot[b];});
+  dvChart('ed-est',{type:'doughnut',data:{labels:ob.map(function(b){return EMB_B[b];}),datasets:[{data:ob.map(function(b){return tot[b];}),backgroundColor:ob.map(function(b){return G[b];}),borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}},[_dvPie()]);
+  var cn={}; filas.forEach(function(r){ var o=cn[r.o.canal]||(cn[r.o.canal]={n:0,g:0}); o.n++; if(r.b==='ENT'||r.b==='RUTA'||r.b==='OTL') o.g++; });
+  var cl=Object.keys(cn).sort(function(a,b){return cn[b].n-cn[a].n;}).slice(0,8);
+  dvChart('ed-can',{type:'bar',data:{labels:cl.map(function(c){return _dvCut(c,18)+' ('+cn[c].n+')';}),datasets:[{data:cl.map(function(c){return Math.round(cn[c].g/cn[c].n*100);}),backgroundColor:cl.map(function(c){var p=cn[c].g/cn[c].n; return p>=.85?C.ok:p>=.6?C.am:C.rd;}),borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:110,ticks:{callback:function(v){return v<=100?v+'%':'';}}},y:{ticks:{font:{size:9}}}},layout:{padding:{right:30}}}},[_dvBar()]);
+  var pe=filas.filter(function(r){return r.b==='CPG'||r.b==='CCF'||r.b==='CNC';}), mo={}, an={'0-1 días':0,'2-3 días':0,'4-7 días':0,'8-15 días':0,'16+ días':0};
+  pe.forEach(function(r){ var m=(EMB.est[r.k]||{}).m||''; var l=EMB_MOT[m]; mo[l]=(mo[l]||0)+1; var a=r.age; an[a<=1?'0-1 días':a<=3?'2-3 días':a<=7?'4-7 días':a<=15?'8-15 días':'16+ días']++; });
+  var mk=Object.keys(mo), mc=[C.gy,C.rd,C.or,C.am,C.bl,C.pu];
+  dvChart('ed-mot',{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k];}),backgroundColor:mk.map(function(k,i){return k===EMB_MOT['']?C.gy:mc[(i+1)%mc.length];}),borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}},[_dvPie()]);
+  dvChart('ed-ant',{type:'bar',data:{labels:Object.keys(an),datasets:[{data:Object.keys(an).map(function(k){return an[k];}),backgroundColor:[C.ok,C.ok,C.am,C.or,C.rd],borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}},layout:{padding:{top:18}}}},[_dvBar()]);
+  var dd={}, L=EMB.log||{}; Object.keys(L).forEach(function(k){ var l=L[k]; if(!l.fd||l.fd<d1||l.fd>d2||(sel&&sel.value&&l.canal!==sel.value)) return; var o=dd[l.fd]||(dd[l.fd]={e:0,r:0}); if(l.b==='ENT') o.e+=l.costo; else if(l.b!=='ANU'&&l.b!=='REC') o.r+=l.costo; });
+  var fk=Object.keys(dd).sort();
+  dvChart('ed-desp',{type:'bar',data:{labels:fk.map(function(d){return d.slice(8,10)+'/'+d.slice(5,7);}),datasets:[{label:'Entregado',data:fk.map(function(d){return Math.round(dd[d].e);}),backgroundColor:C.ok,stack:'s',noLbl:true},{label:'En ruta / otros',data:fk.map(function(d){return Math.round(dd[d].r);}),backgroundColor:C.bl,stack:'s',noLbl:true}]},
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return 'S/'+_dvN(v);}}}}}},[]);
+}
+// ---------- engancharse a los render existentes (sin tocarlos) ----------
+(function(){
+  function wrap(name,fn){ var o=window[name]; if(typeof o!=='function') return; window[name]=function(){ var r=o.apply(this,arguments); try{fn();}catch(e){} return r; }; }
+  wrap('valRender',valDash); wrap('preRender',preDash); wrap('embRender',embDash);
+  setTimeout(function(){ try{valDash();}catch(e){} try{preDash();}catch(e){} try{embDash();}catch(e){} },300);
+})();
 
 
 // ===================================================
