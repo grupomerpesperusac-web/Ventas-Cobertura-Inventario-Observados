@@ -324,6 +324,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   <button class="tab"     onclick="gTab('packs');pkOnOpen()"  id="t-packs">🎁 Packs</button>
   <button class="tab"     onclick="gTab('val');valOnOpen()"  id="t-val">✅ Validador IA</button>
   <button class="tab"     onclick="gTab('pre');preOnOpen()"  id="t-pre">⚡ Pre-Observados</button>
+  <button class="tab"     onclick="gTab('emb');embOnOpen()"  id="t-emb">📦 Embudo Despacho</button>
   <button class="tab"     onclick="gTab('compartir')"  id="t-compartir">🌐 Publicar / Ver</button>
 </div>
 <!-- ═══ TAB: CARGA ═══ -->
@@ -1522,7 +1523,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">👤 Estoy trabajando como:</label>
   <select class="sel" id="pk-user" onchange="pkSetUser(this.value)"></select>
-  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v26</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
+  <span class="chip c-gris" id="pk-ver" title="Versión de la herramienta que estás usando">Packs v30</span> <span class="chip c-gris" id="pk-sync" title="Los registros de packs se guardan en un archivo compartido (packs_estado.json) y se actualizan solos cada ~20 s.">⚫ Packs: sin conectar</span>
   <button class="btn btn-o" onclick="pkSyncNow(true)">🔄 Actualizar ahora</button>
 </div>
 <div class="krow" id="pk-kpis"></div>
@@ -1586,17 +1587,18 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 
 <div class="pane" id="pane-val">
 <div class="tip">
-  <b>✅ Validador IA (pedidos FNB / Calidda):</b> sube aquí el <b>archivo crudo</b> que baja de FNB. La herramienta lo depura con las reglas del MERPES AI Validator
+  <b>✅ Validador IA (FNB / Calidda y Mybees / Backus):</b> sube aquí el <b>archivo crudo</b> de FNB o el reporte de <b>Mybees</b> (el canal se reconoce solo). La herramienta lo depura con las reglas del MERPES AI Validator
   (SKU sin prefijos SAL-/IBR-/GRU-/BR- y sin sufijo -R, N° de pedido provisional si viene vacío, financiamiento parcial, duplicados, direcciones, asesores en mayúsculas, descartados por validación fallida)
   y te deja <b>exportar el Excel listo para cargar al SIG</b>. Al mismo tiempo, los pedidos válidos pasan solos a <b>⚡ Pre-Observados</b>, antes de que lleguen al SIG.
 </div>
 <div class="drop" id="val-drop" style="margin-bottom:10px;padding:16px;text-align:center;border:2px dashed var(--line2);border-radius:8px;cursor:pointer;" onclick="document.getElementById('val-file').click()">
-  <div style="font-size:13px;font-weight:800;">📥 Arrastra aquí el Excel crudo de FNB o haz clic para elegirlo</div>
+  <div style="font-size:13px;font-weight:800;">📥 Arrastra aquí el Excel crudo de FNB o el reporte de Mybees, o haz clic para elegirlo</div>
   <div style="font-size:10px;color:var(--text3);margin-top:3px;">Puedes subir varios archivos. Los duplicados se detectan contra lo ya validado en los últimos 30 días.</div>
   <input type="file" id="val-file" accept=".xlsx,.xls" multiple style="display:none" onchange="valSubir(this.files);this.value='';">
 </div>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-  <button class="btn btn-g" onclick="valExportar()" style="font-weight:800;">📤 Exportar para SIG</button>
+  <button class="btn btn-g" id="val-bt-FNB" onclick="valExportar('FNB')" style="font-weight:800;">📤 Exportar FNB para SIG</button>
+  <button class="btn btn-g" id="val-bt-BEES" onclick="valExportar('BEES')" style="font-weight:800;">📤 Exportar Mybees para SIG</button>
   <select class="sel" id="val-fil" onchange="valRender()">
     <option value="TODOS">Todos los estados</option><option value="PROBLEMA">Con observaciones (FIX / WARN / ERR / SKIP)</option>
     <option value="OK">OK</option><option value="FIX">FIX (corregido solo)</option><option value="WARN">WARN (revisar)</option><option value="ERR">ERR (bloquea)</option><option value="SKIP">SKIP (descartado)</option>
@@ -1605,6 +1607,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   <span id="val-msg" style="font-size:11px;font-weight:700;"></span>
 </div>
 <div class="krow" id="val-kpis"></div>
+<div id="val-map"></div>
 <div class="tbox"><div class="tbox-h"><h3>📋 Resultado de la validación</h3><span class="pk-mini" id="val-n"></span></div>
   <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr>
     <th>Estado</th><th>Archivo</th><th>Fila</th><th>N° Pedido</th><th>Contrato</th><th>Cliente</th><th>SKU original → SIG</th><th style="text-align:right">Cant.</th><th style="text-align:right">Importe</th><th>Detalle</th></tr></thead>
@@ -1645,6 +1648,58 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
     <tbody id="pre-tbody"></tbody></table></div></div>
 <div class="tbox"><div class="tbox-h"><h3>🗂 Cortes cargados</h3></div>
   <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Archivo</th><th>Subido por</th><th>Fecha / hora</th><th style="text-align:right">Líneas</th><th></th></tr></thead><tbody id="pre-cortes"></tbody></table></div></div>
+</div>
+
+<div class="pane" id="pane-emb">
+<div class="tip">
+  <b>📦 Embudo de despacho:</b> compara lo que se <b>carga</b> cada día (FNB, Mybees, Pay Joy, etc.) con lo que <b>realmente sale</b>. Cruza por <b>N° de pedido</b> la gestión de confirmaciones con el reporte de tránsito
+  (entregado / en ruta / rechazo / anulado). Lo que no tiene guía queda como <b>pendiente</b> y aquí le asignas el <b>motivo</b> (falta pago, observado por stock, gas, otro) para monitorearlo.
+  Pulsa <b>☁️ Actualizar desde Drive</b>: lee la carpeta compartida y toma el archivo más reciente de cada tipo.
+  <span style="color:#64748b;">Los importes se conocen para lo que pasó por el Validador (vendido) o ya tiene guía (valor del reporte); donde no hay importe se muestra solo la cantidad.</span>
+</div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+  <button class="btn btn-p" id="emb-btn" onclick="embActualizar()">☁️ Actualizar desde Drive</button>
+  <button class="btn btn-o" onclick="embCfgToggle()">⚙ Configurar Drive</button>
+  <label class="btn btn-o" style="cursor:pointer;" title="Respaldo: sube los archivos a mano si Drive no responde">📥 Subir archivos a mano
+    <input type="file" accept=".xlsx,.xls" multiple style="display:none" onchange="embSubir(this.files);this.value='';"></label>
+  <span class="chip c-gris" id="emb-sync"></span>
+</div>
+<div id="emb-cfg" style="display:none;background:#f8fafc;border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;">
+  <div style="margin-bottom:6px;color:#475569;">Configuración única: la carpeta de Drive debe estar en <b>"Cualquier persona con el enlace · Lector"</b> y la clave debe ser una <b>clave de API de Google</b> con la API de Drive habilitada y restringida a este sitio web.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+    <input class="si" id="emb-key" placeholder="Clave de API de Google (AIza…)" style="width:300px;" autocomplete="off">
+    <input class="si" id="emb-folder" placeholder="Enlace o ID de la carpeta de Drive" style="width:360px;">
+    <label style="font-size:10px;"><input type="checkbox" id="emb-share" checked> Compartir con todos los usuarios</label>
+    <button class="btn btn-b" onclick="embCfgGuardar()">💾 Guardar</button>
+    <button class="btn btn-o" onclick="embProbar()">🧪 Probar conexión</button>
+  </div>
+</div>
+<div id="emb-msg" style="font-size:11px;font-weight:700;margin-bottom:6px;"></div>
+<div id="emb-src" style="margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+  <label style="font-size:11px;font-weight:700;color:var(--text2);">Fecha de venta:</label>
+  <input type="date" class="si" id="emb-d1" onchange="embRender()"> <span>→</span> <input type="date" class="si" id="emb-d2" onchange="embRender()">
+  <button class="btn btn-o" onclick="embRango(1)">Hoy</button><button class="btn btn-o" onclick="embRango(7)">7 días</button><button class="btn btn-o" onclick="embRango(30)">30 días</button><button class="btn btn-o" onclick="embRango('mes')">Mes</button>
+  <select class="sel" id="emb-canal" onchange="embRender()"><option value="">Todos los canales</option></select>
+</div>
+<div class="krow" id="emb-kpis"></div>
+<div class="tbox"><div class="tbox-h"><h3>📅 Embudo por día de venta</h3><span class="pk-mini">Pedidos (y S/ cuando se conoce el importe) según dónde están hoy · "% con guía" = entregado + en ruta sobre lo cargado</span></div>
+  <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Día</th><th style="text-align:right">Cargados</th><th style="text-align:right">Entregado</th><th style="text-align:right">En ruta /<br>logística</th><th style="text-align:right">Programado<br>sin guía</th><th style="text-align:right">Confirmado<br>sin guía</th><th style="text-align:right">No<br>contactado</th><th style="text-align:right">Rechazo /<br>anulado</th><th style="text-align:right">% con guía</th></tr></thead>
+    <tbody id="emb-dia"></tbody></table></div></div>
+<div class="tbox"><div class="tbox-h"><h3>🏷 Por canal / fuerza de venta</h3></div>
+  <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Canal</th><th style="text-align:right">Cargados</th><th style="text-align:right">Entregado</th><th style="text-align:right">En ruta /<br>logística</th><th style="text-align:right">Programado<br>sin guía</th><th style="text-align:right">Confirmado<br>sin guía</th><th style="text-align:right">No<br>contactado</th><th style="text-align:right">Rechazo /<br>anulado</th><th style="text-align:right">% con guía</th></tr></thead>
+    <tbody id="emb-can"></tbody></table></div></div>
+<div class="tbox"><div class="tbox-h"><h3>🚚 Despachado en el rango (por fecha de despacho)</h3><span class="pk-mini">Mismo formato del reporte de Miguel: entregado / rechazo / efectividad por fuerza de venta (valor según el reporte de tránsito)</span></div>
+  <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Fuerza de venta</th><th style="text-align:right">Despachados</th><th style="text-align:right">Entregado</th><th style="text-align:right">En ruta / otros</th><th style="text-align:right">Rechazo</th><th style="text-align:right">Anulado</th><th style="text-align:right">Efectividad</th></tr></thead>
+    <tbody id="emb-desp"></tbody></table></div></div>
+<div class="tbox"><div class="tbox-h"><h3>⏳ Pedidos pendientes y su motivo</h3><span class="pk-mini" id="emb-pn"></span></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;padding:6px 10px;">
+    <select class="sel" id="emb-pf" onchange="embRender()"><option value="PEND">Sin guía (programado / confirmado / no contactado)</option><option value="NOENT">Todo lo no entregado (incluye en ruta y logística)</option></select>
+    <select class="sel" id="emb-pm" onchange="embRender()"><option value="TODOS">Todos los motivos</option><option value="SIN">Sin motivo asignado</option><option value="PAGO">Falta pago / financiamiento</option><option value="STOCK">Observado por falta de stock</option><option value="GAS">Habilitar servicio de gas</option><option value="DIR">Dirección / cliente no ubicado</option><option value="OTRO">Otro</option></select>
+    <button class="btn btn-g" onclick="embExportar()">📊 Exportar Excel</button>
+  </div>
+  <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Venta</th><th>Canal</th><th>Pedido</th><th>Cliente</th><th>Estado</th><th style="text-align:right">Importe</th><th>Alertas</th><th>Motivo</th><th>Nota</th><th>Actualizó</th></tr></thead>
+    <tbody id="emb-pend"></tbody></table></div></div>
 </div>
 
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
@@ -8402,7 +8457,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 // Los cortes se comparten en pre_estado.json (rama datos-packs, igual que Surtidos).
 // No modifica ninguna otra pestaña.
 // ===================================================
-var PRE={LS:'merpes_pre_v1',FILE:'pre_estado.json',sha:null,busy:false,dirty:false,cortes:[],RET:3,err:null,lastOk:null,started:false,vista:[]};
+var PRE={mapa:{},LS:'merpes_pre_v1',FILE:'pre_estado.json',sha:null,busy:false,dirty:false,cortes:[],RET:3,err:null,lastOk:null,started:false,vista:[]};
 function _preNow(){return new Date().toISOString();}
 function _preE(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function _preUser(){try{return localStorage.getItem('merpes_surtidos_user')||'—';}catch(e){return '—';}}
@@ -8452,8 +8507,8 @@ function preParse(wb){
   return out.length?{lineas:out,peds:Object.keys(out.reduce(function(m,l){m[l[0]]=1;return m;},{})).length}:null;
 }
 // ---------- persistencia (local + GitHub) ----------
-function _preSaveLocal(){try{localStorage.setItem(PRE.LS,JSON.stringify({cortes:PRE.cortes,dirty:PRE.dirty}));}catch(e){}}
-function _preLoadLocal(){try{var p=JSON.parse(localStorage.getItem(PRE.LS)||'null'); if(p){PRE.cortes=p.cortes||[];PRE.dirty=!!p.dirty;}}catch(e){}}
+function _preSaveLocal(){try{localStorage.setItem(PRE.LS,JSON.stringify({cortes:PRE.cortes,mapa:PRE.mapa,dirty:PRE.dirty}));}catch(e){}}
+function _preLoadLocal(){try{var p=JSON.parse(localStorage.getItem(PRE.LS)||'null'); if(p){PRE.cortes=p.cortes||[];PRE.mapa=p.mapa||{};PRE.dirty=!!p.dirty;}}catch(e){}}
 function _preMerge(rem){
   var m={}, cambio=false;
   (PRE.cortes||[]).forEach(function(c){m[c.id]=c;});
@@ -8463,6 +8518,7 @@ function _preMerge(rem){
     .sort(function(a,b){return String(a.ts)<String(b.ts)?-1:1;});
   return cambio;
 }
+function _preMergeMapa(rem){ if(!rem) return; Object.keys(rem).forEach(function(k){ var l=PRE.mapa[k], r=rem[k]; if(r&&(!l||String(r.ts)>String(l.ts))) PRE.mapa[k]=r; }); }
 function _preUrl(){return _pkApi()+'/contents/'+PRE.FILE+(PKS.branchOk?'?ref='+PKS.BR+'&':'?')+'t='+Date.now();}
 async function prePull(){
   await _pkEnsureBranch();
@@ -8472,7 +8528,7 @@ async function prePull(){
   var j=await r.json(); PRE.sha=j.sha; var t=j.content?_pkB64d(j.content):''; return t?JSON.parse(t):null;
 }
 async function prePush(){
-  var body={message:'Pre-Observados: corte '+new Date().toLocaleString('es-PE'),content:btoa(unescape(encodeURIComponent(JSON.stringify({ver:1,cortes:PRE.cortes}))))};
+  var body={message:'Pre-Observados: corte '+new Date().toLocaleString('es-PE'),content:btoa(unescape(encodeURIComponent(JSON.stringify({ver:1,cortes:PRE.cortes,mapa:PRE.mapa}))))};
   if(PKS.branchOk) body.branch=PKS.BR; if(PRE.sha) body.sha=PRE.sha;
   var r=await fetch(_pkApi()+'/contents/'+PRE.FILE,{method:'PUT',headers:_pkH(true),body:JSON.stringify(body)});
   if(r.status===409||r.status===422) return 'CONFLICT';
@@ -8484,8 +8540,8 @@ async function preSync(manual){
   try{
     for(var n=0;n<4;n++){
       var rem=await prePull(); var ids={}; ((rem&&rem.cortes)||[]).forEach(function(c){ids[c.id]=c.del?2:1;});
-      _preMerge(rem&&rem.cortes);
-      var need=PRE.cortes.some(function(c){return !ids[c.id]||(c.del&&ids[c.id]!==2);});
+      _preMerge(rem&&rem.cortes); _preMergeMapa(rem&&rem.mapa);
+      var need=PRE.cortes.some(function(c){return !ids[c.id]||(c.del&&ids[c.id]!==2);})||Object.keys(PRE.mapa).some(function(k){var q=rem&&rem.mapa&&rem.mapa[k]; return !q||String(PRE.mapa[k].ts)>String(q.ts);});
       if(need||PRE.dirty){ var res=await prePush(); if(res==='CONFLICT') continue; }
       PRE.dirty=false; break;
     }
@@ -8632,6 +8688,348 @@ function preIniciar(){
   setInterval(function(){ if(!document.hidden) preSync(false); },120000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',preIniciar); else preIniciar();
+// ===================================================
+// EMBUDO DE DESPACHO v30 — lo que se carga vs. lo que realmente sale
+// Cruza por N° de PEDIDO: Gestión Confirmaciones (universo cargado) + Reporte Tránsito / Excel Miguel / Base diaria logística
+// Lee la carpeta de Google Drive (enlace público + clave de API) al pulsar "Actualizar desde Drive".
+// Motivos manuales (falta pago, gas, stock, otros) y clave Drive se comparten en emb_estado.json (rama datos-packs).
+// No modifica ninguna otra pestaña (solo LEE VAL.rows y PRE para enriquecer).
+// ===================================================
+var EMB={LS:'merpes_emb_v1',FILE:'emb_estado.json',sha:null,busy:false,dirty:false,err:null,lastOk:null,started:false,
+  cfg:{key:'',folder:'1vrOpZzNsf57XOrzp6xllIufpW4SsGDm8',ts:'',shared:false},
+  est:{},vend:{},parsed:{},src:{},conf:null,log:null,loadedAt:null,busyDrive:false,vista:[],RET_VEND:60,RET_EST:120};
+var EMB_MOT={'':'— sin motivo —',PAGO:'Falta pago / financiamiento',STOCK:'Observado por falta de stock',GAS:'Habilitar servicio de gas',DIR:'Dirección / cliente no ubicado',OTRO:'Otro (ver nota)'};
+var EMB_B={ENT:'Entregado',RUTA:'En ruta (con guía)',OTL:'En gestión logística',CPG:'Programado, sin guía',CCF:'Confirmado, sin guía',CNC:'No contactado',CRE:'Rechazo en confirmación',REC:'Rechazo en entrega',ANU:'Anulado'};
+// ---------- utilidades ----------
+function _embN(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();}
+function _embPed(v){ if(v==null||v==='') return ''; if(typeof v==='number') return String(Math.round(v)); return String(v).replace(/\.0+$/,'').trim(); }
+function _embKey(ped,canal){ return ped.length>=8?ped:(ped+'|'+_embN(canal)); }
+function _embF(v){ try{ if(typeof v==='number'&&(v<40000||v>60000)) return ''; return _preFecha(v)||''; }catch(e){ return ''; } }
+function _embS(n){ return 'S/ '+Math.round(n||0).toLocaleString('es-PE'); }
+function _embSaveLocal(){try{localStorage.setItem(EMB.LS,JSON.stringify({cfg:EMB.cfg,est:EMB.est,vend:EMB.vend,dirty:EMB.dirty}));}catch(e){}}
+function _embLoadLocal(){try{var p=JSON.parse(localStorage.getItem(EMB.LS)||'null'); if(p){ if(p.cfg) EMB.cfg=Object.assign(EMB.cfg,p.cfg); EMB.est=p.est||{}; EMB.vend=p.vend||{}; EMB.dirty=!!p.dirty; }}catch(e){}}
+function _embMsg(h,c){var e=document.getElementById('emb-msg'); if(e){e.innerHTML=h||'';e.style.color=c||'';}}
+function _embTick(){return new Promise(function(r){setTimeout(r,20);});}
+function _embUser(){return (typeof _preUser==='function')?_preUser():'—';}
+// ---------- lectura de los 4 archivos ----------
+function _embHdr(rows,must){
+  for(var i=0;i<Math.min(rows.length,15);i++){ var u=(rows[i]||[]).map(_embN);
+    if(must.every(function(m){return u.some(function(x){return x===m;});})) return i; }
+  return -1;
+}
+function _embCol(u,re){ for(var i=0;i<u.length;i++) if(re.test(u[i])) return i; return -1; }
+function embParseConf(rows){
+  var h=_embHdr(rows,['PEDIDO','ESTADO','LIDER']); if(h<0) return null;
+  var u=rows[h].map(_embN), c={f:_embCol(u,/^FECHA$/),l:_embCol(u,/^LIDER$/),n:_embCol(u,/^NOMBRE/),p:_embCol(u,/^PEDIDO$/),pr:_embCol(u,/^PRODUCTO/),
+    e:_embCol(u,/^ESTADO$/),d:_embCol(u,/^DETALLE$/),m:_embCol(u,/^MOTIVO/),di:_embCol(u,/^DISTRITO/),r:_embCol(u,/^RESPONSABLE/)};
+  var out={}, r, row, ped, canal, k, f, o, dv;
+  for(r=h+1;r<rows.length;r++){
+    row=rows[r]; if(!row) continue; ped=_embPed(row[c.p]); if(!ped) continue;
+    canal=_embN(row[c.l]); k=_embKey(ped,canal); f=_embF(row[c.f]); if(!f) continue;
+    o=out[k];
+    if(!o){ dv=c.d>=0?row[c.d]:null;
+      out[k]={k:k,ped:ped,f:f,canal:canal,cli:String(row[c.n]==null?'':row[c.n]).trim(),e:_embN(row[c.e]),
+        d:(typeof dv==='number'||dv instanceof Date)?_embF(dv):String(dv==null?'':dv).trim(),m:String(row[c.m]==null?'':row[c.m]).trim(),
+        dis:String(row[c.di]==null?'':row[c.di]).trim(),pr:String(row[c.pr]==null?'':row[c.pr]).trim().slice(0,70),resp:String(row[c.r]==null?'':row[c.r]).trim(),n:1};
+    } else o.n++;
+  }
+  return Object.keys(out).length?out:null;
+}
+function _embStLog(s){
+  var t=_embN(s).replace(/ /g,''); if(!t) return '';
+  if(t.indexOf('ANULADO')>=0) return 'ANULADO';
+  if(t.indexOf('RECHAZO')>=0||t.indexOf('DEVUELTO')>=0) return 'RECHAZO';
+  if(t.indexOf('ENTREGADO')>=0) return 'ENTREGADO';
+  if(t.indexOf('TRANSITO')>=0) return 'TRANSITO';
+  if(t.indexOf('PROGR')>=0) return 'PROGRAMADO';
+  return t;
+}
+function _embBLog(st){ return st==='ENTREGADO'?'ENT':(st==='TRANSITO'||st==='PROGRAMADO')?'RUTA':st==='ANULADO'?'ANU':st==='RECHAZO'?'REC':'OTL'; }
+var _EMB_PRIO=['REC','OTL','RUTA','ENT','ANU'];
+function embParseLog(rows,kind){
+  var h=_embHdr(rows,['PEDIDO','FUERZA DE VENTA']); if(h<0) return null;
+  var u=rows[h].map(_embN), isD=(kind==='data');
+  var c={p:_embCol(u,/^PEDIDO$/),fu:_embCol(u,/^FUERZA DE VENTA$/),fb:_embCol(u,/^FECHA (DE )?BASE$/),fd:_embCol(u,/^FECHA (DE )?DESPACHO$/),
+    e:_embCol(u,isD?/^OBSERVACION LOG/:/^ESTADO$/),co:_embCol(u,isD?/^VALORIZADO$/:/^COSTO$/),rj:_embCol(u,/^DETALLE RECHAZO/),tr:_embCol(u,/^TRANSPORTE$/),pl:_embCol(u,/^PLACA$/)};
+  if(c.p<0||c.e<0) return null;
+  var out={}, r, row, ped, canal, k, st, b, o, co;
+  for(r=h+1;r<rows.length;r++){
+    row=rows[r]; if(!row) continue; ped=_embPed(row[c.p]); if(!ped||_embN(ped)==='PEDIDO'||_embN(ped)==='#N/A') continue;
+    canal=_embN(row[c.fu]); k=_embKey(ped,canal); st=_embStLog(row[c.e]); b=_embBLog(st);
+    co=c.co>=0?(parseFloat(row[c.co])||0):0;
+    o=out[k]; if(!o) o=out[k]={k:k,ped:ped,canal:canal,bs:{},st:{},costo:0,fd:'',fb:'',rj:'',tr:'',pl:''};
+    o.bs[b]=1; o.st[b]=st||'(vacío)'; o.costo+=co;
+    var fd=c.fd>=0?_embF(row[c.fd]):''; if(fd&&fd>o.fd) o.fd=fd;
+    var fb=c.fb>=0?_embF(row[c.fb]):''; if(fb&&(!o.fb||fb<o.fb)) o.fb=fb;
+    if(c.rj>=0&&row[c.rj]) o.rj=String(row[c.rj]).trim();
+    if(c.tr>=0&&row[c.tr]) o.tr=String(row[c.tr]).trim();
+    if(c.pl>=0&&row[c.pl]) o.pl=String(row[c.pl]).trim();
+  }
+  Object.keys(out).forEach(function(k){ var o=out[k]; for(var i=0;i<_EMB_PRIO.length;i++){ if(o.bs[_EMB_PRIO[i]]){o.b=_EMB_PRIO[i];break;} } o.e=o.st[o.b]; delete o.bs; delete o.st; });
+  return Object.keys(out).length?out:null;
+}
+function _embKind(name){
+  var t=_embN(name);
+  if(/CONFIRMACION/.test(t)) return 'conf';
+  if(/TRANSITO/.test(t)) return 'trans';
+  if(/MY ?BEES|MIGUEL/.test(t)) return 'data';
+  if(/BASE DIARIA/.test(t)) return 'base';
+  return '';
+}
+var _EMB_SHEET={conf:'BASE DIARIA',trans:'TRANSITO',data:'DATA',base:'BASE DIARIA'};
+var _EMB_LBL={conf:'Gestión Confirmaciones',trans:'Reporte Tránsito',data:'Excel Miguel (Mybees)',base:'Base diaria logística'};
+function embIngesta(kind,buf,meta){
+  var sh=_EMB_SHEET[kind];
+  var wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false,sheets:[sh]}); var ws=wb.Sheets[sh];
+  if(!ws) throw new Error('No encontré la hoja "'+sh+'" en '+meta.name);
+  var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
+  var p=(kind==='conf')?embParseConf(rows):embParseLog(rows,kind);
+  if(!p) throw new Error('No reconocí las columnas de la hoja "'+sh+'" en '+meta.name);
+  EMB.parsed[kind]=p; EMB.src[kind]={id:meta.id,name:meta.name,mod:meta.modifiedTime,n:Object.keys(p).length,ts:new Date().toISOString()};
+}
+function embMerge(){
+  EMB.conf=EMB.parsed.conf||null; var L={}, k, kinds=['base','data','trans'];   // el último pisa: Tránsito > Excel Miguel > Base diaria
+  kinds.forEach(function(kd){ var p=EMB.parsed[kd]; if(!p) return; for(k in p) L[k]=Object.assign({src:kd},p[k]); });
+  EMB.log=L;
+}
+// ---------- Google Drive (carpeta con enlace público + clave de API) ----------
+function _embFolderId(s){ s=String(s||'').trim(); var m=s.match(/folders\/([\w-]+)/); return m?m[1]:s.replace(/[?#].*$/,''); }
+async function embDriveLista(){
+  var q="'"+_embFolderId(EMB.cfg.folder)+"' in parents and trashed=false";
+  var u='https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields='+encodeURIComponent('files(id,name,mimeType,modifiedTime,size)')+
+    '&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true&key='+encodeURIComponent(EMB.cfg.key);
+  var r=await fetch(u,{cache:'no-store'}); var j=null; try{j=await r.json();}catch(e){}
+  if(!r.ok){ var m=(j&&j.error&&j.error.message)||('HTTP '+r.status);
+    if(r.status===403||r.status===404) throw new Error('Google rechazó el acceso ('+m+'). Revisa que la carpeta esté en "Cualquier persona con el enlace · Lector" y que la clave de API tenga habilitada la API de Drive y permita este sitio web.');
+    if(r.status===400) throw new Error('La clave de API no es válida ('+m+').');
+    throw new Error(m); }
+  return (j&&j.files)||[];
+}
+async function embDriveBajar(id){
+  var r=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+'?alt=media&supportsAllDrives=true&key='+encodeURIComponent(EMB.cfg.key),{cache:'no-store'});
+  if(!r.ok) throw new Error('No se pudo descargar el archivo (HTTP '+r.status+')');
+  return await r.arrayBuffer();
+}
+function _embElegir(lst){
+  var pick={}; lst.forEach(function(f){ if(/folder$/.test(f.mimeType||'')) return; var kd=_embKind(f.name); if(!kd) return;
+    if(!pick[kd]||String(f.modifiedTime)>String(pick[kd].modifiedTime)) pick[kd]=f; });
+  return pick;
+}
+async function embActualizar(){
+  if(EMB.busyDrive) return;
+  if(!EMB.cfg.key){ embCfgToggle(true); _embMsg('⚙ Primero pega la <b>clave de API de Google</b> (una sola vez) y pulsa Guardar.','#92400e'); return; }
+  if(typeof XLSX==='undefined'){ _embMsg('❌ No se pudo leer Excel en este navegador.','#b91c1c'); return; }
+  EMB.busyDrive=true; _embBtn(true);
+  try{
+    _embMsg('⏳ Consultando la carpeta de Drive…','#92400e'); var lst=await embDriveLista(), pick=_embElegir(lst), nuevos=0, igual=0, faltan=[];
+    var orden=['conf','trans','data','base'];
+    for(var i=0;i<orden.length;i++){ var kd=orden[i], f=pick[kd];
+      if(!f){ faltan.push(_EMB_LBL[kd]); continue; }
+      var prev=EMB.src[kd]; if(prev&&prev.id===f.id&&prev.mod===f.modifiedTime&&EMB.parsed[kd]){ igual++; continue; }
+      _embMsg('⏬ Descargando '+_preE(f.name)+' ('+(Math.round((+f.size||0)/1048576*10)/10)+' MB)…','#92400e'); await _embTick();
+      var buf=await embDriveBajar(f.id);
+      _embMsg('⚙ Procesando '+_preE(f.name)+'…','#92400e'); await _embTick();
+      embIngesta(kd,buf,{id:f.id,name:f.name,modifiedTime:f.modifiedTime}); nuevos++;
+    }
+    embMerge(); EMB.loadedAt=new Date(); embRender();
+    _embMsg('✅ Drive leído: '+nuevos+' archivo(s) actualizado(s)'+(igual?', '+igual+' sin cambios':'')+(faltan.length?' · ⚠ no encontré en la carpeta: '+faltan.join(', '):'')+'.',faltan.length?'#92400e':'#15803d');
+  }catch(e){ _embMsg('❌ '+_preE(e.message||e),'#b91c1c'); }
+  finally{ EMB.busyDrive=false; _embBtn(false); }
+}
+function _embBtn(b){ var x=document.getElementById('emb-btn'); if(x){x.disabled=!!b; x.textContent=b?'⏳ Leyendo Drive…':'☁️ Actualizar desde Drive';} }
+async function embProbar(){
+  if(!EMB.cfg.key){ _embMsg('Pega primero la clave de API.','#b91c1c'); return; }
+  try{ _embMsg('⏳ Probando…','#92400e'); var l=await embDriveLista(), pk=_embElegir(l);
+    _embMsg('✅ Conexión correcta. Archivos en la carpeta: '+(l.length?l.map(function(f){return _preE(f.name)+(_embKind(f.name)?' ('+_EMB_LBL[_embKind(f.name)]+')':' (se ignora)');}).join(' · '):'ninguno')+'.','#15803d');
+  }catch(e){ _embMsg('❌ '+_preE(e.message||e),'#b91c1c'); }
+}
+// ---------- carga manual (respaldo) ----------
+function embSubir(files){
+  if(!files||!files.length) return; if(typeof XLSX==='undefined'){ _embMsg('❌ No se pudo leer Excel.','#b91c1c'); return; }
+  var arr=Array.prototype.slice.call(files), ok=0, bad=[];
+  (async function(){
+    for(var i=0;i<arr.length;i++){ var f=arr[i], kd=_embKind(f.name);
+      if(!kd){ bad.push(f.name+' (nombre no reconocido)'); continue; }
+      try{ _embMsg('⚙ Procesando '+_preE(f.name)+'…','#92400e'); await _embTick();
+        var buf=await new Promise(function(res,rej){var fr=new FileReader(); fr.onload=function(e){res(e.target.result);}; fr.onerror=function(){rej(new Error('No se pudo abrir'));}; fr.readAsArrayBuffer(f);});
+        embIngesta(kd,buf,{id:'local:'+f.name,name:f.name,modifiedTime:new Date(f.lastModified||Date.now()).toISOString()}); ok++;
+      }catch(e){ bad.push(f.name+' ('+(e.message||e)+')'); }
+    }
+    embMerge(); EMB.loadedAt=new Date(); embRender();
+    _embMsg((ok?'✅ '+ok+' archivo(s) cargado(s). ':'')+(bad.length?'⚠ No se pudo: '+_preE(bad.join(' · ')):''),bad.length?'#92400e':'#15803d');
+  })();
+}
+// ---------- vendido (desde el Validador) y motivos ----------
+function embCapturar(){
+  try{ if(typeof VAL==='undefined'||!VAL.rows||!VAL.rows.length) return; var m={}, p, ch=false;
+    VAL.rows.forEach(function(r){ if(r.skip||r.isDup||r.estado==='SKIP') return; var ped=String(r.nroPedido==null?'':r.nroPedido).trim(); if(!ped||/-/.test(ped)) return;
+      var o=m[ped]||(m[ped]={i:0,c:r.ch||'FNB',f:_embF(r.fechaVenta)||_preHoy()}); o.i+=(+r.importe||0); });
+    for(p in m){ var imp=Math.round(m[p].i*100)/100, o=EMB.vend[p]; if(!o||o.i!==imp){ EMB.vend[p]={i:imp,c:m[p].c,f:m[p].f,ts:new Date().toISOString()}; ch=true; } }
+    if(ch){ EMB.dirty=true; _embSaveLocal(); }
+  }catch(e){}
+}
+function embSetMot(k,v){ var o=EMB.est[k]||{m:'',n:'',h:[]}; if(o.m===v) return; o.m=v; _embTouch(k,o); }
+function embSetNota(k,v){ var o=EMB.est[k]||{m:'',n:'',h:[]}; v=String(v||'').trim().slice(0,160); if(o.n===v) return; o.n=v; _embTouch(k,o); }
+function _embTouch(k,o){
+  o.por=_embUser(); o.ts=new Date().toISOString(); o.h=(o.h||[]).concat([[o.ts,o.por,o.m,o.n]]).slice(-10);
+  EMB.est[k]=o; EMB.dirty=true; _embSaveLocal(); embSync(false);
+}
+// ---------- sincronización con GitHub ----------
+function _embUrl(){return _pkApi()+'/contents/'+EMB.FILE+(PKS.branchOk?'?ref='+PKS.BR+'&':'?')+'t='+Date.now();}
+async function embPull(){
+  await _pkEnsureBranch();
+  var r=await fetch(_embUrl(),{headers:_pkH(),cache:'no-store'});
+  if(r.status===404){EMB.sha=null;return null;}
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  var j=await r.json(); EMB.sha=j.sha; var t=j.content?_pkB64d(j.content):''; return t?JSON.parse(t):null;
+}
+async function embPush(){
+  var pay={ver:1,est:EMB.est,vend:EMB.vend}; if(EMB.cfg.shared&&EMB.cfg.key) pay.cfg={key:EMB.cfg.key,folder:EMB.cfg.folder,ts:EMB.cfg.ts};
+  var body={message:'Embudo: '+new Date().toLocaleString('es-PE'),content:btoa(unescape(encodeURIComponent(JSON.stringify(pay))))};
+  if(PKS.branchOk) body.branch=PKS.BR; if(EMB.sha) body.sha=EMB.sha;
+  var r=await fetch(_pkApi()+'/contents/'+EMB.FILE,{method:'PUT',headers:_pkH(true),body:JSON.stringify(body)});
+  if(r.status===409||r.status===422) return 'CONFLICT';
+  if(!r.ok) throw new Error('GitHub '+r.status);
+  var j=await r.json(); EMB.sha=(j.content&&j.content.sha)||EMB.sha; return 'OK';
+}
+function _embMergeRem(rem){
+  if(!rem) return false; var ch=false, k, a, b;
+  if(rem.cfg&&rem.cfg.key&&(!EMB.cfg.key||String(rem.cfg.ts||'')>String(EMB.cfg.ts||''))){ EMB.cfg.key=rem.cfg.key; EMB.cfg.folder=rem.cfg.folder||EMB.cfg.folder; EMB.cfg.ts=rem.cfg.ts||''; ch=true; }
+  for(k in (rem.est||{})){ a=EMB.est[k]; b=rem.est[k]; if(!a||String(b.ts)>String(a.ts)){EMB.est[k]=b;ch=true;} }
+  for(k in (rem.vend||{})){ a=EMB.vend[k]; b=rem.vend[k]; if(!a||String(b.ts)>String(a.ts)){EMB.vend[k]=b;ch=true;} }
+  var lv=_preSumDias(_preHoy(),-EMB.RET_VEND), le=_preSumDias(_preHoy(),-EMB.RET_EST);
+  for(k in EMB.vend) if((EMB.vend[k].f||'')<lv) delete EMB.vend[k];
+  for(k in EMB.est) if(String(EMB.est[k].ts||'').slice(0,10)<le) delete EMB.est[k];
+  return ch;
+}
+async function embSync(manual){
+  if(EMB.busy) return; EMB.busy=true;
+  try{
+    for(var n=0;n<4;n++){
+      var rem=await embPull(); _embMergeRem(rem);
+      if(EMB.dirty){ var res=await embPush(); if(res==='CONFLICT') continue; }
+      EMB.dirty=false; break;
+    }
+    EMB.err=null; EMB.lastOk=new Date();
+  }catch(e){ EMB.err=e.message||String(e); }
+  finally{ EMB.busy=false; _embSaveLocal(); embRenderEstado(); if(manual) embRender(); }
+}
+// ---------- configuración ----------
+function embCfgToggle(on){ var p=document.getElementById('emb-cfg'); if(!p) return; var v=(on==null)?(p.style.display==='none'):on; p.style.display=v?'block':'none';
+  if(v){ document.getElementById('emb-key').value=EMB.cfg.key||''; document.getElementById('emb-folder').value=EMB.cfg.folder||''; document.getElementById('emb-share').checked=EMB.cfg.shared!==false; } }
+function embCfgGuardar(){
+  var k=document.getElementById('emb-key').value.trim(), f=_embFolderId(document.getElementById('emb-folder').value), sh=document.getElementById('emb-share').checked;
+  if(!k||!f){ _embMsg('Completa la clave de API y la carpeta.','#b91c1c'); return; }
+  EMB.cfg={key:k,folder:f,shared:sh,ts:new Date().toISOString()}; EMB.dirty=true; _embSaveLocal(); embCfgToggle(false);
+  _embMsg('✅ Configuración guardada'+(sh?' y compartida con los demás usuarios.':' solo en este equipo.'),'#15803d'); embSync(true);
+}
+// ---------- análisis ----------
+function embPedFalta(){
+  var s={}; try{ if(typeof PRE==='undefined'||!PRE.cortes||!PRE.cortes.some(function(c){return !c.del;})||!pkHayStock()) return s;
+    preAnalisis().sku.forEach(function(x){ if(x.falta>0) x.lines.forEach(function(l){ if(l.falta>0) s[String(l.ped)]=1; }); }); }catch(e){} return s;
+}
+function embAnalisis(d1,d2,canal){
+  var hoy=_preHoy(), conf=EMB.conf||{}, L=EMB.log||{}, filas=[], k, o, l, b, vd, imp;
+  var mapB={'CONFIRMADO':'CCF','PROGRAMADO':'CPG','NO CONTACTADO':'CNC','RECHAZO':'CRE'};
+  for(k in conf){ o=conf[k]; if(o.f<d1||o.f>d2) continue; if(canal&&o.canal!==canal) continue;
+    l=L[k]; b=l?l.b:(mapB[o.e]||'CCF'); vd=EMB.vend[o.ped]; imp=vd?vd.i:((l&&l.costo>0)?l.costo:null);
+    filas.push({k:k,o:o,l:l,b:b,imp:imp,age:_preDifDias(hoy,o.f)}); }
+  return filas;
+}
+function _embAgg(filas,keyFn){
+  var m={}; filas.forEach(function(r){ var kk=keyFn(r); var a=m[kk]||(m[kk]={k:kk,n:0,imp:0,nImp:0,b:{},bi:{}});
+    a.n++; if(r.imp!=null){a.imp+=r.imp;a.nImp++;} a.b[r.b]=(a.b[r.b]||0)+1; a.bi[r.b]=(a.bi[r.b]||0)+(r.imp||0); });
+  return Object.keys(m).map(function(x){return m[x];});
+}
+function _embCel(a,bs){ var n=0,i=0; bs.forEach(function(x){n+=(a.b[x]||0);i+=(a.bi[x]||0);}); if(!n) return '<td style="text-align:right;color:#cbd5e1;">·</td>';
+  return '<td style="text-align:right;"><b>'+n+'</b>'+(i>0?'<br><span style="color:#64748b;font-size:9px;">'+_embS(i)+'</span>':'')+'</td>'; }
+function _embFila(a,lbl,tot){
+  var sin=a.b.CPG||0, conSG=['CPG','CCF','CNC'].reduce(function(t,x){return t+(a.b[x]||0);},0), conGuia=['ENT','RUTA','OTL'].reduce(function(t,x){return t+(a.b[x]||0);},0);
+  var pct=a.n?Math.round(conGuia/a.n*100):0, col=pct>=85?'#15803d':pct>=60?'#b45309':'#b91c1c';
+  return '<tr'+(tot?' style="background:#f1f5f9;font-weight:700;"':'')+'><td>'+lbl+'</td>'+
+    '<td style="text-align:right;"><b>'+a.n+'</b>'+(a.imp>0?'<br><span style="color:#64748b;font-size:9px;" title="Importe conocido en '+a.nImp+' de '+a.n+' pedidos">'+_embS(a.imp)+(a.nImp<a.n?'*':'')+'</span>':'')+'</td>'+
+    _embCel(a,['ENT'])+_embCel(a,['RUTA','OTL'])+_embCel(a,['CPG'])+_embCel(a,['CCF'])+_embCel(a,['CNC'])+_embCel(a,['CRE','REC','ANU'])+
+    '<td style="text-align:right;font-weight:800;color:'+col+';">'+pct+'%</td></tr>';
+}
+function _embDM(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'—';}
+function embRango(n){ var h=_preHoy(); var a=document.getElementById('emb-d1'), b=document.getElementById('emb-d2'); if(!a||!b) return;
+  b.value=h; a.value=(n==='mes')?h.slice(0,8)+'01':_preSumDias(h,-(n-1)); embRender(); }
+function embRenderEstado(){
+  var e=document.getElementById('emb-sync'); if(e) e.textContent=EMB.err?('🔴 Sin conexión con GitHub — motivos guardados en este equipo'+(EMB.dirty?' y se enviarán al reconectar':'')):(EMB.lastOk?('🟢 Motivos sincronizados '+EMB.lastOk.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})):'⚫ …');
+  var f=document.getElementById('emb-src'); if(f){ var kinds=['conf','trans','data','base'];
+    f.innerHTML=kinds.map(function(kd){ var s=EMB.src[kd]; return '<span class="chip '+(s?'c-verde':'c-gris')+'" title="'+(s?_preE(s.name)+' · '+s.n.toLocaleString('es-PE')+' pedidos':'Aún no cargado')+'">'+_EMB_LBL[kd]+(s?' · '+new Date(s.mod).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):' · —')+'</span>'; }).join(' '); }
+}
+function embRender(){
+  var tb=document.getElementById('emb-dia'); if(!tb) return; embCapturar(); embRenderEstado();
+  var d1=document.getElementById('emb-d1').value, d2=document.getElementById('emb-d2').value;
+  if(!d1||!d2){ embRango(7); return; }
+  if(!EMB.conf){ document.getElementById('emb-kpis').innerHTML=''; tb.innerHTML='<tr><td colspan="9" style="color:#64748b;padding:14px;">Pulsa <b>☁️ Actualizar desde Drive</b> (o sube los archivos a mano) para ver el embudo.</td></tr>';
+    document.getElementById('emb-can').innerHTML=''; document.getElementById('emb-pend').innerHTML=''; document.getElementById('emb-desp').innerHTML=''; return; }
+  var sel=document.getElementById('emb-canal'), cv=sel.value, cans={};
+  Object.keys(EMB.conf).forEach(function(k){ var o=EMB.conf[k]; if(o.f>=d1&&o.f<=d2) cans[o.canal]=1; });
+  sel.innerHTML='<option value="">Todos los canales</option>'+Object.keys(cans).sort().map(function(c){return '<option value="'+_preE(c)+'"'+(c===cv?' selected':'')+'>'+_preE(c)+'</option>';}).join('');
+  var filas=embAnalisis(d1,d2,sel.value), T=_embAgg(filas,function(){return 'T';})[0]||{n:0,imp:0,nImp:0,b:{},bi:{}};
+  var g=function(x){return T.b[x]||0;}, conGuia=g('ENT')+g('RUTA')+g('OTL'), pend=g('CPG')+g('CCF')+g('CNC'), perd=g('CRE')+g('REC')+g('ANU');
+  var rec=g('REC'), efe=(g('ENT')+rec)?Math.round(g('ENT')/(g('ENT')+rec)*100):0;
+  var impGuia=(T.bi.ENT||0)+(T.bi.RUTA||0)+(T.bi.OTL||0), impPend=(T.bi.CPG||0)+(T.bi.CCF||0)+(T.bi.CNC||0);
+  document.getElementById('emb-kpis').innerHTML=
+    '<div class="kpi k-blue"><div class="kl">Pedidos cargados</div><div class="kv">'+T.n.toLocaleString('es-PE')+'</div></div>'+
+    '<div class="kpi k-green"><div class="kl">Entregados</div><div class="kv">'+g('ENT').toLocaleString('es-PE')+'</div><div class="kl" style="text-transform:none;font-weight:500;">'+_embS(T.bi.ENT)+'</div></div>'+
+    '<div class="kpi k-blue"><div class="kl">Con guía (entregado + ruta)</div><div class="kv">'+(T.n?Math.round(conGuia/T.n*100):0)+'%</div><div class="kl" style="text-transform:none;font-weight:500;">'+_embS(impGuia)+'</div></div>'+
+    '<div class="kpi k-amber"><div class="kl">Pendientes sin guía</div><div class="kv">'+pend.toLocaleString('es-PE')+'</div>'+(impPend>0?'<div class="kl" style="text-transform:none;font-weight:500;">'+_embS(impPend)+' conocido</div>':'')+'</div>'+
+    '<div class="kpi k-red"><div class="kl">Rechazados / anulados</div><div class="kv">'+perd.toLocaleString('es-PE')+'</div></div>'+
+    '<div class="kpi k-purple"><div class="kl">Efectividad de entrega</div><div class="kv">'+efe+'%</div><div class="kl" style="text-transform:none;font-weight:500;">entregado / (entregado + rechazo)</div></div>';
+  var dias=_embAgg(filas,function(r){return r.o.f;}).sort(function(a,b){return a.k<b.k?1:-1;});
+  tb.innerHTML=dias.map(function(a){return _embFila(a,_embDM(a.k)+' <span style="color:#94a3b8;font-size:9px;">'+['dom','lun','mar','mié','jue','vie','sáb'][new Date(a.k+'T12:00:00').getDay()]+'</span>');}).join('')+_embFila(T,'TOTAL',true);
+  document.getElementById('emb-can').innerHTML=_embAgg(filas,function(r){return r.o.canal;}).sort(function(a,b){return b.n-a.n;}).map(function(a){return _embFila(a,_preE(a.k));}).join('');
+  // despachado por fecha de despacho (como la tabla de Miguel)
+  var DS={}, dT={n:0,ent:0,entI:0,ruta:0,rutaI:0,rec:0,recI:0,anu:0,anuI:0}, kk, l;
+  for(kk in (EMB.log||{})){ l=EMB.log[kk]; if(!l.fd||l.fd<d1||l.fd>d2) continue; if(sel.value&&l.canal!==sel.value) continue;
+    var x=DS[l.canal]||(DS[l.canal]={k:l.canal,n:0,ent:0,entI:0,ruta:0,rutaI:0,rec:0,recI:0,anu:0,anuI:0});
+    [x,dT].forEach(function(t){ t.n++; if(l.b==='ENT'){t.ent++;t.entI+=l.costo;} else if(l.b==='ANU'){t.anu++;t.anuI+=l.costo;} else if(l.b==='REC'){t.rec++;t.recI+=l.costo;} else {t.ruta++;t.rutaI+=l.costo;} }); }
+  var dc=function(n,i){return n?'<td style="text-align:right;"><b>'+n+'</b>'+(i>0?'<br><span style="color:#64748b;font-size:9px;">'+_embS(i)+'</span>':'')+'</td>':'<td style="text-align:right;color:#cbd5e1;">·</td>';};
+  var dr=function(t,lbl,tot){ var ef=(t.ent+t.rec)?Math.round(t.ent/(t.ent+t.rec)*100):0; return '<tr'+(tot?' style="background:#f1f5f9;font-weight:700;"':'')+'><td>'+lbl+'</td><td style="text-align:right;"><b>'+t.n+'</b></td>'+dc(t.ent,t.entI)+dc(t.ruta,t.rutaI)+dc(t.rec,t.recI)+dc(t.anu,t.anuI)+'<td style="text-align:right;font-weight:800;">'+ef+'%</td></tr>'; };
+  var dl=Object.keys(DS).map(function(c){return DS[c];}).sort(function(a,b){return b.n-a.n;});
+  document.getElementById('emb-desp').innerHTML=dl.length?dl.map(function(t){return dr(t,_preE(t.k));}).join('')+dr(dT,'TOTAL',true):'<tr><td colspan="7" style="color:#64748b;padding:10px;">Sin despachos en el rango.</td></tr>';
+  // pendientes
+  var pf=document.getElementById('emb-pf').value, pm=document.getElementById('emb-pm').value, faltaS=embPedFalta(), hoy=_preHoy();
+  var lst=filas.filter(function(r){ var okb=(pf==='PEND')?(r.b==='CPG'||r.b==='CCF'||r.b==='CNC'):(r.b!=='ENT'&&r.b!=='ANU'&&r.b!=='CRE');
+    if(!okb) return false; var m=(EMB.est[r.k]||{}).m||''; if(pm==='SIN') return !m; if(pm&&pm!=='TODOS') return m===pm; return true; })
+    .sort(function(a,b){return b.age-a.age;});
+  EMB.vista=lst;
+  document.getElementById('emb-pn').textContent=lst.length+' pedido(s)'+(lst.length>400?' · mostrando 400':'');
+  document.getElementById('emb-pend').innerHTML=lst.length?lst.slice(0,400).map(function(r){
+    var o=r.o, es=EMB.est[r.k]||{}, vence=(o.e==='PROGRAMADO'&&/^\d{4}-/.test(o.d)&&o.d<hoy), flags=[];
+    if(faltaS[o.ped]) flags.push('<span class="chip c-rojo" title="Algún SKU de este pedido no tiene stock según Pre-Observados">sin stock</span>');
+    if(vence) flags.push('<span class="chip c-amber" title="La fecha programada ya pasó">reprogramar</span>');
+    if(r.age>=3&&r.b!=='RUTA') flags.push('<span class="chip c-rojo">'+r.age+' días</span>');
+    var opts=Object.keys(EMB_MOT).map(function(m){return '<option value="'+m+'"'+(m===(es.m||'')?' selected':'')+'>'+EMB_MOT[m]+'</option>';}).join('');
+    var ek=_preE(r.k).replace(/'/g,'&#39;');
+    return '<tr><td>'+_embDM(o.f)+'</td><td>'+_preE(o.canal)+'</td><td class="mono">'+_preE(o.ped)+'</td><td>'+_preE(o.cli).slice(0,28)+'</td>'+
+      '<td><span class="chip '+(r.b==='CPG'?'c-amber':r.b==='CCF'?'c-gris':r.b==='CNC'?'c-rojo':'c-gris')+'">'+EMB_B[r.b]+'</span>'+(o.e==='PROGRAMADO'&&/^\d{4}-/.test(o.d)?' <span style="font-size:9px;color:#64748b;">p/ '+_embDM(o.d)+'</span>':'')+'</td>'+
+      '<td style="text-align:right;">'+(r.imp!=null?_embS(r.imp):'<span style="color:#cbd5e1;">—</span>')+'</td><td>'+flags.join(' ')+'</td>'+
+      '<td><select class="sel" style="font-size:10px;max-width:190px;" onchange="embSetMot(\''+ek+'\',this.value)">'+opts+'</select></td>'+
+      '<td><input class="si" style="font-size:10px;width:150px;" value="'+_preE(es.n||'')+'" placeholder="nota…" onchange="embSetNota(\''+ek+'\',this.value)"></td>'+
+      '<td style="font-size:9px;color:#64748b;" title="'+_preE((es.h||[]).map(function(h){return new Date(h[0]).toLocaleString('es-PE')+' · '+h[1]+' · '+(EMB_MOT[h[2]]||'')+(h[3]?' · '+h[3]:'');}).join('\n'))+'">'+(es.ts?_preE(es.por||'')+' '+new Date(es.ts).toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit'}):'')+'</td></tr>'; }).join('')
+    :'<tr><td colspan="10" style="color:#64748b;padding:12px;">Sin pedidos con ese criterio en el rango.</td></tr>';
+}
+function embExportar(){
+  var l=EMB.vista||[]; if(!l.length){alert('No hay pedidos en la lista.');return;}
+  var rows=l.map(function(r){ var es=EMB.est[r.k]||{}; return [r.o.f,r.o.canal,r.o.ped,r.o.cli,EMB_B[r.b],r.o.d||'',r.imp!=null?r.imp:'',r.age,EMB_MOT[es.m||''],es.n||'',es.por||'',r.o.dis,r.o.pr]; });
+  exportarExcelMerpes({datos:rows,cabeceras:['Fecha venta','Canal','N° Pedido','Cliente','Estado','Detalle / fecha programada','Importe (S/)','Días desde venta','Motivo','Nota','Actualizó','Distrito','Producto'],
+    titulo:'EMBUDO DE DESPACHO — PEDIDOS PENDIENTES',subtitulo:'Cargado vs. despachado · '+document.getElementById('emb-d1').value+' al '+document.getElementById('emb-d2').value,
+    filtros:'',archivo:'Embudo_Pendientes_'+_preHoy(),sheetName:'Pendientes',
+    kpis:[{val:l.length,lbl:'Pedidos listados',color:'amber'}]});
+}
+function embOnOpen(){ embRender(); embSync(false); }
+function embIniciar(){
+  if(EMB.started) return; EMB.started=true; _embLoadLocal();
+  var a=document.getElementById('emb-d1'), b=document.getElementById('emb-d2'); if(a&&b&&!a.value){ b.value=_preHoy(); a.value=_preSumDias(_preHoy(),-6); }
+  embRenderEstado();
+  setTimeout(function(){embSync(false);},5000);
+  setInterval(function(){ var p=document.getElementById('pane-emb'); if(!document.hidden&&((p&&p.classList.contains('on'))||EMB.dirty)) embSync(false); },180000);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',embIniciar); else embIniciar();
 
 
 // ===================================================
@@ -8724,10 +9122,17 @@ function valLeer(file,done){
   fr.onload=function(ev){
     try{
       var wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
-      var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      var ws0=wb.Sheets[wb.SheetNames[0]], arr0=XLSX.utils.sheet_to_json(ws0,{header:1,raw:true,defval:''});
+      if(valEsBees(arr0)){ valLeerBees(arr0,file); done(); return; }
+      var rows=XLSX.utils.sheet_to_json(ws0,{defval:''});
       var hist=valHist(), proc=[];
       rows.forEach(function(r,i){ if(valEsFila(r)) proc.push(valProcesarFila(r,i,file.name,proc,hist)); });
-      if(!proc.length){_valMsg('❌ No encontré pedidos en '+_preE(file.name)+'. ¿Es el Excel crudo de FNB?','#b91c1c');done();return;}
+      proc.forEach(function(x){x.ch='FNB';});
+      if(!proc.length){
+        var ya=null; try{ya=preParse(wb);}catch(x){}
+        _valMsg(ya?('⚠ <b>'+_preE(file.name)+'</b> ya es un archivo <b>validado</b> (salida del Validator, ya con SKU limpios), no el crudo de FNB. Aquí hay que subir el <b>Excel crudo</b> que baja de FNB (por ejemplo "BASE DE FNB …"). Si solo quieres enviarlo a alertas, súbelo en <b>⚡ Pre-Observados</b>.')
+          :('❌ No encontré pedidos en '+_preE(file.name)+'. Sube el Excel crudo de FNB (debe traer columnas como CLIENTE, DNI, SKU, Nro. DE CONTRATO).'),'#b91c1c');
+        done();return;}
       VAL.rows=VAL.rows.concat(proc); valGuardarLocal();
       // → Pre-Observados: solo lo que irá al SIG
       var ok=proc.filter(function(x){return !x.skip&&x.estado!=='ERR'&&!x.isDup;});
@@ -8761,58 +9166,66 @@ function valRender(){
     '<div class="kpi k-amber"><div class="kv">'+c(function(r){return r.financiadoParcial&&!r.skip;})+'</div><div class="kl">Financ. parcial</div></div>'+
     '<div class="kpi k-purple"><div class="kv">'+c(function(r){return r.isDup;})+'</div><div class="kl">Duplicados excluidos</div></div>'+
     '<div class="kpi k-red"><div class="kv">'+c(function(r){return r.estado==='ERR';})+'</div><div class="kl">Errores (bloquean)</div></div>'+
-    '<div class="kpi k-red"><div class="kv">'+c(function(r){return r.skip;})+'</div><div class="kl">Descartadas (validación fallida)</div></div>';
+    '<div class="kpi k-red"><div class="kv">'+c(function(r){return r.skip&&r.estado!=='PEND';})+'</div><div class="kl">Descartadas (validación fallida)</div></div>';
+  var mp=document.getElementById('val-map'); if(mp) mp.innerHTML=valMapaHtml();
+  ['FNB','BEES'].forEach(function(k){ var b=document.getElementById('val-bt-'+k); if(b){ var n=R.filter(function(r){return (r.ch||'FNB')===k&&!r.skip&&r.estado!=='ERR'&&!r.isDup;}).length; b.textContent='📤 Exportar '+(k==='BEES'?'Mybees':'FNB')+' para SIG ('+n+')'; } });
   var f=(document.getElementById('val-fil')||{}).value||'TODOS';
   var L=R.filter(function(r){ return f==='TODOS'||(f==='PROBLEMA'?r.estado!=='OK':r.estado===f); });
   document.getElementById('val-n').textContent=L.length+' de '+R.length+' líneas'+(L.length>400?' (se muestran 400)':'');
-  var chip=function(e){return e==='OK'?'<span class="chip c-verde">OK</span>':e==='FIX'?'<span class="chip c-verde">FIX</span>':e==='WARN'?'<span class="chip c-amber">WARN</span>':e==='ERR'?'<span class="chip c-rojo">ERR</span>':'<span class="chip c-gris">SKIP</span>';};
+  var chip=function(e){return e==='PEND'?'<span class="chip c-gris">PEND</span>':e==='OK'?'<span class="chip c-verde">OK</span>':e==='FIX'?'<span class="chip c-verde">FIX</span>':e==='WARN'?'<span class="chip c-amber">WARN</span>':e==='ERR'?'<span class="chip c-rojo">ERR</span>':'<span class="chip c-gris">SKIP</span>';};
   tb.innerHTML=L.length?L.slice(0,400).map(function(r){
-    return '<tr><td>'+chip(r.estado)+(r.isDup?' <span class="chip c-gris">dup</span>':'')+'</td><td style="font-size:9px;">'+_preE(r.fileName).slice(0,24)+'</td><td>'+(r.idx+2)+'</td><td class="mono">'+_preE(r.nroPedido)+'</td><td class="mono">'+_preE(r.nroContrato)+'</td><td>'+_preE(r.cliente).slice(0,28)+'</td>'+
+    return '<tr><td>'+chip(r.estado)+(r.isDup?' <span class="chip c-gris">dup</span>':'')+'</td><td style="font-size:9px;">'+_preE(r.fileName).slice(0,24)+'</td><td>'+(r.idx+2)+'</td><td class="mono">'+_preE(r.nroPedido)+'</td><td class="mono">'+_preE(r.nroContrato||(r.ch==='BEES'?'MYBEES':''))+'</td><td>'+_preE(r.cliente).slice(0,28)+'</td>'+
       '<td class="mono">'+_preE(r.raw_sku_orig)+(r.raw_sku_orig!==r.raw_sku?' → <b>'+_preE(r.raw_sku)+'</b>':'')+'</td><td style="text-align:right">'+r.cantidad+'</td><td style="text-align:right">'+r.importe.toLocaleString('es-PE')+'</td><td style="font-size:9px;">'+_preE(r.motivo)+'</td></tr>';}).join('')
-    :'<tr><td colspan="10" style="color:#64748b;padding:12px;">'+(R.length?'Nada que mostrar con este filtro.':'Sube el Excel crudo de FNB para empezar.')+'</td></tr>';
+    :'<tr><td colspan="10" style="color:#64748b;padding:12px;">'+(R.length?'Nada que mostrar con este filtro.':'Sube el Excel crudo de FNB o el reporte de Mybees para empezar.')+'</td></tr>';
 }
 // ---------- exportar Excel para el SIG (mismo formato del Validator) ----------
-function valExportar(){
-  var R=VAL.rows; if(!R.length){alert('Primero sube y valida al menos un archivo.');return;}
-  var aSIG=R.filter(function(r){return !r.skip&&r.estado!=='ERR'&&!r.isDup;}), desc=R.filter(function(r){return r.skip;}),
+function valExportar(ch){
+  ch=ch||'FNB';
+  var CFG=ch==='BEES'?{doc:'BK',cod:'BACKUS',precio:'BACKUS',vend:function(){return '43772228';},emi:function(r){return r.emision||r.fechaVenta;},ven:function(r){return r.emision||r.fechaVenta;},etq:'MyBees / Backus',file:'MERPES_MYBEES_Validado_SIG_'}
+    :{doc:'FNB',cod:'CALIDDA',precio:'CALIDDA',vend:function(r){return r.asesor;},emi:function(r){return r.fechaVenta;},ven:function(r){return r.fechaEntrega||r.fechaVenta;},etq:'FNB Calidda',file:'MERPES_FNB_Validado_SIG_'};
+  var R=VAL.rows.filter(function(r){return (r.ch||'FNB')===ch;}); if(!R.length){alert('No hay líneas de '+CFG.etq+' para exportar. Sube primero el archivo.');return;}
+  var aSIG=R.filter(function(r){return !r.skip&&r.estado!=='ERR'&&!r.isDup;}), desc=R.filter(function(r){return r.skip&&r.estado!=='PEND';}), pend=R.filter(function(r){return r.estado==='PEND';}),
       errs=R.filter(function(r){return !r.skip&&r.estado==='ERR';}), dups=R.filter(function(r){return r.isDup&&!r.skip;}),
       provs=aSIG.filter(function(r){return r.esProvisional;}), parc=aSIG.filter(function(r){return r.financiadoParcial;});
+  if(!aSIG.length&&!confirm('No hay líneas listas para el SIG en '+CFG.etq+' (solo errores, pendientes o duplicados). ¿Exportar igual el reporte?')) return;
   var archivos=Array.from(new Set(R.map(function(r){return r.fileName;}))).join(', '), hoy=new Date().toLocaleDateString('es-PE');
   var H=['FECHA EMISION','FECHA VENCIMIENTO','DOC.','SERIE','N° PEDIDO','TIPO','NUMERO','APELLIDOS Y NOMBRES / RAZON SOCIAL','ALMACEN','MATERIAL (SKU)','U.MEDIDA','UNIDADES','P.UNITARIO','TOTAL','CLASE IMPUESTO','MONEDA','FORMA DE PAGO','DOC. MOD.','SERIE MOD.','NUMERO MOD.','CC 1','CC 2','GLOSA','CLASE MOV.','PERIODO ALT.','CLASE','CODIGO','VENDEDOR','PRECIO','FECHA VENTA'];
   var pad=function(a){var o=a.slice(); while(o.length<30) o.push(''); return o;};
   var g4=new Array(30).fill(''); g4[0]='FECHA EMISION'; g4[1]='FECHA VENCIMIENTO'; g4[2]='COMPROBANTE DE PAGO'; g4[5]='INFORMACION CLIENTE'; g4[8]='DATOS DEL DETALLE DEL DOCUMENTO'; g4[14]='CLASE IMPUESTO'; g4[15]='MONEDA'; g4[16]='FORMA DE PAGO'; g4[17]='COMPROBANTE QUE SE MODIFICA'; g4[20]='CENTRO DE COSTOS'; g4[22]='GLOSA'; g4[23]='Clase Mov.'; g4[24]='Periodo Alt.'; g4[25]='Clase'; g4[26]='Codigo'; g4[27]='Vendedor'; g4[28]='PRECIO'; g4[29]='FECHA VENTA';
-  var aoa=[pad(['MERPES AI VALIDATOR — Plantilla SIG-ERP | FNB Calidda | '+hoy+' | '+aSIG.length+' registros para SIG | '+desc.length+' descartados (validación fallida)']),
-    pad(['⚡ '+provs.length+' líneas con N° Pedido PROVISIONAL (ver hoja PROVISIONALES) | '+desc.length+' validación fallida DESCARTADOS (no van al SIG) | SKUs depurados sin prefijos']),
+  var aoa=[pad(['MERPES AI VALIDATOR — Plantilla SIG-ERP | '+CFG.etq+' | '+hoy+' | '+aSIG.length+' registros para SIG | '+desc.length+' descartados'+(pend.length?' | '+pend.length+' pendientes de contacto (no incluidos)':'')]),
+    pad(['⚡ '+provs.length+' líneas con N° Pedido PROVISIONAL | '+errs.length+' con error (no van al SIG) | SKUs depurados']),
     pad(['Lectura de datos desde Fila 7 | Origen: '+archivos]), g4, H,
-    pad(['↓ Las líneas con N° Pedido PROVISIONAL (formato CD######-NN) deben reemplazarse en el SIG con el N° real que devuelva FNB — ver hoja PROVISIONALES'])];
-  aSIG.forEach(function(r){ aoa.push([r.fechaVenta,r.fechaEntrega||r.fechaVenta,'FNB','',r.nroPedido,r.tipo,r.raw_dni,r.cliente,'001',r.raw_sku,'UND',r.cantidad,r.precio,r.importe,'V01','PEN','CON','','','','0013','1301','','','','CLI','CALIDDA',r.asesor,'CALIDDA',r.fechaVenta]); });
+    pad([ch==='BEES'?'↓ Pedidos MyBees/Backus validados — N° de pedido y fechas tal cual el reporte (EMISIÓN = F CONTACTO, VENTA = F CANJE)':'↓ Las líneas con N° Pedido PROVISIONAL (formato CD######-NN) deben reemplazarse en el SIG con el N° real que devuelva FNB — ver hoja PROVISIONALES'])];
+  aSIG.forEach(function(r){ aoa.push([CFG.emi(r),CFG.ven(r),CFG.doc,'',r.nroPedido,r.tipo,r.raw_dni,r.cliente,'001',r.raw_sku,'UND',r.cantidad,r.precio,r.importe,'V01','PEN','CON','','','','0013','1301','','','','CLI',CFG.cod,CFG.vend(r),CFG.precio,r.fechaVenta]); });
   var ws1=XLSX.utils.aoa_to_sheet(aoa);
   ws1['!merges']=[0,1,2,5].map(function(r){return {s:{r:r,c:0},e:{r:r,c:29}};}).concat([{s:{r:3,c:2},e:{r:3,c:4}},{s:{r:3,c:5},e:{r:3,c:7}},{s:{r:3,c:8},e:{r:3,c:13}},{s:{r:3,c:17},e:{r:3,c:19}},{s:{r:3,c:20},e:{r:3,c:21}}]);
   ws1['!cols']=H.map(function(h,i){return {wch:[7,29].indexOf(i)>=0?40:i===4?18:i===7?36:i===27?32:14};});
   aSIG.forEach(function(r,k){var c=ws1[XLSX.utils.encode_cell({r:6+k,c:6})]; if(c){c.t='s';c.v=String(r.raw_dni);}});
-  var rep=[['MERPES AI VALIDATOR — Reporte de Validación | '+archivos+' | FNB Calidda'],
-    ['PARA SIG: '+aSIG.length,'','PROVISIONALES: '+provs.length,'','FIN. PARCIAL: '+parc.length,'','ERRORES: '+errs.length,'','DUPLICADOS: '+dups.length,'DESCARTADOS: '+desc.length],[],
+  var rep=[['MERPES AI VALIDATOR — Reporte de Validación | '+archivos+' | '+CFG.etq],
+    ['PARA SIG: '+aSIG.length,'','PROVISIONALES: '+provs.length,'','FIN. PARCIAL: '+parc.length,'','ERRORES: '+errs.length,'','DUPLICADOS: '+dups.length,'DESCARTADOS: '+desc.length+(pend.length?' | PENDIENTES: '+pend.length:'')],[],
     ['ARCHIVO','FILA','CAMPO','COL. SIG','VALOR ORIGINAL','VALOR CORREGIDO POR IA','ESTADO','DETALLE','ACCIÓN RECOMENDADA']];
   R.forEach(function(r){ var f=r.idx+2,a=r.fileName;
+    if(r.estado==='PEND'){rep.push([a,f,'Pedido','N° PEDIDO',r.nroPedido,'(no incluido)','PEND',r.motivo,'Contactar al cliente y volver a cargar']);return;}
     if(r.skip){rep.push([a,f,'Estado','—',r.nroContrato||'','(descartado)','SKIP','Validación fallida — no se asigna N° pedido','No cargar al SIG']);return;}
     if(r.issues&&r.issues.length) rep.push([a,f,'Dirección','DIRECCIÓN',r.raw_addr,r.norm_addr,'FIX',r.issues.join(' | '),'Corrección automática']);
-    if(r.raw_sku_orig!==r.raw_sku) rep.push([a,f,'SKU','MATERIAL',r.raw_sku_orig,r.raw_sku,r.skuOk?'FIX':'ERR',r.isReacond?'Reacondicionado: sufijo -R y prefijo suprimidos':'Prefijo suprimido','SKU listo para SIG']);
+    if(r.raw_sku_orig!==r.raw_sku) rep.push([a,f,'SKU','MATERIAL',r.raw_sku_orig,r.raw_sku,r.skuOk?'FIX':'ERR',ch==='BEES'?'Código Bees convertido a SIG':(r.isReacond?'Reacondicionado: sufijo -R y prefijo suprimidos':'Prefijo suprimido'),'SKU listo para SIG']);
     if(r.esProvisional) rep.push([a,f,'N° Pedido','N° PEDIDO','(vacío)',r.nroPedido,'WARN','Provisional: contrato + correlativo','Reemplazar en SIG con el N° real de FNB']);
     if(r.financiadoParcial) rep.push([a,f,'Financiamiento','TOTAL',r.importe,r.credito,'WARN','Saldo pendiente S/ '+r.saldoPendiente,'Gestionar cobro al contado']);
     if(r.isDup) rep.push([a,f,'Duplicado','—',r.codigoUnico,'(excluido del SIG)','WARN','Mismo Código Único ya cargado','No subir dos veces']);
+    if(ch==='BEES'&&r.estado==='WARN'&&!r.isDup) rep.push([a,f,'Revisión','—',r.nroPedido,'',r.estado,r.motivo,'Revisar antes de cargar']);
     if(r.estado==='ERR') rep.push([a,f,'Bloqueante','—','',r.motivo,'ERR',r.motivo,'Corregir en origen y recargar']); });
   var ws2=XLSX.utils.aoa_to_sheet(rep); ws2['!cols']=[30,6,14,12,50,50,8,45,34].map(function(w){return {wch:w};});
   var corr=R.filter(function(r){return !r.skip&&((r.issues&&r.issues.length)||r.raw_sku_orig!==r.raw_sku);}).length;
-  var res=[['MERPES AI VALIDATOR — Resumen Ejecutivo | FNB Calidda '+hoy],['Archivos: '+archivos+'  |  Grupo Merpes Perú S.A.C.'],[],['INDICADOR','VALOR'],
-    ['REGISTROS VÁLIDOS PARA SIG',aSIG.length],['REGISTROS CON CORRECCIONES AUTOMÁTICAS (dirección/SKU)',corr],['PEDIDOS PROVISIONALES (reemplazar N° al día siguiente)',provs.length],
-    ['FINANCIAMIENTO PARCIAL (saldo por cobrar)',parc.length],['VALIDACIÓN FALLIDA — DESCARTADOS',desc.length],['DUPLICADOS EXCLUIDOS',dups.length],['ERRORES BLOQUEANTES',errs.length],
+  var res=[['MERPES AI VALIDATOR — Resumen Ejecutivo | '+CFG.etq+' '+hoy],['Archivos: '+archivos+'  |  Grupo Merpes Perú S.A.C.'],[],['INDICADOR','VALOR'],
+    ['REGISTROS VÁLIDOS PARA SIG',aSIG.length],['REGISTROS CON CORRECCIONES AUTOMÁTICAS',corr],['PEDIDOS PROVISIONALES (reemplazar N° al día siguiente)',provs.length],
+    ['FINANCIAMIENTO PARCIAL (saldo por cobrar)',parc.length],['VALIDACIÓN FALLIDA — DESCARTADOS',desc.length],['PENDIENTES DE CONTACTO (no incluidos)',pend.length],['DUPLICADOS EXCLUIDOS',dups.length],['ERRORES BLOQUEANTES',errs.length],
     ['MONTO DE LÍNEAS PARA SIG (S/)',Math.round(aSIG.reduce(function(t,r){return t+r.importe;},0)*100)/100]];
   var ws3=XLSX.utils.aoa_to_sheet(res); ws3['!cols']=[{wch:58},{wch:16}];
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws1,'DATOS VALIDADOS SIG'); XLSX.utils.book_append_sheet(wb,ws2,'REPORTE DE VALIDACION'); XLSX.utils.book_append_sheet(wb,ws3,'RESUMEN EJECUTIVO');
   if(provs.length){ var pv=[['N° PROVISIONAL (en SIG)','N° CONTRATO','FECHA VENTA','CLIENTE','SKU','ARCHIVO','N° PEDIDO REAL (completar)','REEMPLAZADO EN SIG (SI/NO)']];
     provs.forEach(function(r){pv.push([r.nroPedido,r.nroContrato,r.fechaVenta,r.cliente,r.raw_sku,r.fileName,'','NO']);});
     var ws4=XLSX.utils.aoa_to_sheet(pv); ws4['!cols']=[24,16,12,36,14,30,26,24].map(function(w){return {wch:w};}); XLSX.utils.book_append_sheet(wb,ws4,'PROVISIONALES'); }
-  XLSX.writeFile(wb,'MERPES_FNB_Validado_SIG_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  XLSX.writeFile(wb,CFG.file+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 function valOnOpen(){ valRender(); }
 (function(){
@@ -8825,6 +9238,117 @@ function valOnOpen(){ valRender(); }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',ini); else ini();
 })();
+
+
+// ===================================================
+// MYBEES (Backus) en el Validador — v28
+// Entrada: reporte "MY BEES" (COD DE CLIENTE / F CANJE / N° PEDIDO / RUC / 2 bloques de producto).
+// Salida: Excel SIG con el formato de "IMPORTE DE PEDIDO BACKUS" (DOC BK, CODIGO BACKUS, vendedor 43772228).
+// Códigos Bees→SIG: tabla base embebida + mapeos que agregues (se comparten en pre_estado.json).
+// ===================================================
+var VAL_BEES_BASE={"M0000001":["11000639","AIRPODS (4TA GEN) USB-C APPLE"],"B0000157":["10000781","BATIDORA ELECTRICA DOU DOU MM-133"],"B0000074":["15000121","CAJA CHINA MEAT MASTER SP + PARRILLA DE "],"B0000009":["13000005","DETECTOR DE BILLETES OPALUX"],"32000308":["32000308","Dron E99pro"],"15000148":["15000148","Estante De 4 Pisos Con Puerta"],"B0000183":["35000025","Juego De Ollas De Metal + Set de Utensil"],"12000288":["12000288","Mesa Plegable de 95*55cm"],"B0000185":["19001124","Mini Taladro Portátil Con Accesorios 46 "],"B0000227":["15000145","Set de Ollas de 12 pzas marca Facusa Inc"],"B0000167":["12000242","Silla Gamer Progear Zone con inclinación"],"B0000223":["10000866","TELEVISOR CAIXUN 43\" SMART TV FHD GOOGLE"],"14000035":["14000035","Tina Masajeadora de Pies"],"B0000111":["17000080","VALES DE CONSUMO FALABELLA S/200"],"B0000290":["15000154","Wok Record Nro26 cm Con Tapa"],"B0000014":["10000793","Alexa Echo Dot 5ta Gen Negro"],"10000714":["10000714","Cámara Interior De Seguridad 360° Tp-Lin"],"35000049":["35000049","Balanza Comercial Digital Ventus B-40 + "],"35000050":["35000050","Olla A Presión Facusa 7 Litros + Regalo "],"12000340":["12000340","Frazada De 2plazas De Piel De Durazno Co"],"15000159":["15000159","Tetera De 2.5 Litros De Metal"],"15000161":["15000161","Set De Jarra Con Vasos De Vidrios 6pzs"],"B0000266":["10000918","Refrigeradora Miray RM-184H Euro Frío 17"],"10000148":["10000148","Congeladora Indurama 198lt Blanco"],"B0000256":["10000913","Cocina A Gas Miray 4 Hornillas A Glp"],"B0000270":["10000940","Freidora Oster De 7.5 Litros Digital "],"B0000267":["10000885","Hervidor Electrico 2.3 Litros Dou Dou Co"],"B0000173":["10000792","HORNO ELECTRICO DOU DOU COD. MY-001"],"B0000154":["10000715","Horno Microondas Miray HMM-205N 20L "],"B0000269":["10000943","Lavadora Indurama Lri-16dgr 16 Kilos"],"10000941":["10000941","Olla Freidora Miray 5.5 Litros"],"10000948":["10000948","Plancha A Vapor Base Cerámica Imaco"],"10000501":["10000501","SANDWICHERA GRILL MERTEC MT-020S"],"B0000291":["11011467","Smartwatch T900 Pro Max Evo Serie10"],"10000955":["10000955","Lavadora Miray 10 Kilos Silver"],"10000958":["10000958","Aspiradora Robot"],"10000956":["10000956","Arrocera Dou Dou Blanca 3litros"],"B0000138":["10000772","Licuadora Gdy 300w Vaso De Vidrio Pequeñ"],"B0000224":["12000305","BANCO PILSEN"],"12000230":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"12000228":["12000228","MESA CUADRADA KINA LOGO PILSEN"],"12000231":["12000231","SILLAS ZEN - LOGO CRISTAL"],"MUNDIAL05":["16000063","Maletín Deportivo"],"MUNDIAL06":["35000041","Maletín Deportivo + Pelota Del Mundial 2"],"MUNDIAL04":["10000933","Parlante Bluethoo En Forma De Pelota"],"MUNDIAL07":["32000306","Pelota Del Mundial 2026 Desinflada"],"MUNDIAL01":["35000045","Pelota Del Mundial 2026 Desinflada + Cha"],"MUNDIAL03":["35000040","Proyector Portátil + Pelota Del Mundial "],"MUNDIAL02":["35000044","Televisor Caixun 32\" Smart Tv Hd Google "],"PACK06":["35000014","PACK CUSQUEÑA: 10 VASOS + 3 DESTAPADORES"],"B0000077":["15000089 (2 UNIDADES)","PACK 2 MANDILES (PILSEN O CRISTAL A ELEC"],"B0000079":["15000090 (6 UNIDADES)","VASO CERVECERO CRISTAL X6 UNIDADES"],"COMBO30":["35000017","6 VASOS + MANDIL CRISTAL"],"B0000222":["10000865","TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE "],"B0000193":["11011315","Celular Motorola Moto G06 4gb 128gb"],"B0000212":["10000847","Máquina De Coser Con Mesita"],"10000504":["10000504","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"B0000276":["10000920","Parlante Recargable 40cm de alto con Luc"],"B0000127":["12000232","ZAPATERA DE 9 PISOS"],"10000961":["10000961","Congelador Horizontal Igloo 99 Litros"],"CLUB000078":["10000899","PARLANTE BLUETOOTH AIWA AWS544BT 110W.RM"],"CLUB000028":["11000888","CELULAR APPLE IPHONE 17 6.3\" 8GB 256GB N"],"CLUB000077":["11000547","CELULAR SAMSUNG GALAXY S24 5G 6.2\" 8GB 2"],"CLUB000030":["10000515","COCINA INDURAMA MONTECARLO ZAFIRO CROMA "],"CLUB000080":["10000582","COCINA MABE 6H CMP7630FX0 GN"],"CLUB000055":["12000298","COLCHON PARAISO ROYAL PRINCE 2.0 PL+2ALM"],"CLUB000082":["10000956","ARROCERA DOU DOU BLANCA 3LITROS MI-029"],"CLUB000001":["10000792","HORNO ELECTRICO DOU DOU MY-001"],"CLUB000002":["13000005","DETECTOR DE BILLETES OPALUX"],"CLUB000051":["10000504","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"CLUB000005":["10000696","BALANZA COMERCIAL DIGITAL VENTUS B-40"],"CLUB000016":["10000304","CONSOLA NINTENDO SWITCH OLED 64GB BLANCO"],"CLUB000039":["11000927","LAPTOP LENOVO 15.6\" 82XM00S6LM AMD R7-58"],"CLUB000043":["11001146","LAPTOP ASUS X1504VA-BQ4454W VIVOBOOK15 C"],"CLUB000068":["10000497","LAVADORA SAMSUNG 19KG WA19CG6441BDPE GRI"],"CLUB000069":["10000471","LAVASECA LG 11KG/7KG WD11WVC3S6 BLANCA"],"CLUB000006":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"CLUB000007":["12000231","SILLAS ZEN - LOGO CRISTAL"],"CLUB000008":["35000017","6 VASOS + MANDIL CRISTAL"],"CLUB000009":["15000089 (2 UNIDADES)","PACK 2 MANDILES CRISTAL"],"CLUB000010":["15000090 (6 UNIDADES)","VASO CERVECERO CRISTAL X6 UNIDADES"],"CLUB000045":["35000048","PACK 1 MESA CRISTAL + 2 SILLAS CRISTAL"],"CLUB000046":["35000047","PACK 1 MESA PILSEN + 2 BANCOS PILSEN"],"CLUB000064":["10000470","REFRIGERADORA SAMSUNG SILVER 384LT RT38D"],"CLUB000047":["33001081","SCOOTER ELECTRICO XIAOMI 6 LITE"],"CLUB000019":["11000814","TABLET LENOVO TAB ONE 8.7\" 4GB 128GB FOL"],"CLUB000022":["10000733","TELEVISOR SAMSUNG UN75U8000FGXPE 75\" UHD"],"CLUB000059":["10000843","TELEVISOR SAMSUNG QLED QN65Q6FAAGXPE 65\""],"CLUB000082-PROV":["10000956","ARROCERA DOU DOU BLANCA 3LITROS MI-029"],"CLUB000001-PROV":["10000792","HORNO ELECTRICO DOU DOU MY-001"],"CLUB000002-PROV":["13000005","DETECTOR DE BILLETES OPALUX"],"CLUB000051-PROV":["0","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"CLUB000005-PROV":["10000696","BALANZA COMERCIAL DIGITAL VENTUS B-40"],"CLUB000006-PROV":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"CLUB000007-PROV":["12000231","SILLAS ZEN - LOGO CRISTAL"],"CLUB000008-PROV":["35000017","6 VASOS + MANDIL CRISTAL"],"CLUB000009-PROV":["15000089 (2 UNIDADES)","PACK 2 MANDILES CRISTAL"],"CLUB000010-PROV":["15000090 (6unidades)","VASO CERVECERO CRISTAL X6 UNIDADES"],"VD000001":["0","Secadora De Cabello Miray [Unidad]"],"VD000003":["0","Combo: 01  Unid Cubrecama Azul 2 Plazas "],"VD000004":["0","Edredón 2 Plazas [Unidad]"],"VD000059":["0","Full Day Lunahuana [Unidad]"],"VD000058":["0","Ica 2 Dias 1 Noche Hotel + City Tour + T"],"VD000010":["10000680","Hervidor Practika Napoles Blacká2.5l [Un"],"VD000011":["10000501","Sandwichera Grill Mertec [Unidad]"],"10000601":["10000601","Plancha Practika A Vapor Mod. Nova [Unid"],"VD000009":["10000679","Cafetera 1.25lt 12 Tazas Negra Daewoo [U"],"VD000014":["0","Batidora De Mano Miray [Unidad]"],"VD000039":["0","Aspiradora Miray [Unidad]"],"VD000012":["0","Olla Arrocera Blackline 2.8l [Unidad]"],"VD000007":["0","Extractor Mod Liquafruits Pro Compact [U"],"10000182":["0","Licuadora Oster 550w Botones Rojo [Unida"],"VD000041":["0","Horno Microondas Miray 20L [Unidad]"],"VD000013":["0","Frigobar Bord 50lt Silver [Unidad]"],"10000447":["0","Refrigeradora Electrolux 2 Puertas 138lt"],"VD000054":["0","Sartén Frying Pan Tau. Best Moments 26(K"],"VD000048":["0","Juego De Ollas 11 Piezas Acero Inoxidabl"],"VD000018":["0","Caja De Herramientas Mertec [Unidad]"],"VD000038":["0","Estante Plástico 4 Niveles 128x60x30cm ["],"VD000047":["0","Lámpara De Emergencia Slim Opalux 9101-2"],"VD000055":["0","Mini Cilindro Ahumador Mr. Grill Fierro "],"12000011":["0","Colchon Paraiso Premium Medallon Ergosof"],"VD000050":["0","Exprimidor Mod Citrus Force Practika [Un"],"VD000006":["0","Horno Electrico Miray [Unidad]"],"VD000005":["10000504","Freidora De Aire Digital Mertec 6.5 Litr"],"VD000044":["15000106","Set De Utensilios Facusa X 6 Piezas Mang"],"VD000049":["0","Juego De Olla Facusa Valencia X 10 Pieza"],"VD000017":["13000005","Detector De Billetes Opalux [Unidad]"],"VD000019":["10000696","Balanza Comercial Digital Ventus [Unidad"],"10000499":["10000499","Parlante Bluetooth Jbl Flip6 30w [Unidad"],"VD000021":["10000502","Audifonos Bluetooth Mertec [Unidad]"],"VD000022":["0","Barra De Sonido Mertec [Unidad]"],"VD000061":["15000121","Caja China Meat Master Sp + Parrilla De "],"VD000066":["0","Televisor Innos 40\" S4001ku[Unidad]"],"VD000067":["0","Televisor Innos 32inch Smart Tv A14 S320"],"VD000070":["0","Audifonos Panasonic True Wireless Rz-B11"],"VD000071":["0","Tablet Tcl Tab 10l Gen 3 Lte 64gb 4gb Ra"],"VD000072":["0","Wok Record 30 Cm Con Tapa[Unidad]"],"VD000075":["0","Plancha De Cabello[Unidad]"],"VD000076":["35000018","Combo Colchón Inflable 2 Plazas + 2 Almo"],"12000012":["12000012","Set Cama Paraiso Su Majestad Chocolate 2"],"12000009":["12000009","Colchon Paraiso Premium Medallon Ergosof"],"12000015":["12000015","Colchon Paraiso Pocket Star King+2alm+1p"],"VD000077":["15000126","Olla A Presión Facusa 7 Litros[Unidad]"],"VD000078":["15000125","Set De Cubiertos Facusa X 16 Piezas[Unid"],"VD000079":["10000745","Frigobar Indurama Ri-101 Blanco 90litros"],"VD000080":["10000742","Licuadora Practika 1.5lt Blw-600 Mod. Pe"],"VD000081":["11000763","Celular Zte Blade A35 6.75\" 2gb 64gb[Uni"],"VD000036":["15000100","Set X5 Bowls Acero Inoxidable [Unidad]"],"MUNDIAL08":["35000035","Pack Mesa Cristal 1pz + Silla Cristal 4p"]};
+VAL.incNC=true; // todos los pedidos del reporte (contactados o no) se cargan al SIG
+function valMapaBees(cod){
+  var c=String(cod==null?'':cod).trim().toUpperCase();
+  if(PRE.mapa&&PRE.mapa[c]&&PRE.mapa[c].sig) return PRE.mapa[c].sig;
+  if(VAL_BEES_BASE[c]) return VAL_BEES_BASE[c][0];
+  return /^\d{8}$/.test(c)?c:'';
+}
+function valEsBees(arr){
+  var h=(arr[0]||[]).map(function(x){return String(x==null?'':x).toUpperCase().trim();});
+  return h.indexOf('F CANJE')>=0&&h.indexOf('COD DE CLIENTE')>=0;
+}
+function valBeesLinea(rec,item,idx,fileName,hist){
+  var skuIn=String(item.cod==null?'':item.cod).trim().toUpperCase(), sig=valMapaBees(skuIn);
+  var dni=String(rec.ruc==null?'':rec.ruc).replace(/\.0$/,'').replace(/\s/g,''), padded=false;
+  if(/^\d{7}$/.test(dni)){ dni='0'+dni; padded=true; }
+  var dniOk=/^\d{8}$/.test(dni)||/^\d{11}$/.test(dni);
+  var fv=valFecha(rec.fCanje)||valFecha(new Date()), em=valFecha(rec.fContacto)||fv;
+  var cant=parseFloat(item.cant)||0, precio=parseFloat(item.precio)||0, ped=String(rec.pedido==null?'':rec.pedido).replace(/\.0$/,'').trim();
+  var cliente=String(rec.cliente||'').replace(/\s+/g,' ').trim();
+  var fFmt=fv.replace(/\//g,'-').replace(/(\d{2})-(\d{2})-(\d{4})/,'$3$2$1').replace(/-/g,'');
+  var cu=sig&&ped?(sig+'|'+ped+'|'+fFmt):'';
+  var contactado=String(rec.estLog||'').toUpperCase().trim()==='CONTACTADO'&&String(rec.obs||'').toUpperCase().trim()==='VALIDADO';
+  var st,motivo,skip=false,faltaMapa=false,parts=[];
+  if(!ped){ st='ERR'; motivo='Falta N° de pedido'; }
+  else if(!dniOk){ st='ERR'; motivo='DNI/RUC inválido ('+(dni||'vacío')+')'; }
+  else if(!sig){ st='ERR'; faltaMapa=true; motivo='Código Bees sin equivalencia SIG ('+skuIn+' · '+String(item.prod||'').slice(0,30)+') — agrégalo abajo'; }
+  else if(!(cant>0)){ st='ERR'; motivo='Cantidad inválida'; }
+  else if(!(precio>0)){ st='ERR'; motivo='Precio vacío o cero'; }
+  else if(!contactado&&!VAL.incNC){ st='PEND'; skip=true; motivo='Pendiente: '+(rec.estLog||'sin estado')+' / '+(rec.obs||'sin validar')+' — no se carga al SIG todavía'; }
+  else {
+    if(sig!==skuIn) parts.push('Código Bees '+skuIn+' → SIG '+sig); else parts.push('Código ya SIG');
+    if(padded) parts.push('DNI de 7 dígitos → se completó con 0');
+    var sum=0; (rec.items||[]).forEach(function(it){sum+=(parseFloat(it.precio)||0)*(parseFloat(it.cant)||0);});
+    var tot=parseFloat(rec.total)||0, warn=false;
+    if(tot>0&&Math.abs(tot-sum)>0.5){ warn=true; parts.push('⚠ Total del pedido S/'+tot+' ≠ suma de líneas S/'+sum); }
+    st=warn?'WARN':((sig!==skuIn||padded)?'FIX':'OK'); motivo=parts.join(' | ');
+  }
+  var isDup=false;
+  if(cu&&!skip){ var ex=hist.find(function(x){return x.cu===cu;}); if(ex){ isDup=true; if(st!=='ERR'){ st='WARN'; motivo='⚠ DUPLICADO — ya validado'+(ex.archivo?' en '+ex.archivo:''); } } }
+  return {idx:idx,fileName:fileName,ch:'BEES',estado:st,skip:skip,isDup:isDup,faltaMapa:faltaMapa,cliente:cliente,raw_dni:dni,raw_addr:rec.dir||'',norm_addr:'',issues:[],
+    raw_sku:sig||skuIn,raw_sku_orig:skuIn,skuOk:!!sig,isReacond:false,producto:String(item.prod||'').slice(0,60),asesor:'',canal:'MYBEES',cantidad:cant,
+    fechaEntrega:em,emision:em,nroPedido:ped,nroContrato:'',fechaVenta:fv,esProvisional:false,provCorrelativo:'',importe:Math.round(precio*cant*100)/100,credito:Math.round(precio*cant*100)/100,precio:precio,
+    saldoPendiente:0,financiadoParcial:false,codigoUnico:cu,motivo:motivo,tipo:(dni.length===11&&dni.indexOf('20')===0)?'2':'1',src:{rec:rec,item:item}};
+}
+function valLeerBees(arr,file){
+  var h=arr[0].map(function(x){return String(x==null?'':x).toUpperCase().trim();});
+  var ix=function(n){return h.indexOf(n);}, ixs=function(p){return h.findIndex(function(x){return x.indexOf(p)===0;});};
+  var iE=ixs('ESTADO'), iCC=ix('COD DE CLIENTE'), iFC=ix('F CANJE'), iP=ixs('N° PEDIDO'), iR=ix('RUC'), iCl=ix('CLIENTE'), iT=ixs('TOTAL'), iFK=ix('F CONTACTO'),
+      iO=ixs('OBSERVACION'), iD=ix('DIRECCION'), blocks=[];
+  h.forEach(function(x,i){ if(x==='CODIGO') blocks.push(i); });
+  var hist=valHist(), proc=[], i, r, rec, k;
+  for(i=1;i<arr.length;i++){
+    r=arr[i]; if(!r||(!r[iP]&&!r[iCl])) continue;
+    rec={estLog:r[iE],codCli:r[iCC],fCanje:r[iFC],pedido:r[iP],ruc:r[iR],cliente:r[iCl],total:r[iT],fContacto:r[iFK],obs:iO>=0?r[iO]:'',dir:iD>=0?r[iD]:'',items:[]};
+    blocks.forEach(function(b){ if(r[b]!==''&&r[b]!=null) rec.items.push({cod:r[b],prod:r[b+1],cant:r[b+2],precio:r[b+3]}); });
+    if(!rec.items.length){ proc.push(valBeesLinea(rec,{cod:'',prod:'',cant:0,precio:0},i-1,file.name,hist)); continue; }
+    rec.items.forEach(function(it){ proc.push(valBeesLinea(rec,it,i-1,file.name,hist)); });
+  }
+  if(!proc.length){_valMsg('❌ No encontré pedidos en '+_preE(file.name),'#b91c1c');return;}
+  VAL.rows=VAL.rows.concat(proc); valGuardarLocal();
+  var n=valBeesCorte(proc,file.name);
+  var cnt=function(s){return proc.filter(function(x){return x.estado===s;}).length;};
+  _valMsg('✅ Mybees · '+_preE(file.name)+': '+proc.length+' líneas · '+n+' a SIG · '+cnt('PEND')+' pendientes de contacto · '+cnt('WARN')+' por revisar · '+cnt('ERR')+' con error.'+(n?' Enviado a Pre-Observados.':''),n?'#15803d':'#b45309');
+  valRender(); preRender(); preSync(true);
+}
+function valBeesCorte(lineas,archivo){
+  var ok=lineas.filter(function(x){return !x.skip&&x.estado!=='ERR'&&!x.isDup;});
+  var c={id:'V'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),archivo:archivo,por:_preUser(),ts:_preNow(),tipo:'validador',n:ok.length,
+    peds:Object.keys(ok.reduce(function(m,x){m[x.nroPedido]=1;return m;},{})).length,
+    l:ok.map(function(x){return [x.nroPedido,x.raw_sku,x.cantidad,'MYBEES','BACKUS',_preFecha(x.fechaVenta)||_preHoy(),0];}),
+    k:lineas.filter(function(x){return !x.skip&&x.codigoUnico;}).map(function(x){return [x.codigoUnico,x.nroPedido,x.fechaVenta,'',x.cliente];})};
+  if(c.l.length||c.k.length){ PRE.cortes.push(c); PRE.dirty=true; _preSaveLocal(); }
+  return ok.length;
+}
+// vuelve a validar líneas guardadas (tras agregar un mapeo o activar "incluir no contactados")
+function valReproc(filtro){
+  var hist=valHist(), nuevos=[];
+  VAL.rows=VAL.rows.map(function(r){ if(r.ch!=='BEES'||!r.src||!filtro(r)) return r; var n=valBeesLinea(r.src.rec,r.src.item,r.idx,r.fileName,hist); nuevos.push(n); return n; });
+  valGuardarLocal(); var n=nuevos.length?valBeesCorte(nuevos,'(revalidado) '+nuevos[0].fileName):0;
+  valRender(); preRender(); if(nuevos.length) preSync(true); return n;
+}
+function valToggleNC(el){
+  VAL.incNC=!!el.checked;
+  if(VAL.incNC){ var n=valReproc(function(r){return r.estado==='PEND';}); _valMsg('✅ Se incluyeron los pedidos no contactados: '+n+' líneas revalidadas.','#15803d'); }
+  else _valMsg('Desactivado: aplica a los próximos archivos. Las líneas ya incluidas siguen en el Excel; usa "Limpiar pantalla" y vuelve a subir si quieres sacarlas.','#92400e');
+}
+function valGuardarMapa(){
+  var n=0, quien=_preUser();
+  document.querySelectorAll('[data-valmap]').forEach(function(inp){
+    var v=String(inp.value||'').trim(); if(!/^\d{8}$/.test(v)) return;
+    PRE.mapa[inp.getAttribute('data-valmap')]={sig:v,por:quien,ts:_preNow()}; n++; });
+  if(!n){ alert('Escribe el código SIG de 8 dígitos al lado de cada código Bees.'); return; }
+  PRE.dirty=true; _preSaveLocal();
+  var r=valReproc(function(x){return x.faltaMapa;}); _valMsg('✅ '+n+' equivalencia(s) guardadas y compartidas · '+r+' líneas pasaron a SIG.','#15803d'); preSync(true);
+}
+function valMapaHtml(){
+  var m={}; VAL.rows.forEach(function(r){ if(r.faltaMapa&&r.src){ var c=String(r.src.item.cod).trim().toUpperCase(); (m[c]=m[c]||{prod:r.src.item.prod,n:0}).n++; } });
+  var ks=Object.keys(m); if(!ks.length) return '';
+  return '<div class="tbox" style="border-color:#f59e0b;"><div class="tbox-h"><h3>🔗 Códigos Bees sin equivalencia SIG ('+ks.length+')</h3><span class="pk-mini">Escribe el código SIG de cada uno. Se guarda y queda compartido para siempre.</span></div><div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Código Bees</th><th>Producto</th><th style="text-align:right">Líneas</th><th>Código SIG (8 dígitos)</th></tr></thead><tbody>'+
+    ks.map(function(k){return '<tr><td class="mono">'+_preE(k)+'</td><td>'+_preE(m[k].prod)+'</td><td style="text-align:right">'+m[k].n+'</td><td><input class="si" data-valmap="'+_preE(k)+'" maxlength="8" style="width:110px;" placeholder="ej. 10000123"></td></tr>';}).join('')+
+    '</tbody></table></div><div style="padding:8px 10px;"><button class="btn btn-g" onclick="valGuardarMapa()" style="font-weight:800;">💾 Guardar equivalencias y revalidar</button></div></div>';
+}
 
 </script>
 </body>
