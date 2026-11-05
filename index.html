@@ -1593,7 +1593,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 </div>
 <div class="drop" id="val-drop" style="margin-bottom:10px;padding:16px;text-align:center;border:2px dashed var(--line2);border-radius:8px;cursor:pointer;" onclick="document.getElementById('val-file').click()">
   <div style="font-size:13px;font-weight:800;">📥 Arrastra aquí el Excel crudo de FNB o el reporte de Mybees, o haz clic para elegirlo</div>
-  <div style="font-size:10px;color:var(--text3);margin-top:3px;">Puedes subir varios archivos. Los duplicados se detectan contra lo ya validado en los últimos 30 días.</div>
+  <div style="font-size:10px;color:var(--text3);margin-top:3px;">Puedes subir varios archivos. Puedes subir el crudo varias veces al día: lo que ya pasó por el validador (aunque lo haya cargado otro usuario) se excluye solo del nuevo corte; se compara contra los últimos 30 días.</div>
   <input type="file" id="val-file" accept=".xlsx,.xls" multiple style="display:none" onchange="valSubir(this.files);this.value='';">
 </div>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
@@ -1619,7 +1619,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div class="tip">
   <b>⚡ Pre-Observados (alerta temprana):</b> los pedidos que validas en <b>✅ Validador IA</b> llegan aquí solos. También puedes subir aquí un Excel <b>"Validado SIG"</b> ya generado (corte de 12:00 o 16:00).
   La herramienta cruza esos pedidos —que aún no están en el SIG— contra el <b>stock del almacén principal</b> (descontando primero los pedidos más antiguos), las <b>OC abiertas</b> y las ventas del kardex,
-  y te dice <b>qué SKUs se van a observar</b> antes de que salga el reporte. Los pedidos cuentan como demanda <b>3 días</b> y se comparten con todos los usuarios.
+  y te dice <b>qué SKUs se van a observar</b> antes de que salga el reporte. Los pedidos cuentan como demanda <b>3 días (Calidda)</b> o <b>48 horas (Mybees)</b> y se comparten con todos los usuarios.
   <span class="chip c-rojo">🔴 Se observará (sin OC que cubra)</span> <span class="chip c-amber">🟠 Falta, hay OC → acelerar</span> <span class="chip c-amber">🟡 Justo (&lt; 5 días de venta tras el pedido)</span> <span class="chip c-verde">🟢 Cubierto</span>
 </div>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
@@ -1638,6 +1638,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 </div>
 <div id="pre-msg" style="font-size:11px;font-weight:700;margin-bottom:8px;"></div>
 <div class="krow" id="pre-kpis"></div>
+<div id="pre-conc"></div>
 <div class="tbox"><div class="tbox-h"><h3>🛒 Acciones para Compras hoy</h3><span class="pk-mini">Ordenado por vencimiento Calidda (4 días · S/ 30 por día de atraso) y luego por unidades faltantes</span></div>
   <div class="tw" style="max-height:300px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr>
     <th>Estado</th><th>Código</th><th>Descripción</th><th style="text-align:right">Falta</th><th>OC abiertas</th><th>Vence</th><th>Acción sugerida</th></tr></thead>
@@ -1685,15 +1686,26 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   <select class="sel" id="emb-canal" onchange="embRender()"><option value="">Todos los canales</option></select>
 </div>
 <div class="krow" id="emb-kpis"></div>
-<div class="tbox"><div class="tbox-h"><h3>📅 Embudo por día de venta</h3><span class="pk-mini">Pedidos (y S/ cuando se conoce el importe) según dónde están hoy · "% con guía" = entregado + en ruta sobre lo cargado</span></div>
+<div class="emb-grid">
+<div class="tbox emb-t"><div class="tbox-h"><h3>📅 Embudo por día de venta</h3><span class="pk-mini">Pedidos (y S/ cuando se conoce el importe) según dónde están hoy · "% con guía" = entregado + en ruta sobre lo cargado</span></div>
   <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Día</th><th style="text-align:right">Cargados</th><th style="text-align:right">Entregado</th><th style="text-align:right">En ruta /<br>logística</th><th style="text-align:right">Programado<br>sin guía</th><th style="text-align:right">Confirmado<br>sin guía</th><th style="text-align:right">No<br>contactado</th><th style="text-align:right">Rechazo /<br>anulado</th><th style="text-align:right">% con guía</th></tr></thead>
     <tbody id="emb-dia"></tbody></table></div></div>
-<div class="tbox"><div class="tbox-h"><h3>🏷 Por canal / fuerza de venta</h3></div>
+<div class="dv-box"><h4>📅 Cargado por día de venta — dónde está hoy (pedidos)</h4><div class="cw"><canvas id="ed-dia"></canvas></div></div>
+<div class="dv-box"><h4>🏷 % con guía por canal (entregado + en ruta sobre lo cargado)</h4><div class="cw"><canvas id="ed-can"></canvas></div></div>
+<div class="tbox emb-t"><div class="tbox-h"><h3>🏷 Por canal / fuerza de venta</h3></div>
   <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Canal</th><th style="text-align:right">Cargados</th><th style="text-align:right">Entregado</th><th style="text-align:right">En ruta /<br>logística</th><th style="text-align:right">Programado<br>sin guía</th><th style="text-align:right">Confirmado<br>sin guía</th><th style="text-align:right">No<br>contactado</th><th style="text-align:right">Rechazo /<br>anulado</th><th style="text-align:right">% con guía</th></tr></thead>
     <tbody id="emb-can"></tbody></table></div></div>
-<div class="tbox"><div class="tbox-h"><h3>🚚 Despachado en el rango (por fecha de despacho)</h3><span class="pk-mini">Mismo formato del reporte de Miguel: entregado / rechazo / efectividad por fuerza de venta (valor según el reporte de tránsito)</span></div>
+<div class="tbox emb-t"><div class="tbox-h"><h3>🚚 Despachado en el rango (por fecha de despacho)</h3><span class="pk-mini">Mismo formato del reporte de Miguel: entregado / rechazo / efectividad por fuerza de venta (valor según el reporte de tránsito)</span></div>
   <div class="tw"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Fuerza de venta</th><th style="text-align:right">Despachados</th><th style="text-align:right">Entregado</th><th style="text-align:right">En ruta / otros</th><th style="text-align:right">Rechazo</th><th style="text-align:right">Anulado</th><th style="text-align:right">Efectividad</th></tr></thead>
     <tbody id="emb-desp"></tbody></table></div></div>
+<div class="dv-box"><h4>🚚 Valor despachado por fecha de despacho (S/)</h4><div class="cw"><canvas id="ed-desp"></canvas></div></div>
+<div class="dv-box"><h4>🧭 Distribución por estado</h4><div class="cw"><canvas id="ed-est"></canvas></div></div>
+<div class="tbox emb-t"><div class="tbox-h"><h3>🧭 Distribución por estado</h3><span class="pk-mini">dónde está hoy cada pedido cargado en el rango</span></div><div class="tw"><table class="dt" style="width:100%;"><thead><tr><th>Estado</th><th style="text-align:right">Pedidos</th><th style="text-align:right">% del total</th><th style="text-align:right">S/ conocido</th></tr></thead><tbody id="emb-t-est"></tbody></table></div></div>
+<div class="tbox emb-t"><div class="tbox-h"><h3>🗂 Pendientes por motivo</h3><span class="pk-mini">solo pedidos sin guía (programado / confirmado / no contactado)</span></div><div class="tw"><table class="dt" style="width:100%;"><thead><tr><th>Motivo</th><th style="text-align:right">Pedidos</th><th style="text-align:right">S/ conocido</th><th style="text-align:right">Antigüedad prom.</th><th style="text-align:right">≥ 3 días</th></tr></thead><tbody id="emb-t-mot"></tbody></table></div></div>
+<div class="dv-box"><h4>🗂 Pendientes por motivo</h4><div class="cw"><canvas id="ed-mot"></canvas></div></div>
+<div class="dv-box"><h4>⏱ Pendientes por antigüedad (días desde la venta)</h4><div class="cw"><canvas id="ed-ant"></canvas></div></div>
+<div class="tbox emb-t"><div class="tbox-h"><h3>⏱ Pendientes por antigüedad</h3><span class="pk-mini">días desde la fecha de venta</span></div><div class="tw"><table class="dt" style="width:100%;"><thead><tr><th>Rango</th><th style="text-align:right">Pedidos</th><th style="text-align:right">% de pendientes</th><th style="text-align:right">S/ conocido</th></tr></thead><tbody id="emb-t-ant"></tbody></table></div></div>
+</div>
 <div class="tbox"><div class="tbox-h"><h3>⏳ Pedidos pendientes y su motivo</h3><span class="pk-mini" id="emb-pn"></span></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;padding:6px 10px;">
     <select class="sel" id="emb-pf" onchange="embRender()"><option value="PEND">Sin guía (programado / confirmado / no contactado)</option><option value="NOENT">Todo lo no entregado (incluye en ruta y logística)</option></select>
@@ -1702,7 +1714,8 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   </div>
   <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Venta</th><th>Canal</th><th>Pedido</th><th>Cliente</th><th>Estado</th><th style="text-align:right">Importe</th><th>Alertas</th><th>Motivo</th><th>Nota</th><th>Actualizó</th></tr></thead>
     <tbody id="emb-pend"></tbody></table></div></div>
-<div id="emb-dash"></div>
+
+
 </div>
 
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
@@ -8460,7 +8473,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
 // Los cortes se comparten en pre_estado.json (rama datos-packs, igual que Surtidos).
 // No modifica ninguna otra pestaña.
 // ===================================================
-var PRE={mapa:{},LS:'merpes_pre_v1',FILE:'pre_estado.json',sha:null,busy:false,dirty:false,cortes:[],RET:3,err:null,lastOk:null,started:false,vista:[]};
+var PRE={mapa:{},LS:'merpes_pre_v1',FILE:'pre_estado.json',sha:null,busy:false,dirty:false,cortes:[],RET:3,RETM:2,err:null,lastOk:null,started:false,vista:[]};
 function _preNow(){return new Date().toISOString();}
 function _preE(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function _preUser(){try{return localStorage.getItem('merpes_surtidos_user')||'—';}catch(e){return '—';}}
@@ -8477,7 +8490,7 @@ function _preHoy(){var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth
 function _preSumDias(iso,n){var d=new Date(iso+'T12:00:00'); d.setDate(d.getDate()+n); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 function _preDifDias(a,b){return Math.round((new Date(a+'T12:00:00')-new Date(b+'T12:00:00'))/864e5);}
 function _preSku(s){
-  s=String(s==null?'':s).trim().toUpperCase().replace(/^(SAL|IBR|GRU|BR)-/,'');
+  s=String(s==null?'':s).trim().toUpperCase().replace(/^(SAL|IBR|GRU|BR|ABAI)[-\s]*/,'');
   var r=/-R$/.test(s); s=s.replace(/-R$/,''); return {cod:s,r:r};
 }
 // ---------- leer el Excel del Validator ----------
@@ -8578,9 +8591,10 @@ function preQuitar(id){
   c.del=true; c.l=[]; c.k=[]; PRE.dirty=true; _preSaveLocal(); preRender(); preSync(true);
 }
 // ---------- análisis ----------
+function _preEsMybees(l){ return /BACKUS/i.test(String(l[4]||''))||/^(MYBEES|BK)$/i.test(String(l[3]||'')); }
 function preLineas(){
-  var lim=_preSumDias(_preHoy(),-PRE.RET), m={};
-  PRE.cortes.forEach(function(c){ if(c.del) return; (c.l||[]).forEach(function(l){ if(l[5]&&l[5]<lim) return; m[l[0]+'|'+l[1]+'|'+l[6]]=l; }); });
+  var hoy0=_preHoy(), limC=_preSumDias(hoy0,-PRE.RET), limM=_preSumDias(hoy0,-PRE.RETM), m={};
+  PRE.cortes.forEach(function(c){ if(c.del) return; (c.l||[]).forEach(function(l){ var lim=_preEsMybees(l)?limM:limC; if(l[5]&&l[5]<lim) return; if(/^ZZ/i.test(String(l[1]))) return; m[l[0]+'|'+l[1]+'|'+l[6]]=l; }); });
   return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return a[5]<b[5]?-1:(a[5]>b[5]?1:(a[0]<b[0]?-1:1));});
 }
 function preAnalisis(){
@@ -8677,7 +8691,7 @@ function preExportar(){
     datos:rows,
     cabeceras:['Estado','Código','Descripción','N° Pedido','Canal','Cliente','Fecha venta','Cantidad','Falta (FIFO)','Stock alm. ppal.','OC abiertas (u)','Llega OC','N° OC','Vence (Calidda)','Sustituto con stock','Ya observado'],
     titulo:'PRE-OBSERVADOS — ALERTA TEMPRANA',subtitulo:'Pedidos validados por el MERPES AI Validator vs. stock y OC abiertas',
-    filtros:'Cortes de los últimos '+PRE.RET+' días',archivo:'PreObservados_'+hoy,sheetName:'Pre-Observados',
+    filtros:'Demanda: Calidda '+PRE.RET+' días · Mybees '+(PRE.RETM*24)+' horas',archivo:'PreObservados_'+hoy,sheetName:'Pre-Observados',
     kpis:[{val:sk.filter(function(s){return s.estado==='ROJO';}).length,lbl:'SKUs que se observarán',color:'red'},
           {val:sk.filter(function(s){return s.estado==='OC';}).length,lbl:'Falta con OC',color:'amber'},
           {val:sk.length,lbl:'SKUs en demanda',color:'blue'}],
@@ -9035,7 +9049,7 @@ function embIniciar(){
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',embIniciar); else embIniciar();
 // ===================================================
-// DASHBOARDS v32 — gráficos al pie de ✅ Validador IA, ⚡ Pre-Observados y 📦 Embudo Despacho
+// DASHBOARDS v32 (v33: el Embudo ahora lleva sus gráficos en paralelo a cada tabla) — gráficos al pie de ✅ Validador IA, ⚡ Pre-Observados y 📦 Embudo Despacho
 // (el dashboard del Validador recupera el estilo del MERPES AI Validator Demo_v2: estados, monto por archivo,
 //  categorías, canal, tipo de corrección, marcas y financiamiento). Solo LEE datos; no modifica ninguna pestaña.
 // ===================================================
@@ -9046,6 +9060,13 @@ var DV={ch:{},C:{navy:'#1A2B4A',or:'#E8630A',ok:'#16A34A',bl:'#0369A1',am:'#D977
   '.dv-box{background:#fff;border:1.5px solid var(--line,#e2e8f0);border-radius:var(--r,10px);padding:12px 14px;min-width:0;}'+
   '.dv-box h4{margin:0 0 8px;font-size:12px;color:var(--text2,#334155);}'+
   '.dv-box .cw{position:relative;height:230px;}.dv-box .cw.tall{height:290px;}'+
+  '.emb-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin:12px 0 18px;align-items:stretch;}'+
+  '.emb-grid>.tbox{margin:0;display:flex;flex-direction:column;}.emb-grid>.tbox .tw{flex:1;max-height:none;overflow-y:visible;}'+
+  '.emb-grid>.dv-box{display:flex;flex-direction:column;}.emb-grid>.dv-box .cw{flex:1 1 auto;height:auto;min-height:330px;}.emb-grid>.dv-box .cw canvas{position:absolute;left:0;top:0;}'+
+  '.emb-grid .dv-box h4{font-size:13px;margin-bottom:10px;}.emb-grid .tbox-h h3{font-size:14px;}'+
+  '.emb-grid .dt{font-size:12.5px!important;}.emb-grid .dt th{font-size:10.5px!important;padding:8px 7px!important;}.emb-grid .dt td{padding:8px 7px!important;}'+
+  '.emb-grid .dt td b{font-size:15px;}.emb-grid .dt td span[style*="font-size:9px"]{font-size:10.5px!important;}.emb-grid .pk-mini{font-size:10.5px;}'+
+  '@media(max-width:1100px){.emb-grid{grid-template-columns:minmax(0,1fr);}}'+
   '.dv-empty{color:#64748b;font-size:11px;padding:14px;background:#f8fafc;border:1px dashed var(--line,#e2e8f0);border-radius:8px;margin:12px 0;}';
   document.head.appendChild(st); }catch(e){} })();
 function _dvN(n){return Math.round(n||0).toLocaleString('es-PE');}
@@ -9085,7 +9106,7 @@ function valDash(){
   var ok=cnt('OK'), fix=cnt('FIX'), warn=cnt('WARN'), err=cnt('ERR'), skip=R.filter(function(r){return r.skip;}).length;
   var monto=V.reduce(function(s,r){return s+(r.importe||0);},0), peds={}; V.forEach(function(r){peds[r.nroPedido]=1;}); var np=Object.keys(peds).length;
   var files={}; R.forEach(function(r){files[r.fileName]=1;});
-  document.getElementById('vd-k').innerHTML=_dvKpi('k-green','S/ '+_dvN(monto),'Monto válido')+_dvKpi('k-blue',np.toLocaleString('es-PE'),'Pedidos distintos')+
+  document.getElementById('vd-k').innerHTML=_dvKpi('k-green','S/ '+_dvN(monto),'Monto válido')+_dvKpi('k-blue',np.toLocaleString('es-PE'),'Pedidos distintos<br><span style="text-transform:none;font-weight:500;">'+_valPedStats().llegan+' llegan a Pre-Observados · '+(_valPedStats().tot-_valPedStats().llegan)+' no</span>')+
     _dvKpi('k-purple','S/ '+_dvN(np?monto/np:0),'Ticket promedio por pedido')+_dvKpi('k-amber',R.length?Math.round((ok+fix)/R.length*100)+'%':'—','Líneas limpias (OK + FIX)')+_dvKpi('k-blue',Object.keys(files).length,'Archivos cargados');
   var C=DV.C;
   dvChart('vd-estado',{type:'doughnut',data:{labels:['✅ Válidos','🔧 Corregidos','⚠ Revisar','❌ Errores','⛔ Descartados'],datasets:[{data:[ok,fix,warn,err,skip],backgroundColor:[C.ok,C.bl,C.am,C.rd,C.gy],borderWidth:0}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:10}}}}}},[_dvPie()]);
@@ -9130,40 +9151,93 @@ function preDash(){
 // ---------- 📦 EMBUDO DESPACHO ----------
 function embDash(){
   var hay=!!(typeof EMB!=='undefined'&&EMB.conf), d1=(document.getElementById('emb-d1')||{}).value, d2=(document.getElementById('emb-d2')||{}).value;
-  var boxes=[{id:'dia',t:'📅 Cargado por día de venta — dónde está hoy (pedidos)',wide:true,tall:true},{id:'est',t:'🧭 Distribución por estado'},{id:'can',t:'🏷 % con guía por canal'},
-    {id:'mot',t:'🗂 Pendientes por motivo'},{id:'ant',t:'⏱ Pendientes por antigüedad (días desde la venta)'},{id:'desp',t:'🚚 Valor despachado por fecha de despacho (S/)'}];
-  if(!dvShell('emb-dash','ed','Dashboard del embudo de despacho',boxes,hay&&d1&&d2,'Pulsa ☁️ Actualizar desde Drive para ver el dashboard.')) return;
+  var T1=document.getElementById('emb-t-est'), T2=document.getElementById('emb-t-mot'), T3=document.getElementById('emb-t-ant');
+  if(!hay||!d1||!d2||!document.getElementById('ed-dia')){ dvKill('ed'); [T1,T2,T3].forEach(function(t){ if(t) t.innerHTML=''; }); return; }
   var sel=document.getElementById('emb-canal'), filas=embAnalisis(d1,d2,sel?sel.value:''), C=DV.C;
   var G={ENT:C.ok,RUTA:C.bl,OTL:C.tl,CPG:C.am,CCF:'#FBBF24',CNC:C.or,CRE:C.rd,REC:'#B91C1C',ANU:C.gy};
-  var days={}, tot={}; filas.forEach(function(r){ var o=days[r.o.f]||(days[r.o.f]={}); o[r.b]=(o[r.b]||0)+1; tot[r.b]=(tot[r.b]||0)+1; });
-  var dk=Object.keys(days).sort(), n=filas.length;
-  var conGuia=(tot.ENT||0)+(tot.RUTA||0)+(tot.OTL||0), pend=(tot.CPG||0)+(tot.CCF||0)+(tot.CNC||0), perd=(tot.CRE||0)+(tot.REC||0)+(tot.ANU||0);
-  document.getElementById('ed-k').innerHTML=_dvKpi('k-blue',n.toLocaleString('es-PE'),'Pedidos en el rango')+_dvKpi('k-green',n?Math.round((tot.ENT||0)/n*100)+'%':'—','Entregados sobre lo cargado')+
-    _dvKpi('k-blue',n?Math.round(conGuia/n*100)+'%':'—','Con guía')+_dvKpi('k-amber',pend,'Pendientes sin guía')+_dvKpi('k-red',perd,'Rechazados / anulados');
+  var days={}, tot={}, impB={}; filas.forEach(function(r){ var o=days[r.o.f]||(days[r.o.f]={}); o[r.b]=(o[r.b]||0)+1; tot[r.b]=(tot[r.b]||0)+1; if(r.imp!=null) impB[r.b]=(impB[r.b]||0)+r.imp; });
+  var dk=Object.keys(days).sort(), n=filas.length, LG={position:'bottom',labels:{font:{size:11},boxWidth:12}}, LR={position:'right',labels:{font:{size:11},boxWidth:12}};
   var order=['ENT','RUTA','OTL','CPG','CCF','CNC','CRE','REC','ANU'];
   dvChart('ed-dia',{type:'bar',data:{labels:dk.map(function(d){return d.slice(8,10)+'/'+d.slice(5,7);}),datasets:order.filter(function(b){return tot[b];}).map(function(b){return {label:EMB_B[b],data:dk.map(function(d){return days[d][b]||0;}),backgroundColor:G[b],stack:'s',noLbl:true,borderRadius:0};})},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,title:{display:true,text:'Pedidos'}}}}},[]);
+    options:{plugins:{legend:LG},scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,title:{display:true,text:'Pedidos'},ticks:{font:{size:11}}}}}},[]);
   var ob=order.filter(function(b){return tot[b];});
-  dvChart('ed-est',{type:'doughnut',data:{labels:ob.map(function(b){return EMB_B[b];}),datasets:[{data:ob.map(function(b){return tot[b];}),backgroundColor:ob.map(function(b){return G[b];}),borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}},[_dvPie()]);
+  dvChart('ed-est',{type:'doughnut',data:{labels:ob.map(function(b){return EMB_B[b];}),datasets:[{data:ob.map(function(b){return tot[b];}),backgroundColor:ob.map(function(b){return G[b];}),borderWidth:0}]},options:{plugins:{legend:LR}}},[_dvPie()]);
   var cn={}; filas.forEach(function(r){ var o=cn[r.o.canal]||(cn[r.o.canal]={n:0,g:0}); o.n++; if(r.b==='ENT'||r.b==='RUTA'||r.b==='OTL') o.g++; });
-  var cl=Object.keys(cn).sort(function(a,b){return cn[b].n-cn[a].n;}).slice(0,8);
-  dvChart('ed-can',{type:'bar',data:{labels:cl.map(function(c){return _dvCut(c,18)+' ('+cn[c].n+')';}),datasets:[{data:cl.map(function(c){return Math.round(cn[c].g/cn[c].n*100);}),backgroundColor:cl.map(function(c){var p=cn[c].g/cn[c].n; return p>=.85?C.ok:p>=.6?C.am:C.rd;}),borderRadius:3}]},
-    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:110,ticks:{callback:function(v){return v<=100?v+'%':'';}}},y:{ticks:{font:{size:9}}}},layout:{padding:{right:30}}}},[_dvBar()]);
-  var pe=filas.filter(function(r){return r.b==='CPG'||r.b==='CCF'||r.b==='CNC';}), mo={}, an={'0-1 días':0,'2-3 días':0,'4-7 días':0,'8-15 días':0,'16+ días':0};
-  pe.forEach(function(r){ var m=(EMB.est[r.k]||{}).m||''; var l=EMB_MOT[m]; mo[l]=(mo[l]||0)+1; var a=r.age; an[a<=1?'0-1 días':a<=3?'2-3 días':a<=7?'4-7 días':a<=15?'8-15 días':'16+ días']++; });
-  var mk=Object.keys(mo), mc=[C.gy,C.rd,C.or,C.am,C.bl,C.pu];
-  dvChart('ed-mot',{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k];}),backgroundColor:mk.map(function(k,i){return k===EMB_MOT['']?C.gy:mc[(i+1)%mc.length];}),borderWidth:0}]},options:{plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}},[_dvPie()]);
-  dvChart('ed-ant',{type:'bar',data:{labels:Object.keys(an),datasets:[{data:Object.keys(an).map(function(k){return an[k];}),backgroundColor:[C.ok,C.ok,C.am,C.or,C.rd],borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}},layout:{padding:{top:18}}}},[_dvBar()]);
+  var cl=Object.keys(cn).sort(function(a,b){return cn[b].n-cn[a].n;}).slice(0,14);
+  dvChart('ed-can',{type:'bar',data:{labels:cl.map(function(c){return _dvCut(c,20)+' ('+cn[c].n+')';}),datasets:[{data:cl.map(function(c){return Math.round(cn[c].g/cn[c].n*100);}),backgroundColor:cl.map(function(c){var p=cn[c].g/cn[c].n; return p>=.85?C.ok:p>=.6?C.am:C.rd;}),borderRadius:3}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:110,ticks:{font:{size:11},callback:function(v){return v<=100?v+'%':'';}}},y:{ticks:{font:{size:11}}}},layout:{padding:{right:34}}}},[_dvBar()]);
+  var pe=filas.filter(function(r){return r.b==='CPG'||r.b==='CCF'||r.b==='CNC';}), mo={}, an={'0-1 días':{n:0,i:0},'2-3 días':{n:0,i:0},'4-7 días':{n:0,i:0},'8-15 días':{n:0,i:0},'16+ días':{n:0,i:0}};
+  pe.forEach(function(r){ var m=(EMB.est[r.k]||{}).m||'', l=EMB_MOT[m], x=mo[l]||(mo[l]={n:0,i:0,a:0,g:0}); x.n++; x.a+=r.age; if(r.age>=3) x.g++; if(r.imp!=null) x.i+=r.imp;
+    var k=r.age<=1?'0-1 días':r.age<=3?'2-3 días':r.age<=7?'4-7 días':r.age<=15?'8-15 días':'16+ días'; an[k].n++; if(r.imp!=null) an[k].i+=r.imp; });
+  var mk=Object.keys(mo).sort(function(a,b){return mo[b].n-mo[a].n;}), mc=[C.gy,C.rd,C.or,C.am,C.bl,C.pu];
+  dvChart('ed-mot',{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k].n;}),backgroundColor:mk.map(function(k,i){return k===EMB_MOT['']?C.gy:mc[(i+1)%mc.length];}),borderWidth:0}]},options:{plugins:{legend:LR}}},[_dvPie()]);
+  var ak=Object.keys(an);
+  dvChart('ed-ant',{type:'bar',data:{labels:ak,datasets:[{data:ak.map(function(k){return an[k].n;}),backgroundColor:[C.ok,C.ok,C.am,C.or,C.rd],borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:11}}},x:{ticks:{font:{size:11}}}},layout:{padding:{top:20}}}},[_dvBar()]);
   var dd={}, L=EMB.log||{}; Object.keys(L).forEach(function(k){ var l=L[k]; if(!l.fd||l.fd<d1||l.fd>d2||(sel&&sel.value&&l.canal!==sel.value)) return; var o=dd[l.fd]||(dd[l.fd]={e:0,r:0}); if(l.b==='ENT') o.e+=l.costo; else if(l.b!=='ANU'&&l.b!=='REC') o.r+=l.costo; });
   var fk=Object.keys(dd).sort();
   dvChart('ed-desp',{type:'bar',data:{labels:fk.map(function(d){return d.slice(8,10)+'/'+d.slice(5,7);}),datasets:[{label:'Entregado',data:fk.map(function(d){return Math.round(dd[d].e);}),backgroundColor:C.ok,stack:'s',noLbl:true},{label:'En ruta / otros',data:fk.map(function(d){return Math.round(dd[d].r);}),backgroundColor:C.bl,stack:'s',noLbl:true}]},
-    options:{plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:12}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return 'S/'+_dvN(v);}}}}}},[]);
+    options:{plugins:{legend:LG},scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:11},callback:function(v){return 'S/'+_dvN(v);}}}}}},[]);
+  // ---- tablas resumen (acompañan a los gráficos) ----
+  var TOT='background:#f1f5f9;font-weight:700;', RT='text-align:right;', mut='<span style="color:#cbd5e1;">—</span>', sv=function(v){return v>0?_embS(v):mut;};
+  if(T1){ var iT=0; ob.forEach(function(b){iT+=(impB[b]||0);});
+    T1.innerHTML=ob.map(function(b){ return '<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+G[b]+';margin-right:7px;"></span>'+EMB_B[b]+'</td><td style="'+RT+'"><b>'+tot[b]+'</b></td><td style="'+RT+'">'+Math.round(tot[b]/n*100)+'%</td><td style="'+RT+'">'+sv(impB[b])+'</td></tr>'; }).join('')+
+      '<tr style="'+TOT+'"><td>TOTAL</td><td style="'+RT+'"><b>'+n+'</b></td><td style="'+RT+'">100%</td><td style="'+RT+'">'+sv(iT)+'</td></tr>'; }
+  if(T2){ var tn=0,ti=0,ta=0,tg=0; mk.forEach(function(k){var x=mo[k]; tn+=x.n; ti+=x.i; ta+=x.a; tg+=x.g;});
+    T2.innerHTML=mk.length?mk.map(function(k){ var x=mo[k]; return '<tr><td>'+_preE(k)+'</td><td style="'+RT+'"><b>'+x.n+'</b></td><td style="'+RT+'">'+sv(x.i)+'</td><td style="'+RT+'">'+(Math.round(x.a/x.n*10)/10)+' días</td><td style="'+RT+(x.g?'color:#b91c1c;':'')+'"><b>'+x.g+'</b></td></tr>'; }).join('')+
+      '<tr style="'+TOT+'"><td>TOTAL</td><td style="'+RT+'"><b>'+tn+'</b></td><td style="'+RT+'">'+sv(ti)+'</td><td style="'+RT+'">'+(tn?Math.round(ta/tn*10)/10:0)+' días</td><td style="'+RT+'"><b>'+tg+'</b></td></tr>'
+      :'<tr><td colspan="5" style="color:#64748b;padding:12px;">Sin pendientes en el rango.</td></tr>'; }
+  if(T3){ var pn=pe.length, pi=0; ak.forEach(function(k){pi+=an[k].i;});
+    T3.innerHTML=ak.map(function(k){ var x=an[k]; return '<tr><td>'+k+'</td><td style="'+RT+'"><b>'+x.n+'</b></td><td style="'+RT+'">'+(pn?Math.round(x.n/pn*100):0)+'%</td><td style="'+RT+'">'+sv(x.i)+'</td></tr>'; }).join('')+
+      '<tr style="'+TOT+'"><td>TOTAL</td><td style="'+RT+'"><b>'+pn+'</b></td><td style="'+RT+'">100%</td><td style="'+RT+'">'+sv(pi)+'</td></tr>'; }
 }
+// ===================================================
+// v33 — CONCILIACIÓN Validador IA ↔ Pre-Observados (dónde está cada pedido) · solo LEE datos
+// ===================================================
+function _valPedStats(){
+  var R=(typeof VAL!=='undefined'&&VAL.rows)||[], P={}, inPre={}, ord=[];
+  try{ preLineas().forEach(function(l){ inPre[String(l[0])]=1; }); }catch(e){}
+  R.forEach(function(r){
+    if(r.skip) return; var k=String(r.nroPedido==null?'':r.nroPedido);
+    var o=P[k]; if(!o){ o=P[k]={k:k,canal:r.canal||'',cli:r.cliente||'',arch:r.fileName||'',n:0,env:0,err:0,dup:0,mot:'',mapa:false,zz:0}; ord.push(k); }
+    o.n++;
+    if(r.estado==='ERR'){ o.err++; if(!o.mot) o.mot=r.motivo||''; if(r.faltaMapa) o.mapa=true; }
+    else if(r.isDup){ o.dup++; }
+    else { o.env++; if(/^ZZ/i.test(String(r.raw_sku||''))) o.zz++; }
+  });
+  var no=[], llegan=0, lineasNo=0;
+  ord.forEach(function(k){ var o=P[k];
+    if(inPre[k]){ llegan++; lineasNo+=o.err+o.dup; return; }
+    var why;
+    if(o.env===0&&o.err>0) why=o.mapa?'Código Bees sin equivalencia SIG':'Línea con error (SKU/DNI/precio)';
+    else if(o.env===0) why='Duplicado — ya validado antes';
+    else if(o.zz===o.env) why='Solo servicios (código ZZ) — no consumen stock';
+    else why='Fuera de la ventana de demanda ('+(o.canal==='MYBEES'?(PRE.RETM*24)+' horas':PRE.RET+' días')+')';
+    no.push({k:k,canal:o.canal,cli:o.cli,arch:o.arch,why:why,det:o.mot}); });
+  var extra=0; Object.keys(inPre).forEach(function(k){ if(!P[k]) extra++; });
+  return {tot:ord.length,llegan:llegan,no:no,extra:extra,lineasNo:lineasNo};
+}
+function preConc(){
+  var box=document.getElementById('pre-conc'); if(!box) return;
+  var S; try{ S=_valPedStats(); }catch(e){ box.innerHTML=''; return; }
+  if(!S.tot){ box.innerHTML=''; return; }
+  var pm={}; S.no.forEach(function(x){ pm[x.why]=(pm[x.why]||0)+1; });
+  var chips=Object.keys(pm).map(function(w){ return '<span class="chip c-amber" style="font-size:11px;">'+_preE(w)+': <b>'+pm[w]+'</b></span>'; }).join(' ');
+  var rows=S.no.slice(0,150).map(function(x){ return '<tr><td class="mono">'+_preE(x.k)+'</td><td>'+_preE(x.canal)+'</td><td>'+_preE(String(x.cli).slice(0,34))+'</td><td>'+_preE(x.why)+(x.det?'<br><span style="color:#64748b;font-size:10.5px;">'+_preE(String(x.det).slice(0,120))+'</span>':'')+'</td><td style="color:#64748b;font-size:10.5px;">'+_preE(String(x.arch).slice(0,30))+'</td></tr>'; }).join('');
+  box.innerHTML='<div class="tbox" style="margin-bottom:12px;"><div class="tbox-h"><h3>🔎 Conciliación con el Validador IA — ¿dónde están los '+S.tot+' pedidos?</h3><span class="pk-mini">Pedidos validados hoy en este equipo vs. los que llegan a este análisis</span></div>'+
+    '<div style="padding:10px 14px;font-size:12.5px;line-height:1.7;">Validador IA: <b>'+S.tot+'</b> pedidos distintos → <b style="color:#15803d;">'+S.llegan+'</b> llegan a Pre-Observados · <b style="color:#b91c1c;">'+S.no.length+'</b> no llegan.'+
+    (S.lineasNo?' <span style="color:#64748b;">Además hay '+S.lineasNo+' línea(s) con error o duplicadas dentro de pedidos que sí llegan.</span>':'')+
+    (S.extra?' <span style="color:#64748b;">Pre-Observados incluye otros '+S.extra+' pedidos de cortes anteriores o de otros usuarios (por eso su total puede superar lo de hoy).</span>':'')+
+    (chips?'<div style="margin-top:6px;">'+chips+'</div>':'')+
+    (S.no.length?'<details style="margin-top:8px;"'+(S.no.length<=20?' open':'')+'><summary style="cursor:pointer;font-weight:700;color:var(--blue2,#1e40af);">Ver los '+S.no.length+' pedidos que no llegan</summary>'+
+      '<div class="tw" style="max-height:300px;overflow-y:auto;margin-top:6px;"><table class="dt" style="font-size:11.5px;width:100%;"><thead><tr><th>Pedido</th><th>Canal</th><th>Cliente</th><th>Por qué no llega</th><th>Archivo</th></tr></thead><tbody>'+rows+'</tbody></table></div></details>':'')+
+    '</div></div>';
+}
+
 // ---------- engancharse a los render existentes (sin tocarlos) ----------
 (function(){
   function wrap(name,fn){ var o=window[name]; if(typeof o!=='function') return; window[name]=function(){ var r=o.apply(this,arguments); try{fn();}catch(e){} return r; }; }
-  wrap('valRender',valDash); wrap('preRender',preDash); wrap('embRender',embDash);
-  setTimeout(function(){ try{valDash();}catch(e){} try{preDash();}catch(e){} try{embDash();}catch(e){} },300);
+  wrap('valRender',valDash); wrap('preRender',preDash); wrap('embRender',embDash); wrap('valRender',preConc); wrap('preRender',preConc);
+  setTimeout(function(){ try{valDash();}catch(e){} try{preDash();}catch(e){} try{embDash();}catch(e){} try{preConc();}catch(e){} },300);
 })();
 
 
@@ -9194,21 +9268,23 @@ function valFecha(v){
   var t=String(v).trim().replace(/ .*/,'').replace(/T.*/,''), m=t.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(m) return m[3]+'/'+m[2]+'/'+m[1];
   m=t.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/); if(m) return m[1].padStart(2,'0')+'/'+m[2].padStart(2,'0')+'/'+m[3]; return t;
 }
-function valEsFila(r){ var g=function(k){return String(r[k]==null?'':r[k]).trim();}; return !!(g('CLIENTE')||g('DNI')||g('Nro. DE CONTRATO')||g('Nro. PEDIDO VENTA')||g('CONTRATO')||g('NRO_PEDIDO')); }
+function valEsFila(r){ var g=function(k){return String(r[k]==null?'':r[k]).trim();}; return !!(g('CLIENTE')||g('DNI')||g('CUENTA CONTRATO')||g('Nro. DE CONTRATO')||g('Nro. PEDIDO VENTA')||g('CONTRATO')||g('NRO_PEDIDO')); }
 // historial de los últimos cortes validados (para duplicados y correlativos provisionales)
-function valHist(){ var h=[]; (PRE.cortes||[]).forEach(function(c){ if(c.del||!c.k) return; c.k.forEach(function(k){ h.push({cu:k[0],contrato:k[1],fv:k[2],corr:k[3],cliente:k[4],archivo:c.archivo}); }); }); return h; }
+function valHist(){ var h=[]; (PRE.cortes||[]).forEach(function(c){ if(c.del||!c.k) return; c.k.forEach(function(k){ h.push({cu:k[0],contrato:k[1],fv:k[2],corr:k[3],cliente:k[4],alt:k[5]||'',ped:k[6]||'',archivo:c.archivo,ts:c.ts}); }); }); return h; }
 function valProcesarFila(r,idx,fileName,prev,hist){
   var rawAddr=r['DIRECCIÓN']||r['DIRECCION']||r['DOMICILIO']||'', normAddr=valNormAddr(rawAddr), issues=valAddrIssues(rawAddr);
   var rawDni=String(r['DNI']||r['NUMERO']||'').replace('.0','').trim(), dniOk=rawDni.length===8&&/^\d+$/.test(rawDni), dniRUC=rawDni.length===11;
   var skuOrig=String(r['SKU']||r['MATERIAL']||r['COD MATERIAL']||'').trim(), isReac=/-R$/i.test(skuOrig), sinSuf=skuOrig.replace(/-R$/i,'').trim();
-  var sku=sinSuf.replace(/^(SAL|IBR|GRU|BR)[-\s]*/i,'').trim(), teniaPref=/^(SAL|IBR|GRU|BR)[-\s]/i.test(sinSuf);
+  var sku=sinSuf.replace(/^(SAL|IBR|GRU|BR|ABAI)[-\s]*/i,'').trim(), teniaPref=/^(SAL|IBR|GRU|BR|ABAI)[-\s]/i.test(sinSuf), esZZ=/^ZZ/i.test(sku), skuNum=/^\d+$/.test(sku);
   var yaLimpio=!teniaPref&&sku&&sku!=='nan'&&sku!=='undefined', skuOk=(teniaPref||yaLimpio)&&sku&&sku!=='nan'&&sku!=='undefined';
   var estado=String(r['ESTADO']||'').toUpperCase(), valid=String(r['TIPO DE VALIDACION RENIEC']||r['TIPO_VALIDACION']||'').toUpperCase();
   var esNoValid=estado.indexOf('FALLIDA')>=0||estado.indexOf('NO VALIDA')>=0||valid.indexOf('FALLIDA')>=0;
   var num=function(x){return parseFloat(String(x).replace(',',''))||0;};
-  var importe=num(r['IMPORTE (S./)']||r['IMPORTE']||r['TOTAL']||'0'), credito=num(r['CRÉDITO UTILIZADO']||r['CREDITO UTILIZADO']||r['CREDITO']||importe)||importe, precio=num(r['PRECIO']||r['P.UNITARIO']||importe)||importe;
-  var saldo=Math.max(0,parseFloat((importe-credito).toFixed(2))), finParcial=saldo>0.01;
-  var contrato=String(r['Nro. DE CONTRATO']||r['CONTRATO']||r['NRO_CONTRATO']||'').trim(), fv=valFecha(r['FECHA VENTA']||r['FECHA_VENTA']||'');
+  var importeOrd=num(r['IMPORTE (S./)']||r['IMPORTE']||r['TOTAL']||'0'), credito=num(r['CRÉDITO UTILIZADO']||r['CREDITO UTILIZADO']||r['CREDITO']||importeOrd)||importeOrd;
+  var cant0=num(r['CANTIDAD']||r['UNIDADES']||'1')||1, precioCol=num(r['PRECIO']||r['P.UNITARIO']||'0');
+  var precio=precioCol>0?precioCol:(importeOrd/cant0), importe=precioCol>0?Math.round(precioCol*cant0*100)/100:importeOrd; // v33: valor de LÍNEA = precio × cantidad (el IMPORTE de FNB es el total del pedido y se repite en cada línea)
+  var saldo=Math.max(0,parseFloat((importeOrd-credito).toFixed(2))), finParcial=saldo>0.01;
+  var contrato=String(r['CUENTA CONTRATO']||r['Nro. DE CONTRATO']||r['CONTRATO']||r['NRO_CONTRATO']||'').replace(/\.0$/,'').trim(), fv=valFecha(r['FECHA VENTA']||r['FECHA_VENTA']||'');
   var cliente=String(r['CLIENTE']||r['APELLIDOS Y NOMBRES, DENOMINACION O RAZON SOCIAL']||'').trim(), producto=String(r['PRODUCTO']||r['DESCRIPCION']||'').trim().slice(0,60);
   var canal=String(r['RESPONSABLE DE VENTA']||r['SEDE']||'').trim().toUpperCase(), asesor=String(r['ASESOR DE VENTAS']||r['VENDEDOR']||'').trim().toUpperCase();
   var cant=num(r['CANTIDAD']||r['UNIDADES']||'1')||1, fEnt=valFecha(r['FECHA ENTREGA']||r['FECHA_ENTREGA']||'')||fv;
@@ -9221,24 +9297,36 @@ function valProcesarFila(r,idx,fileName,prev,hist){
   }
   var nroPedido=pedRaw||(contrato?(contrato+'-'+corr):('PROV-'+(idx+1)));
   var fFmt=fv.replace(/\//g,'-').replace(/(\d{2})-(\d{2})-(\d{4})/,'$3$2$1').replace(/-/g,'');
-  var cu=skuOk&&contrato?(sku+'|'+contrato+'|'+fFmt):(skuOk?(sku+'|'+nroPedido+'|'+fFmt):'');
+  var cuAlt=skuOk&&contrato?(sku+'|'+contrato+'|'+fFmt):'', cu=skuOk?(pedRaw?(sku+'|'+pedRaw+'|'+fFmt):(contrato?cuAlt:(sku+'|'+nroPedido+'|'+fFmt))):'';
   var st,motivo,skip=false,parts=[];
   if(esNoValid){ st='SKIP'; motivo='Validación fallida — descartado (no se asigna N° provisional)'; skip=true; }
-  else if(!skuOk){ st='ERR'; motivo='SKU inválido ('+skuOrig+') — prefijo no reconocido (válidos: SAL-/IBR-/GRU-/BR-)'; }
+  else if(!skuOk){ st='ERR'; motivo='SKU inválido ('+skuOrig+') — prefijo no reconocido (válidos: SAL-/IBR-/GRU-/BR-/ABAI-)'; }
+  else if(!skuNum&&!esZZ){ st='ERR'; motivo='SKU no numérico ('+skuOrig+') — el SIG solo acepta códigos numéricos (y ZZ de servicios)'; }
   else if(!dniOk&&!dniRUC){ st='ERR'; motivo='DNI inválido ('+rawDni.length+' dígitos)'; }
   else {
     if(issues.length) parts.push(issues.join(' | '));
     if(isReac) parts.push('SKU reacondicionado: '+skuOrig+' → '+sku+' (sufijo -R removido)');
     if(yaLimpio&&!isReac) parts.push('SKU ya en formato limpio');
+    if(esZZ) parts.push('⚠ Código ZZ = servicio: confirmar que no sea mercadería');
     if(esProv) parts.push('⚡ N° PEDIDO PROVISIONAL: '+nroPedido);
     if(finParcial) parts.push('💳 Financiamiento parcial: saldo S/'+saldo);
-    st=(esProv||finParcial)?'WARN':((issues.length||isReac)?'FIX':'OK'); motivo=parts.join(' | ')||'Sin errores';
+    st=(esProv||finParcial||esZZ)?'WARN':((issues.length||isReac)?'FIX':'OK'); motivo=parts.join(' | ')||'Sin errores';
   }
-  var isDup=false, dupDe='';
-  if(cu&&!skip){ var ex=hist.find(function(x){return x.cu===cu;})||null; if(ex){ isDup=true; dupDe=ex.archivo||''; if(st!=='ERR'&&st!=='SKIP'){ st='WARN'; motivo='⚠ DUPLICADO — mismo Código Único ya validado'+(dupDe?' en '+dupDe:''); } } }
+  var isDup=false, dupDe='', actualizar=null;
+  if(cu&&!skip){ var ex=null, tipo='', hi, x;
+    // v34: ya cargado = mismo pedido+SKU; o (si antes entró con cuenta contrato provisional) misma cuenta+SKU+fecha → ahora trae su N° real
+    for(hi=0;hi<hist.length;hi++){ x=hist[hi];
+      if(pedRaw&&x.ped){ if(x.ped===pedRaw+'|'+sku){ex=x;tipo='dup';break;} continue; }
+      if(pedRaw){ if(x.cu===cu||(cuAlt&&(x.cu===cuAlt||x.alt===cuAlt))){ex=x;tipo=x.corr?'prov':'dup';break;} continue; }
+      if(x.cu===cu||(cuAlt&&x.alt===cuAlt)){ex=x;tipo='dup';break;} }
+    if(ex){ isDup=true; dupDe=ex.archivo||'';
+      var hh2=ex.ts?new Date(ex.ts).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+      if(tipo==='prov'){ actualizar={prov:(ex.contrato||contrato)+'-'+ex.corr,real:pedRaw}; }
+      if(st!=='ERR'&&st!=='SKIP'){ st='WARN';
+        motivo=tipo==='prov'?('🔁 Ya cargado al SIG como provisional '+actualizar.prov+' → N° real '+pedRaw+' (actualizar en el SIG)'):('⚠ YA CARGADO — ya pasó por el validador'+(dupDe?' ('+dupDe+(hh2?' · '+hh2:'')+')':'')+'; se excluye de este corte'); } } }
   return {idx:idx,fileName:fileName,estado:st,skip:skip,isDup:isDup,cliente:cliente,raw_dni:rawDni,raw_addr:rawAddr,norm_addr:normAddr,issues:issues,
     raw_sku:sku,raw_sku_orig:skuOrig,skuOk:skuOk,isReacond:isReac,producto:producto,asesor:asesor,canal:canal,cantidad:cant,fechaEntrega:fEnt,
-    nroPedido:nroPedido,nroContrato:contrato,fechaVenta:fv,esProvisional:esProv,provCorrelativo:corr,importe:importe,credito:credito,precio:precio,
+    nroPedido:nroPedido,nroContrato:contrato,cuAlt:cuAlt,pedKey:(pedRaw?pedRaw+'|'+sku:''),actualizar:actualizar,fechaVenta:fv,esProvisional:esProv,provCorrelativo:corr,importe:importe,importeOrden:importeOrd,credito:credito,precio:precio,
     saldoPendiente:saldo,financiadoParcial:finParcial,codigoUnico:cu,motivo:motivo,tipo:dniRUC?'2':'1'};
 }
 // ---------- subir y validar ----------
@@ -9251,6 +9339,12 @@ function valSubir(files){
   sig();
 }
 function valLeer(file,done){
+  _valMsg('⏳ Verificando los cortes anteriores (de todos los usuarios)…','#92400e');
+  var fin=false, tm=null, go=function(){ if(fin) return; fin=true; clearTimeout(tm); valLeerCore(file,done); };
+  tm=setTimeout(go,7000);
+  try{ Promise.resolve(preSync(false)).then(go,go); }catch(e){ go(); }
+}
+function valLeerCore(file,done){
   _valMsg('⏳ Validando '+_preE(file.name)+'…','#92400e');
   var fr=new FileReader();
   fr.onerror=function(){_valMsg('❌ No se pudo abrir '+_preE(file.name),'#b91c1c');done();};
@@ -9263,6 +9357,7 @@ function valLeer(file,done){
       var hist=valHist(), proc=[];
       rows.forEach(function(r,i){ if(valEsFila(r)) proc.push(valProcesarFila(r,i,file.name,proc,hist)); });
       proc.forEach(function(x){x.ch='FNB';});
+      (function(){ var vis={}; proc.forEach(function(x){ var k=String(x.nroPedido); if(vis[k]) x.saldoPendiente=0; vis[k]=1; }); })();
       if(!proc.length){
         var ya=null; try{ya=preParse(wb);}catch(x){}
         _valMsg(ya?('⚠ <b>'+_preE(file.name)+'</b> ya es un archivo <b>validado</b> (salida del Validator, ya con SKU limpios), no el crudo de FNB. Aquí hay que subir el <b>Excel crudo</b> que baja de FNB (por ejemplo "BASE DE FNB …"). Si solo quieres enviarlo a alertas, súbelo en <b>⚡ Pre-Observados</b>.')
@@ -9275,10 +9370,11 @@ function valLeer(file,done){
       var c={id:'V'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),archivo:file.name,por:_preUser(),ts:_preNow(),tipo:'validador',
         n:ok.length,peds:Object.keys(ok.reduce(function(m,x){m[x.nroPedido]=1;return m;},{})).length,
         l:ok.map(function(x){return [x.nroPedido,x.raw_sku,x.cantidad,'FNB','CALIDDA',iso(x.fechaVenta),x.isReacond?1:0];}),
-        k:proc.filter(function(x){return !x.skip&&x.codigoUnico;}).map(function(x){return [x.codigoUnico,x.nroContrato,x.fechaVenta,x.provCorrelativo||'',x.cliente];})};
+        k:ok.filter(function(x){return x.codigoUnico;}).map(function(x){return [x.codigoUnico,x.nroContrato,x.fechaVenta,x.provCorrelativo||'',x.cliente,x.cuAlt||'',x.pedKey||''];})};
       if(c.l.length||c.k.length){ PRE.cortes.push(c); PRE.dirty=true; _preSaveLocal(); }
       var cnt=function(s){return proc.filter(function(x){return x.estado===s;}).length;};
-      _valMsg('✅ '+_preE(file.name)+': '+proc.length+' líneas · '+ok.length+' a SIG · '+cnt('WARN')+' por revisar · '+cnt('ERR')+' con error · '+cnt('SKIP')+' descartadas.'+(ok.length?' Enviado a Pre-Observados.':' Nada nuevo para enviar (todo duplicado o con error).'),ok.length?'#15803d':'#b45309');
+      var nd=proc.filter(function(x){return x.isDup;}).length, na=proc.filter(function(x){return x.actualizar;}).length, nr=proc.filter(function(x){return x.estado==='WARN'&&!x.isDup;}).length;
+      _valMsg('✅ '+_preE(file.name)+': '+proc.length+' líneas · <b>'+ok.length+' nuevas a SIG</b> · '+nd+' ya cargadas antes (excluidas)'+(na?' ('+na+' con N° real para actualizar en el SIG)':'')+' · '+nr+' por revisar · '+cnt('ERR')+' con error · '+cnt('SKIP')+' descartadas.'+(ok.length?' Enviado a Pre-Observados.':(nd?' Nada nuevo: todo esto ya pasó por el validador.':' Nada nuevo para enviar (todo con error).'))+(PRE.err?' <span style="color:#b91c1c;">⚠ Sin conexión con GitHub: lo ya cargado solo se comparó contra este equipo.</span>':''),ok.length?'#15803d':'#b45309');
       valRender(); preRender(); preSync(true);
     }catch(e){_valMsg('❌ Error validando '+_preE(file.name)+': '+_preE(e.message||e),'#b91c1c');}
     done();
@@ -9299,17 +9395,18 @@ function valRender(){
     '<div class="kpi k-amber"><div class="kv">'+c(function(r){return r.estado==='FIX'&&!r.isDup;})+'</div><div class="kl">Corregidas solas (FIX)</div></div>'+
     '<div class="kpi k-amber"><div class="kv">'+c(function(r){return r.esProvisional&&!r.skip;})+'</div><div class="kl">N° pedido provisional</div></div>'+
     '<div class="kpi k-amber"><div class="kv">'+c(function(r){return r.financiadoParcial&&!r.skip;})+'</div><div class="kl">Financ. parcial</div></div>'+
-    '<div class="kpi k-purple"><div class="kv">'+c(function(r){return r.isDup;})+'</div><div class="kl">Duplicados excluidos</div></div>'+
+    '<div class="kpi k-purple"><div class="kv">'+c(function(r){return r.isDup;})+'</div><div class="kl">Ya cargadas antes (excluidas)</div></div>'+
+    '<div class="kpi k-amber"><div class="kv">'+c(function(r){return !!r.actualizar;})+'</div><div class="kl">Provisionales con N° real (actualizar en SIG)</div></div>'+
     '<div class="kpi k-red"><div class="kv">'+c(function(r){return r.estado==='ERR';})+'</div><div class="kl">Errores (bloquean)</div></div>'+
     '<div class="kpi k-red"><div class="kv">'+c(function(r){return r.skip&&r.estado!=='PEND';})+'</div><div class="kl">Descartadas (validación fallida)</div></div>';
   var mp=document.getElementById('val-map'); if(mp) mp.innerHTML=valMapaHtml();
-  ['FNB','BEES'].forEach(function(k){ var b=document.getElementById('val-bt-'+k); if(b){ var n=R.filter(function(r){return (r.ch||'FNB')===k&&!r.skip&&r.estado!=='ERR'&&!r.isDup;}).length; b.textContent='📤 Exportar '+(k==='BEES'?'Mybees':'FNB')+' para SIG ('+n+')'; } });
+  ['FNB','BEES'].forEach(function(k){ var b=document.getElementById('val-bt-'+k); if(b){ var n=R.filter(function(r){return (r.ch||'FNB')===k&&!r.skip&&r.estado!=='ERR'&&!r.isDup&&!r.exportado;}).length; b.textContent='📤 Exportar '+(k==='BEES'?'Mybees':'FNB')+' para SIG ('+n+' nuevas)'; } });
   var f=(document.getElementById('val-fil')||{}).value||'TODOS';
   var L=R.filter(function(r){ return f==='TODOS'||(f==='PROBLEMA'?r.estado!=='OK':r.estado===f); });
   document.getElementById('val-n').textContent=L.length+' de '+R.length+' líneas'+(L.length>400?' (se muestran 400)':'');
   var chip=function(e){return e==='PEND'?'<span class="chip c-gris">PEND</span>':e==='OK'?'<span class="chip c-verde">OK</span>':e==='FIX'?'<span class="chip c-verde">FIX</span>':e==='WARN'?'<span class="chip c-amber">WARN</span>':e==='ERR'?'<span class="chip c-rojo">ERR</span>':'<span class="chip c-gris">SKIP</span>';};
   tb.innerHTML=L.length?L.slice(0,400).map(function(r){
-    return '<tr><td>'+chip(r.estado)+(r.isDup?' <span class="chip c-gris">dup</span>':'')+'</td><td style="font-size:9px;">'+_preE(r.fileName).slice(0,24)+'</td><td>'+(r.idx+2)+'</td><td class="mono">'+_preE(r.nroPedido)+'</td><td class="mono">'+_preE(r.nroContrato||(r.ch==='BEES'?'MYBEES':''))+'</td><td>'+_preE(r.cliente).slice(0,28)+'</td>'+
+    return '<tr><td>'+chip(r.estado)+(r.isDup?' <span class="chip c-gris" title="Ya pasó por el validador en un corte anterior">ya cargado</span>':'')+'</td><td style="font-size:9px;">'+_preE(r.fileName).slice(0,24)+'</td><td>'+(r.idx+2)+'</td><td class="mono">'+_preE(r.nroPedido)+'</td><td class="mono">'+_preE(r.nroContrato||(r.ch==='BEES'?'MYBEES':''))+'</td><td>'+_preE(r.cliente).slice(0,28)+'</td>'+
       '<td class="mono">'+_preE(r.raw_sku_orig)+(r.raw_sku_orig!==r.raw_sku?' → <b>'+_preE(r.raw_sku)+'</b>':'')+'</td><td style="text-align:right">'+r.cantidad+'</td><td style="text-align:right">'+r.importe.toLocaleString('es-PE')+'</td><td style="font-size:9px;">'+_preE(r.motivo)+'</td></tr>';}).join('')
     :'<tr><td colspan="10" style="color:#64748b;padding:12px;">'+(R.length?'Nada que mostrar con este filtro.':'Sube el Excel crudo de FNB o el reporte de Mybees para empezar.')+'</td></tr>';
 }
@@ -9319,16 +9416,19 @@ function valExportar(ch){
   var CFG=ch==='BEES'?{doc:'BK',cod:'BACKUS',precio:'BACKUS',vend:function(){return '43772228';},emi:function(r){return r.emision||r.fechaVenta;},ven:function(r){return r.emision||r.fechaVenta;},etq:'MyBees / Backus',file:'MERPES_MYBEES_Validado_SIG_'}
     :{doc:'FNB',cod:'CALIDDA',precio:'CALIDDA',vend:function(r){return r.asesor;},emi:function(r){return r.fechaVenta;},ven:function(r){return r.fechaEntrega||r.fechaVenta;},etq:'FNB Calidda',file:'MERPES_FNB_Validado_SIG_'};
   var R=VAL.rows.filter(function(r){return (r.ch||'FNB')===ch;}); if(!R.length){alert('No hay líneas de '+CFG.etq+' para exportar. Sube primero el archivo.');return;}
+  var pendExp=R.filter(function(r){return !r.exportado;});
+  if(!pendExp.length){ if(!confirm('Todo lo que hay en pantalla ya se exportó antes. ¿Exportarlo de nuevo completo?')) return; }
+  else if(pendExp.length<R.length){ R=pendExp; }
   var aSIG=R.filter(function(r){return !r.skip&&r.estado!=='ERR'&&!r.isDup;}), desc=R.filter(function(r){return r.skip&&r.estado!=='PEND';}), pend=R.filter(function(r){return r.estado==='PEND';}),
       errs=R.filter(function(r){return !r.skip&&r.estado==='ERR';}), dups=R.filter(function(r){return r.isDup&&!r.skip;}),
-      provs=aSIG.filter(function(r){return r.esProvisional;}), parc=aSIG.filter(function(r){return r.financiadoParcial;});
+      provs=aSIG.filter(function(r){return r.esProvisional;}), parc=aSIG.filter(function(r){return r.financiadoParcial;}), upd=R.filter(function(r){return r.actualizar&&!r.skip;});
   if(!aSIG.length&&!confirm('No hay líneas listas para el SIG en '+CFG.etq+' (solo errores, pendientes o duplicados). ¿Exportar igual el reporte?')) return;
   var archivos=Array.from(new Set(R.map(function(r){return r.fileName;}))).join(', '), hoy=new Date().toLocaleDateString('es-PE');
   var H=['FECHA EMISION','FECHA VENCIMIENTO','DOC.','SERIE','N° PEDIDO','TIPO','NUMERO','APELLIDOS Y NOMBRES / RAZON SOCIAL','ALMACEN','MATERIAL (SKU)','U.MEDIDA','UNIDADES','P.UNITARIO','TOTAL','CLASE IMPUESTO','MONEDA','FORMA DE PAGO','DOC. MOD.','SERIE MOD.','NUMERO MOD.','CC 1','CC 2','GLOSA','CLASE MOV.','PERIODO ALT.','CLASE','CODIGO','VENDEDOR','PRECIO','FECHA VENTA'];
   var pad=function(a){var o=a.slice(); while(o.length<30) o.push(''); return o;};
   var g4=new Array(30).fill(''); g4[0]='FECHA EMISION'; g4[1]='FECHA VENCIMIENTO'; g4[2]='COMPROBANTE DE PAGO'; g4[5]='INFORMACION CLIENTE'; g4[8]='DATOS DEL DETALLE DEL DOCUMENTO'; g4[14]='CLASE IMPUESTO'; g4[15]='MONEDA'; g4[16]='FORMA DE PAGO'; g4[17]='COMPROBANTE QUE SE MODIFICA'; g4[20]='CENTRO DE COSTOS'; g4[22]='GLOSA'; g4[23]='Clase Mov.'; g4[24]='Periodo Alt.'; g4[25]='Clase'; g4[26]='Codigo'; g4[27]='Vendedor'; g4[28]='PRECIO'; g4[29]='FECHA VENTA';
   var aoa=[pad(['MERPES AI VALIDATOR — Plantilla SIG-ERP | '+CFG.etq+' | '+hoy+' | '+aSIG.length+' registros para SIG | '+desc.length+' descartados'+(pend.length?' | '+pend.length+' pendientes de contacto (no incluidos)':'')]),
-    pad(['⚡ '+provs.length+' líneas con N° Pedido PROVISIONAL | '+errs.length+' con error (no van al SIG) | SKUs depurados']),
+    pad(['⚡ '+provs.length+' líneas con N° Pedido PROVISIONAL | '+dups.length+' ya cargadas en cortes anteriores (excluidas) | '+errs.length+' con error (no van al SIG) | SKUs depurados']),
     pad(['Lectura de datos desde Fila 7 | Origen: '+archivos]), g4, H,
     pad([ch==='BEES'?'↓ Pedidos MyBees/Backus validados — N° de pedido y fechas tal cual el reporte (EMISIÓN = F CONTACTO, VENTA = F CANJE)':'↓ Las líneas con N° Pedido PROVISIONAL (formato CD######-NN) deben reemplazarse en el SIG con el N° real que devuelva FNB — ver hoja PROVISIONALES'])];
   aSIG.forEach(function(r){ aoa.push([CFG.emi(r),CFG.ven(r),CFG.doc,'',r.nroPedido,r.tipo,r.raw_dni,r.cliente,'001',r.raw_sku,'UND',r.cantidad,r.precio,r.importe,'V01','PEN','CON','','','','0013','1301','','','','CLI',CFG.cod,CFG.vend(r),CFG.precio,r.fechaVenta]); });
@@ -9345,22 +9445,26 @@ function valExportar(ch){
     if(r.issues&&r.issues.length) rep.push([a,f,'Dirección','DIRECCIÓN',r.raw_addr,r.norm_addr,'FIX',r.issues.join(' | '),'Corrección automática']);
     if(r.raw_sku_orig!==r.raw_sku) rep.push([a,f,'SKU','MATERIAL',r.raw_sku_orig,r.raw_sku,r.skuOk?'FIX':'ERR',ch==='BEES'?'Código Bees convertido a SIG':(r.isReacond?'Reacondicionado: sufijo -R y prefijo suprimidos':'Prefijo suprimido'),'SKU listo para SIG']);
     if(r.esProvisional) rep.push([a,f,'N° Pedido','N° PEDIDO','(vacío)',r.nroPedido,'WARN','Provisional: contrato + correlativo','Reemplazar en SIG con el N° real de FNB']);
-    if(r.financiadoParcial) rep.push([a,f,'Financiamiento','TOTAL',r.importe,r.credito,'WARN','Saldo pendiente S/ '+r.saldoPendiente,'Gestionar cobro al contado']);
-    if(r.isDup) rep.push([a,f,'Duplicado','—',r.codigoUnico,'(excluido del SIG)','WARN','Mismo Código Único ya cargado','No subir dos veces']);
+    if(r.financiadoParcial&&r.saldoPendiente>0) rep.push([a,f,'Financiamiento','TOTAL PEDIDO',(r.importeOrden||r.importe),r.credito,'WARN','Saldo pendiente S/ '+r.saldoPendiente,'Gestionar cobro al contado']);
+    if(r.isDup) rep.push([a,f,r.actualizar?'Actualizar N° pedido':'Ya cargado','—',r.codigoUnico,'(excluido de este corte)','WARN',r.motivo,r.actualizar?('En el SIG cambiar '+r.actualizar.prov+' por '+r.actualizar.real):'No subir dos veces']);
     if(ch==='BEES'&&r.estado==='WARN'&&!r.isDup) rep.push([a,f,'Revisión','—',r.nroPedido,'',r.estado,r.motivo,'Revisar antes de cargar']);
     if(r.estado==='ERR') rep.push([a,f,'Bloqueante','—','',r.motivo,'ERR',r.motivo,'Corregir en origen y recargar']); });
   var ws2=XLSX.utils.aoa_to_sheet(rep); ws2['!cols']=[30,6,14,12,50,50,8,45,34].map(function(w){return {wch:w};});
   var corr=R.filter(function(r){return !r.skip&&((r.issues&&r.issues.length)||r.raw_sku_orig!==r.raw_sku);}).length;
   var res=[['MERPES AI VALIDATOR — Resumen Ejecutivo | '+CFG.etq+' '+hoy],['Archivos: '+archivos+'  |  Grupo Merpes Perú S.A.C.'],[],['INDICADOR','VALOR'],
     ['REGISTROS VÁLIDOS PARA SIG',aSIG.length],['REGISTROS CON CORRECCIONES AUTOMÁTICAS',corr],['PEDIDOS PROVISIONALES (reemplazar N° al día siguiente)',provs.length],
-    ['FINANCIAMIENTO PARCIAL (saldo por cobrar)',parc.length],['VALIDACIÓN FALLIDA — DESCARTADOS',desc.length],['PENDIENTES DE CONTACTO (no incluidos)',pend.length],['DUPLICADOS EXCLUIDOS',dups.length],['ERRORES BLOQUEANTES',errs.length],
+    ['FINANCIAMIENTO PARCIAL (saldo por cobrar)',parc.length],['VALIDACIÓN FALLIDA — DESCARTADOS',desc.length],['PENDIENTES DE CONTACTO (no incluidos)',pend.length],['YA CARGADAS EN CORTES ANTERIORES (excluidas de este corte)',dups.length],['PROVISIONALES CON N° REAL — ACTUALIZAR EN SIG',upd.length],['ERRORES BLOQUEANTES',errs.length],
     ['MONTO DE LÍNEAS PARA SIG (S/)',Math.round(aSIG.reduce(function(t,r){return t+r.importe;},0)*100)/100]];
   var ws3=XLSX.utils.aoa_to_sheet(res); ws3['!cols']=[{wch:58},{wch:16}];
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws1,'DATOS VALIDADOS SIG'); XLSX.utils.book_append_sheet(wb,ws2,'REPORTE DE VALIDACION'); XLSX.utils.book_append_sheet(wb,ws3,'RESUMEN EJECUTIVO');
-  if(provs.length){ var pv=[['N° PROVISIONAL (en SIG)','N° CONTRATO','FECHA VENTA','CLIENTE','SKU','ARCHIVO','N° PEDIDO REAL (completar)','REEMPLAZADO EN SIG (SI/NO)']];
+  if(provs.length){ var pv=[['N° PROVISIONAL (en SIG) = CUENTA CONTRATO + correlativo','CUENTA CONTRATO','FECHA VENTA','CLIENTE','SKU','ARCHIVO','N° PEDIDO REAL (completar)','REEMPLAZADO EN SIG (SI/NO)']];
     provs.forEach(function(r){pv.push([r.nroPedido,r.nroContrato,r.fechaVenta,r.cliente,r.raw_sku,r.fileName,'','NO']);});
     var ws4=XLSX.utils.aoa_to_sheet(pv); ws4['!cols']=[24,16,12,36,14,30,26,24].map(function(w){return {wch:w};}); XLSX.utils.book_append_sheet(wb,ws4,'PROVISIONALES'); }
+  if(upd.length){ var up=[['N° PROVISIONAL (cargado antes)','N° PEDIDO REAL (poner en el SIG)','CUENTA CONTRATO','SKU','CLIENTE','FECHA VENTA','ACTUALIZADO EN SIG (SI/NO)']], seen={};
+    upd.forEach(function(r){ var k=r.actualizar.prov+'|'+r.actualizar.real+'|'+r.raw_sku; if(seen[k]) return; seen[k]=1; up.push([r.actualizar.prov,r.actualizar.real,r.nroContrato,r.raw_sku,r.cliente,r.fechaVenta,'NO']); });
+    var ws5=XLSX.utils.aoa_to_sheet(up); ws5['!cols']=[28,28,16,14,36,12,24].map(function(w){return {wch:w};}); XLSX.utils.book_append_sheet(wb,ws5,'ACTUALIZAR N° PEDIDO'); }
   XLSX.writeFile(wb,CFG.file+new Date().toISOString().slice(0,10)+'.xlsx');
+  R.forEach(function(r){r.exportado=1;}); valGuardarLocal(); valRender();
 }
 function valOnOpen(){ valRender(); }
 (function(){
@@ -9444,7 +9548,7 @@ function valLeerBees(arr,file){
   VAL.rows=VAL.rows.concat(proc); valGuardarLocal();
   var n=valBeesCorte(proc,file.name);
   var cnt=function(s){return proc.filter(function(x){return x.estado===s;}).length;};
-  _valMsg('✅ Mybees · '+_preE(file.name)+': '+proc.length+' líneas · '+n+' a SIG · '+cnt('PEND')+' pendientes de contacto · '+cnt('WARN')+' por revisar · '+cnt('ERR')+' con error.'+(n?' Enviado a Pre-Observados.':''),n?'#15803d':'#b45309');
+  _valMsg('✅ Mybees · '+_preE(file.name)+': '+proc.length+' líneas · '+n+' nuevas a SIG · '+proc.filter(function(x){return x.isDup;}).length+' ya cargadas antes (excluidas) · '+cnt('PEND')+' pendientes de contacto · '+cnt('WARN')+' por revisar · '+cnt('ERR')+' con error.'+(n?' Enviado a Pre-Observados.':''),n?'#15803d':'#b45309');
   valRender(); preRender(); preSync(true);
 }
 function valBeesCorte(lineas,archivo){
@@ -9452,7 +9556,7 @@ function valBeesCorte(lineas,archivo){
   var c={id:'V'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),archivo:archivo,por:_preUser(),ts:_preNow(),tipo:'validador',n:ok.length,
     peds:Object.keys(ok.reduce(function(m,x){m[x.nroPedido]=1;return m;},{})).length,
     l:ok.map(function(x){return [x.nroPedido,x.raw_sku,x.cantidad,'MYBEES','BACKUS',_preFecha(x.fechaVenta)||_preHoy(),0];}),
-    k:lineas.filter(function(x){return !x.skip&&x.codigoUnico;}).map(function(x){return [x.codigoUnico,x.nroPedido,x.fechaVenta,'',x.cliente];})};
+    k:ok.filter(function(x){return x.codigoUnico;}).map(function(x){return [x.codigoUnico,x.nroPedido,x.fechaVenta,'',x.cliente];})};
   if(c.l.length||c.k.length){ PRE.cortes.push(c); PRE.dirty=true; _preSaveLocal(); }
   return ok.length;
 }
