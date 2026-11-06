@@ -1604,6 +1604,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
     <option value="OK">OK</option><option value="FIX">FIX (corregido solo)</option><option value="WARN">WARN (revisar)</option><option value="ERR">ERR (bloquea)</option><option value="SKIP">SKIP (descartado)</option>
   </select>
   <button class="btn btn-o" onclick="valLimpiar()">🧹 Limpiar pantalla</button>
+  <button class="btn btn-o" onclick="preLimpiarUI()" title="Borra de la memoria compartida lo ya cargado (para volver a probar un día)">🗑 Borrar lo cargado…</button>
   <span id="val-msg" style="font-size:11px;font-weight:700;"></span>
 </div>
 <div class="krow" id="val-kpis"></div>
@@ -1634,6 +1635,7 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   <input class="si" id="pre-q" placeholder="Buscar código o descripción…" oninput="preRender()" style="min-width:200px;">
   <button class="btn btn-g" onclick="preExportar()">📊 Exportar Excel</button>
   <button class="btn btn-o" onclick="preSync(true)">🔄 Actualizar</button>
+  <button class="btn btn-o" onclick="preLimpiarUI()" title="Quita cortes cargados (memoria compartida) para volver a subirlos">🧹 Limpiar cortes…</button>
   <span class="chip c-gris" id="pre-sync"></span>
 </div>
 <div id="pre-msg" style="font-size:11px;font-weight:700;margin-bottom:8px;"></div>
@@ -1678,7 +1680,8 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   </div>
 </div>
 <div id="emb-msg" style="font-size:11px;font-weight:700;margin-bottom:6px;"></div>
-<div id="emb-src" style="margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+<div id="emb-src" style="margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+<div id="emb-cov" style="font-size:11px;color:#334155;margin-bottom:10px;"></div>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
   <label style="font-size:11px;font-weight:700;color:var(--text2);">Fecha de venta:</label>
   <input type="date" class="si" id="emb-d1" onchange="embRender()"> <span>→</span> <input type="date" class="si" id="emb-d2" onchange="embRender()">
@@ -1709,10 +1712,10 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
 <div class="tbox"><div class="tbox-h"><h3>⏳ Pedidos pendientes y su motivo</h3><span class="pk-mini" id="emb-pn"></span></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;padding:6px 10px;">
     <select class="sel" id="emb-pf" onchange="embRender()"><option value="PEND">Sin guía (programado / confirmado / no contactado)</option><option value="NOENT">Todo lo no entregado (incluye en ruta y logística)</option></select>
-    <select class="sel" id="emb-pm" onchange="embRender()"><option value="TODOS">Todos los motivos</option><option value="SIN">Sin motivo asignado</option><option value="PAGO">Falta pago / financiamiento</option><option value="STOCK">Observado por falta de stock</option><option value="GAS">Habilitar servicio de gas</option><option value="DIR">Dirección / cliente no ubicado</option><option value="OTRO">Otro</option></select>
+    <select class="sel" id="emb-pm" onchange="embRender()"><option value="TODOS">Todos los motivos</option></select>
     <button class="btn btn-g" onclick="embExportar()">📊 Exportar Excel</button>
   </div>
-  <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Venta</th><th>Canal</th><th>Pedido</th><th>Cliente</th><th>Estado</th><th style="text-align:right">Importe</th><th>Alertas</th><th>Motivo</th><th>Nota</th><th>Actualizó</th></tr></thead>
+  <div class="tw" style="max-height:520px;overflow-y:auto;"><table class="dt" style="font-size:10px;width:100%;"><thead><tr><th>Venta</th><th>Canal</th><th>Pedido</th><th>Cliente</th><th>Estado</th><th>Estado SIG</th><th style="text-align:right">Importe</th><th>Alertas</th><th>Motivo (automático o manual)</th><th>Nota</th><th>Actualizó</th></tr></thead>
     <tbody id="emb-pend"></tbody></table></div></div>
 
 
@@ -3986,7 +3989,7 @@ function renderObs(){
       <td class="mono" style="text-align:right;">${it.unidObs||'—'}</td>
       <td class="mono fw7" style="text-align:right;color:var(--blue);font-weight:700;">${it.stockActual>0?it.stockActual:'—'}</td>
       <td class="mono fw7" style="text-align:right;color:${it.unidPend>0?'#b91c1c':'var(--text3)'};">${it.unidPend||'—'}</td>
-      <td class="mono fw7" style="text-align:right;background:#fef2f2;" title="${it.unidPend} unid. × S/${(it.costoUnit*1.18).toFixed(2)} c/u (PVP con IGV)">S/${it.montoIGV>0?it.montoIGV.toLocaleString('es-PE'):'S/0'}</td>
+      <td class="mono fw7" style="text-align:right;background:#fef2f2;" title="${it.unidPend} unid. × S/${(it.costoUnit*1.18).toFixed(2)} c/u (PVP con IGV)">S/${it.montoIGV>0?it.montoIGV.toLocaleString('es-PE'):'0'}</td>
       <td class="mono" style="text-align:right;">${it.vtaMes||'—'}</td>
       <td class="mono" style="text-align:right;">${it.diasMes||'—'}</td>
       <td>${accSel}</td>
@@ -7690,7 +7693,7 @@ async function _pkEnsureBranch(){
     var sha=(await m.json()).object.sha;
     var c=await fetch(_pkApi()+'/git/refs',{method:'POST',headers:_pkH(true),body:JSON.stringify({ref:'refs/heads/'+PKS.BR,sha:sha})});
     PKS.branchOk=!!c.ok;
-  }catch(e){PKS.branchOk=false;}
+  }catch(e){ if(e&&e.message==='main'){PKS.branchOk=false;} else throw e; } // v36: un fallo de red NO fija 'sin rama' para siempre (leía la rama equivocada)
 }
 function _pkUrl(){return _pkApi()+'/contents/'+PKS.FILE+(PKS.branchOk?'?ref='+PKS.BR+'&':'?')+'t='+Date.now();}
 function _pkB64d(s){return decodeURIComponent(escape(atob(String(s).replace(/\n/g,''))));}
@@ -8536,9 +8539,15 @@ function _preMerge(rem){
 }
 function _preMergeMapa(rem){ if(!rem) return; Object.keys(rem).forEach(function(k){ var l=PRE.mapa[k], r=rem[k]; if(r&&(!l||String(r.ts)>String(l.ts))) PRE.mapa[k]=r; }); }
 function _preUrl(){return _pkApi()+'/contents/'+PRE.FILE+(PKS.branchOk?'?ref='+PKS.BR+'&':'?')+'t='+Date.now();}
+async function _preFetch(url,opt){
+  var ac=(typeof AbortController!=='undefined')?new AbortController():null, to=ac?setTimeout(function(){ac.abort();},20000):null;
+  try{ if(ac) opt.signal=ac.signal; return await fetch(url,opt); }
+  catch(e){ if(e&&e.name==='AbortError') throw new Error('tiempo de espera agotado'); throw e; }
+  finally{ if(to) clearTimeout(to); }
+}
 async function prePull(){
   await _pkEnsureBranch();
-  var r=await fetch(_preUrl(),{headers:_pkH(),cache:'no-store'});
+  var r=await _preFetch(_preUrl(),{headers:_pkH(),cache:'no-store'});
   if(r.status===404){PRE.sha=null;return null;}
   if(!r.ok) throw new Error('GitHub '+r.status);
   var j=await r.json(); PRE.sha=j.sha; var t=j.content?_pkB64d(j.content):''; return t?JSON.parse(t):null;
@@ -8546,13 +8555,17 @@ async function prePull(){
 async function prePush(){
   var body={message:'Pre-Observados: corte '+new Date().toLocaleString('es-PE'),content:btoa(unescape(encodeURIComponent(JSON.stringify({ver:1,cortes:PRE.cortes,mapa:PRE.mapa}))))};
   if(PKS.branchOk) body.branch=PKS.BR; if(PRE.sha) body.sha=PRE.sha;
-  var r=await fetch(_pkApi()+'/contents/'+PRE.FILE,{method:'PUT',headers:_pkH(true),body:JSON.stringify(body)});
+  var r=await _preFetch(_pkApi()+'/contents/'+PRE.FILE,{method:'PUT',headers:_pkH(true),body:JSON.stringify(body)});
   if(r.status===409||r.status===422) return 'CONFLICT';
   if(!r.ok) throw new Error('GitHub '+r.status);
   var j=await r.json(); PRE.sha=(j.content&&j.content.sha)||PRE.sha; return 'OK';
 }
+function _preMsgTmp(h,c){ _preMsg(h,c); setTimeout(function(){ var e=document.getElementById('pre-msg'); if(e&&e.innerHTML===h) _preMsg('',''); },9000); }
 async function preSync(manual){
-  if(PRE.busy) return; PRE.busy=true;
+  if(PRE.busy&&Date.now()-(PRE.busyT||0)<30000){ if(manual===true) _preMsgTmp('⏳ Ya se está sincronizando… espera unos segundos y vuelve a pulsar.','#92400e'); return; }
+  PRE.busy=true; PRE.busyT=Date.now();
+  var antes={}; PRE.cortes.forEach(function(c){ antes[c.id]=c.del?2:1; });
+  if(manual===true) _preMsg('⏳ Sincronizando con GitHub…','#92400e');
   try{
     for(var n=0;n<4;n++){
       var rem=await prePull(); var ids={}; ((rem&&rem.cortes)||[]).forEach(function(c){ids[c.id]=c.del?2:1;});
@@ -8562,8 +8575,12 @@ async function preSync(manual){
       PRE.dirty=false; break;
     }
     PRE.err=null; PRE.lastOk=new Date();
-  }catch(e){ PRE.err=e.message||String(e); }
-  finally{ PRE.busy=false; _preSaveLocal(); preRender(); }
+    if(manual===true){
+      var vis=PRE.cortes.filter(function(c){return !c.del;}), nu=vis.filter(function(c){return !antes[c.id];}).length, qu=PRE.cortes.filter(function(c){return c.del&&antes[c.id]===1;}).length;
+      _preMsgTmp('✅ Actualizado: '+vis.length+' corte(s) cargado(s)'+(nu?' · <b>'+nu+' nuevo(s)</b> de otros usuarios':' · sin cortes nuevos')+(qu?' · '+qu+' quitado(s) por otro usuario':'')+'.','#15803d');
+    }
+  }catch(e){ PRE.err=e.message||String(e); if(manual===true) _preMsgTmp('🔴 No se pudo sincronizar ('+_preE(PRE.err)+'). Se usa lo guardado en este equipo; reintenta en unos segundos.','#b91c1c'); }
+  finally{ PRE.busy=false; _preSaveLocal(); preRender(); try{ if(typeof valRender==='function'&&document.getElementById('val-tbody')) valRender(); }catch(x){} }
 }
 // ---------- subir un corte ----------
 function _preMsg(h,c){var e=document.getElementById('pre-msg'); if(e){e.innerHTML=h||'';e.style.color=c||'';}}
@@ -8588,13 +8605,65 @@ function preSubir(file){
 function preQuitar(id){
   var c=PRE.cortes.find(function(x){return x.id===id;}); if(!c) return;
   if(!confirm('¿Quitar el corte "'+c.archivo+'"? Dejará de contarse como demanda para todos.')) return;
-  c.del=true; c.l=[]; c.k=[]; PRE.dirty=true; _preSaveLocal(); preRender(); preSync(true);
+  _preArchivar(c); PRE.dirty=true; _preSaveLocal(); preRender(); preSync(true);
+}
+function _preArchivar(c){ if(c.l&&c.l.length||c.k&&c.k.length) c.x={l:c.l||[],k:c.k||[]}; c.del=true; c.l=[]; c.k=[]; }
+// ---------- panel "Limpiar cortes" (Pre-Observados y Validador comparten la misma memoria) ----------
+function preLimpiarUI(){
+  var old=document.getElementById('pre-limp-modal'); if(old) old.remove();
+  var vis=PRE.cortes.filter(function(c){return !c.del;}).slice().reverse();
+  var arch=PRE.cortes.filter(function(c){return c.del&&c.x;}).slice().reverse();
+  var f=function(c){ return new Date(c.ts).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); };
+  var hoy=_preHoy();
+  var h='<div id="pre-limp-modal" style="position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(15,23,42,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;">'+
+   '<div style="background:#fff;border-radius:12px;max-width:820px;width:100%;max-height:88vh;overflow:auto;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.35);font-size:12px;color:#0f172a;">'+
+   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="font-size:15px;">🧹 Limpiar cortes cargados</b><button class="btn btn-o" onclick="preLimpiarCerrar()">✕ Cerrar</button></div>'+
+   '<div style="color:#475569;margin-bottom:10px;line-height:1.5;">Estos cortes son la <b>memoria compartida</b> del Validador (duplicados y correlativos provisionales) y de Pre-Observados (demanda). Al quitar un corte, <b>esos pedidos dejan de contarse para todos</b> y puedes volver a subir su archivo. Lo quitado se puede <b>restaurar</b> abajo.</div>'+
+   '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">'+
+   '<button class="btn btn-o" onclick="preLimpiarMarcar(\'hoy\')">Marcar los subidos hoy</button><button class="btn btn-o" onclick="preLimpiarMarcar(\'todos\')">Marcar todos</button><button class="btn btn-o" onclick="preLimpiarMarcar(\'ninguno\')">Desmarcar</button></div>'+
+   '<div style="border:1px solid #e2e8f0;border-radius:8px;max-height:280px;overflow:auto;"><table class="dt" style="font-size:11px;width:100%;"><thead><tr><th></th><th>Archivo</th><th>Subido por</th><th>Subido (fecha / hora)</th><th>Tipo</th><th style="text-align:right">Pedidos</th></tr></thead><tbody>'+
+   (vis.length?vis.map(function(c){ var esHoy=String(c.ts||'').slice(0,10)===hoy; return '<tr><td><input type="checkbox" class="pre-limp-ck" data-id="'+c.id+'" data-hoy="'+(esHoy?1:0)+'"></td><td>'+_preE(c.archivo)+'</td><td>'+_preE(c.por)+'</td><td>'+f(c)+'</td><td>'+(c.tipo==='validador'?'Validador':'Excel validado')+'</td><td style="text-align:right">'+(c.peds||0)+'</td></tr>'; }).join(''):'<tr><td colspan="6" style="padding:12px;color:#64748b;">No hay cortes cargados.</td></tr>')+
+   '</tbody></table></div>'+
+   '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;"><button class="btn btn-r" onclick="preLimpiarOk()">🗑 Quitar los marcados</button><span id="pre-limp-msg" style="font-weight:700;"></span></div>'+
+   (arch.length?'<div style="margin-top:14px;"><b>↩ Quitados recientemente (se pueden restaurar)</b><div style="border:1px solid #e2e8f0;border-radius:8px;max-height:150px;overflow:auto;margin-top:6px;"><table class="dt" style="font-size:11px;width:100%;"><tbody>'+
+     arch.map(function(c){ return '<tr><td>'+_preE(c.archivo)+'</td><td>'+f(c)+'</td><td style="text-align:right">'+(c.peds||0)+' pedidos</td><td><button class="btn btn-o" style="padding:1px 8px;font-size:10px;" onclick="preRestaurar(\''+c.id+'\')">↩ Restaurar</button></td></tr>'; }).join('')+'</tbody></table></div></div>':'')+
+   '</div></div>';
+  var d=document.createElement('div'); d.innerHTML=h; document.body.appendChild(d.firstChild);
+}
+function preLimpiarCerrar(){ var m=document.getElementById('pre-limp-modal'); if(m) m.remove(); }
+function preLimpiarMarcar(modo){ document.querySelectorAll('.pre-limp-ck').forEach(function(ck){ ck.checked=modo==='todos'||(modo==='hoy'&&ck.getAttribute('data-hoy')==='1'); }); }
+function preLimpiarOk(){
+  var ids=[]; document.querySelectorAll('.pre-limp-ck').forEach(function(ck){ if(ck.checked) ids.push(ck.getAttribute('data-id')); });
+  var msg=document.getElementById('pre-limp-msg');
+  if(!ids.length){ if(msg){ msg.style.color='#b91c1c'; msg.textContent='Marca al menos un corte.'; } return; }
+  var sel=PRE.cortes.filter(function(c){return ids.indexOf(c.id)>=0;}), val=sel.some(function(c){return c.tipo==='validador';}), peds=sel.reduce(function(a,c){return a+(c.peds||0);},0);
+  if(!confirm('¿Quitar '+ids.length+' corte(s) ('+peds+' pedidos) para todos los usuarios?'+(val&&VAL.rows.length?'\n\nTambién se limpiará la pantalla del Validador: vuelve a subir el crudo del día. Si no exportaste el Excel para el SIG, cancela y expórtalo antes.':''))) return;
+  sel.forEach(_preArchivar); PRE.dirty=true; _preSaveLocal();
+  if(val&&VAL.rows.length){ VAL.rows=[]; valGuardarLocal(); valRender(); }
+  preLimpiarCerrar(); preRender();
+  var t='🧹 '+ids.length+' corte(s) quitado(s) · '+peds+' pedidos libres para volver a cargarlos.'+(val?' Sube de nuevo el crudo en ✅ Validador IA.':'');
+  _preMsgTmp(t,'#15803d'); _valMsg(t,'#15803d'); preSync(true);
+}
+function preRestaurar(id){
+  var c=PRE.cortes.find(function(x){return x.id===id;}); if(!c||!c.x) return;
+  var n={id:'R'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),archivo:c.archivo,por:_preUser(),ts:_preNow(),tipo:c.tipo,n:(c.x.l||[]).length,peds:c.peds,l:c.x.l||[],k:c.x.k||[]};
+  if(!c.tipo) delete n.tipo;
+  PRE.cortes.push(n); c.x=null; PRE.dirty=true; _preSaveLocal(); preLimpiarCerrar(); preRender();
+  _preMsgTmp('↩ Corte "'+_preE(c.archivo)+'" restaurado.','#15803d'); preSync(true);
 }
 // ---------- análisis ----------
 function _preEsMybees(l){ return /BACKUS/i.test(String(l[4]||''))||/^(MYBEES|BK)$/i.test(String(l[3]||'')); }
+// v37: código SIG limpio y multiplicador de pack ("15000090 (6 UNIDADES)" = 6 u. del 15000090). Sirve también para cortes guardados por versiones anteriores.
+function _preSkuPack(s){
+  var t=String(s==null?'':s).trim().toUpperCase().replace(/^(SAL|IBR|GRU|BR|ABAI)[-\s]*/,''), mult=1, m=t.match(/^(\d{8})\s*(?:\(\s*X?\s*(\d+)\s*UNIDADES?\s*\)|X\s*(\d+)\s*UNIDADES?)\s*$/);
+  if(m){ t=m[1]; mult=parseInt(m[2]||m[3],10)||1; }
+  var r=/-R$/.test(t); t=t.replace(/-R$/,''); return {cod:t,r:r,mult:mult};
+}
 function preLineas(){
   var hoy0=_preHoy(), limC=_preSumDias(hoy0,-PRE.RET), limM=_preSumDias(hoy0,-PRE.RETM), m={};
-  PRE.cortes.forEach(function(c){ if(c.del) return; (c.l||[]).forEach(function(l){ var lim=_preEsMybees(l)?limM:limC; if(l[5]&&l[5]<lim) return; if(/^ZZ/i.test(String(l[1]))) return; m[l[0]+'|'+l[1]+'|'+l[6]]=l; }); });
+  PRE.cortes.forEach(function(c){ if(c.del) return; (c.l||[]).forEach(function(l0){ var l=l0, sp=_preSkuPack(l0[1]);
+      if(sp.cod!==String(l0[1])||sp.mult>1||sp.r){ l=l0.slice(); l[1]=sp.cod; if(sp.mult>1) l[2]=(parseFloat(l0[2])||0)*sp.mult; if(sp.r&&!l[6]) l[6]=1; }
+      var lim=_preEsMybees(l)?limM:limC; if(l[5]&&l[5]<lim) return; if(/^ZZ/i.test(String(l[1]))) return; m[l[0]+'|'+l[1]+'|'+l[6]]=l; }); });
   return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return a[5]<b[5]?-1:(a[5]>b[5]?1:(a[0]<b[0]?-1:1));});
 }
 function preAnalisis(){
@@ -8718,12 +8787,20 @@ var EMB={LS:'merpes_emb_v1',FILE:'emb_estado.json',sha:null,busy:false,dirty:fal
   est:{},vend:{},parsed:{},src:{},conf:null,log:null,loadedAt:null,busyDrive:false,vista:[],RET_VEND:60,RET_EST:120};
 var EMB_MOT={'':'— sin motivo —',PAGO:'Falta pago / financiamiento',STOCK:'Observado por falta de stock',GAS:'Habilitar servicio de gas',DIR:'Dirección / cliente no ubicado',OTRO:'Otro (ver nota)'};
 var EMB_B={ENT:'Entregado',RUTA:'En ruta (con guía)',OTL:'En gestión logística',CPG:'Programado, sin guía',CCF:'Confirmado, sin guía',CNC:'No contactado',CRE:'Rechazo en confirmación',REC:'Rechazo en entrega',ANU:'Anulado'};
+// v38 — motivos AUTOMÁTICOS (todo pedido tiene motivo): manual > Observados/ESPE > Confirmaciones
+var EMB_MA={A_STOCK:'Sin stock (observado)',A_OBS:'Observado en SIG',A_SERV:'Servicio pendiente (SIG)',A_APR:'Aprobado en SIG, falta facturar',A_FAC:'Facturado, falta despachar',
+  A_TRA:'Ya en tránsito en SIG',A_ENT:'Ya entregado en SIG',A_PRG:'Programado (fecha futura)',A_REP:'Programado — fecha vencida',A_CONF:'Confirmado, esperando guía',
+  A_NC:'Cliente no contactado',A_CRE:'Rechazo en confirmación',A_ANU:'Anulado en SIG',A_REC:'Rechazo en SIG',A_SIN:'Sin información (revisar)'};
+var EMB_MCOL={PAGO:'#DC2626',STOCK:'#E8630A',GAS:'#D97706',DIR:'#0369A1',OTRO:'#7C3AED',A_STOCK:'#EA580C',A_OBS:'#F59E0B',A_SERV:'#CA8A04',A_APR:'#0D9488',A_FAC:'#0891B2',
+  A_TRA:'#2563EB',A_ENT:'#16A34A',A_PRG:'#84CC16',A_REP:'#F97316',A_CONF:'#64748B',A_NC:'#BE185D',A_CRE:'#B91C1C',A_ANU:'#9CA3AF',A_REC:'#991B1B',A_SIN:'#6B7280'};
 // ---------- utilidades ----------
 function _embN(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();}
 function _embPed(v){ if(v==null||v==='') return ''; if(typeof v==='number') return String(Math.round(v)); return String(v).replace(/\.0+$/,'').trim(); }
 function _embKey(ped,canal){ return ped.length>=8?ped:(ped+'|'+_embN(canal)); }
 function _embF(v){ try{ if(typeof v==='number'&&(v<40000||v>60000)) return ''; return _preFecha(v)||''; }catch(e){ return ''; } }
 function _embS(n){ return 'S/ '+Math.round(n||0).toLocaleString('es-PE'); }
+// v38: monto en soles para TABLAS = más grande, azul y negrita (clase .mny)
+function _embM(n,tip){ return '<span class="mny"'+(tip?' title="'+_preE(tip)+'"':'')+'>'+_embS(n)+'</span>'; }
 function _embSaveLocal(){try{localStorage.setItem(EMB.LS,JSON.stringify({cfg:EMB.cfg,est:EMB.est,vend:EMB.vend,dirty:EMB.dirty}));}catch(e){}}
 function _embLoadLocal(){try{var p=JSON.parse(localStorage.getItem(EMB.LS)||'null'); if(p){ if(p.cfg) EMB.cfg=Object.assign(EMB.cfg,p.cfg); EMB.est=p.est||{}; EMB.vend=p.vend||{}; EMB.dirty=!!p.dirty; }}catch(e){}}
 function _embMsg(h,c){var e=document.getElementById('emb-msg'); if(e){e.innerHTML=h||'';e.style.color=c||'';}}
@@ -8786,27 +8863,56 @@ function embParseLog(rows,kind){
   Object.keys(out).forEach(function(k){ var o=out[k]; for(var i=0;i<_EMB_PRIO.length;i++){ if(o.bs[_EMB_PRIO[i]]){o.b=_EMB_PRIO[i];break;} } o.e=o.st[o.b]; delete o.bs; delete o.st; });
   return Object.keys(out).length?out:null;
 }
+function _embStE(s){ return _embN(s).replace(/[ _]/g,''); }
+// v38 — REPORTE ESPE (SIG): una fila por documento. Se agrupa por N° de pedido (sin ceros a la izquierda): importe, estado SIG y observación.
+function embParseEspe(rows){
+  var h=-1, i, u, c;
+  for(i=0;i<Math.min(rows.length,25);i++){ u=(rows[i]||[]).map(_embN); if(u.indexOf('NUMERO')>=0&&u.indexOf('MONTO')>=0&&u.indexOf('ESTADO')>=0){ h=i; break; } }
+  if(h<0) return null;
+  u=rows[h].map(_embN);
+  c={n:_embCol(u,/^NUMERO$/),m:_embCol(u,/^MONTO$/),e:_embCol(u,/^ESTADO$/),o:_embCol(u,/^OBSERVACION$/),s:_embCol(u,/^SUB ESTADO$/),fd:_embCol(u,/^F\.DOCUM$/),fe:_embCol(u,/^F\.ESTADO$/),en:_embCol(u,/^ENTIDAD$/)};
+  if(c.n<0||c.m<0||c.e<0) return null;
+  var acc={}, mx='', r, row, p, d, st, ob, imp, fe, fd, a;
+  for(r=h+1;r<rows.length;r++){
+    row=rows[r]; if(!row) continue; p=_embPed(row[c.n]).replace(/^0+/,''); if(!p) continue;
+    st=_embStE(row[c.e]); ob=c.o>=0?String(row[c.o]==null?'':row[c.o]).replace(/_x000D_/g,' ').replace(/\s+/g,' ').trim():'';
+    imp=parseFloat(row[c.m]); if(!isFinite(imp)) imp=0;
+    fe=c.fe>=0?_embF(row[c.fe]):''; fd=c.fd>=0?_embF(row[c.fd]):''; if(fd&&fd>mx) mx=fd;
+    d={st:st,ob:ob,i:imp,k:(fe||fd||''),sb:c.s>=0?String(row[c.s]==null?'':row[c.s]).trim():'',en:c.en>=0?String(row[c.en]==null?'':row[c.en]).trim():''};
+    (acc[p]||(acc[p]=[])).push(d);
+  }
+  var out={}, n=0;
+  Object.keys(acc).forEach(function(p){
+    var L=acc[p], vivos=L.filter(function(x){return x.st!=='ANULADO';}), U=vivos.length?vivos:L, best=U[0], i2, tot=0;
+    for(i2=0;i2<U.length;i2++){ tot+=U[i2].i; if(U[i2].k>=best.k) best=U[i2]; }
+    out[p]={p:p,i:Math.round(tot*100)/100,st:best.st,ob:best.ob,sb:best.sb,en:best.en,nd:L.length}; n++;
+  });
+  if(!n) return null;
+  out.__max=mx; return out;
+}
 function _embKind(name){
   var t=_embN(name);
   if(/CONFIRMACION/.test(t)) return 'conf';
   if(/TRANSITO/.test(t)) return 'trans';
   if(/MY ?BEES|MIGUEL/.test(t)) return 'data';
   if(/BASE DIARIA/.test(t)) return 'base';
+  if(/(^|[^A-Z])ESPE([^A-Z]|$)/.test(t)) return 'espe';
   return '';
 }
-var _EMB_SHEET={conf:'BASE DIARIA',trans:'TRANSITO',data:'DATA',base:'BASE DIARIA'};
-var _EMB_LBL={conf:'Gestión Confirmaciones',trans:'Reporte Tránsito',data:'Excel Miguel (Mybees)',base:'Base diaria logística'};
+var _EMB_SHEET={conf:'BASE DIARIA',trans:'TRANSITO',data:'DATA',base:'BASE DIARIA',espe:'Reporte'};
+var _EMB_LBL={conf:'Gestión Confirmaciones',trans:'Reporte Tránsito',data:'Excel Miguel (Mybees)',base:'Base diaria logística',espe:'Reporte ESPE (SIG)'};
 function embIngesta(kind,buf,meta){
   var sh=_EMB_SHEET[kind];
-  var wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false,sheets:[sh]}); var ws=wb.Sheets[sh];
+  var wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false,sheets:(kind==='espe'?0:[sh])}); var ws=(kind==='espe')?wb.Sheets[wb.SheetNames[0]]:wb.Sheets[sh];
   if(!ws) throw new Error('No encontré la hoja "'+sh+'" en '+meta.name);
+  if(kind==='espe'&&ws['!ref']){ var rg=XLSX.utils.decode_range(ws['!ref']); if(rg.e.c>40){ rg.e.c=40; ws['!ref']=XLSX.utils.encode_range(rg); } }   // el ESPE trae 230 columnas casi vacías: leemos solo las primeras
   var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
-  var p=(kind==='conf')?embParseConf(rows):embParseLog(rows,kind);
+  var p=(kind==='conf')?embParseConf(rows):(kind==='espe')?embParseEspe(rows):embParseLog(rows,kind);
   if(!p) throw new Error('No reconocí las columnas de la hoja "'+sh+'" en '+meta.name);
-  EMB.parsed[kind]=p; EMB.src[kind]={id:meta.id,name:meta.name,mod:meta.modifiedTime,n:Object.keys(p).length,ts:new Date().toISOString()};
+  EMB.parsed[kind]=p; EMB.src[kind]={id:meta.id,name:meta.name,mod:meta.modifiedTime,n:Object.keys(p).filter(function(x){return x!=='__max';}).length,ts:new Date().toISOString()};
 }
 function embMerge(){
-  EMB.conf=EMB.parsed.conf||null; var L={}, k, kinds=['base','data','trans'];   // el último pisa: Tránsito > Excel Miguel > Base diaria
+  EMB.conf=EMB.parsed.conf||null; EMB.espe=EMB.parsed.espe||null; EMB.espeMax=(EMB.espe&&EMB.espe.__max)||''; var L={}, k, kinds=['base','data','trans'];   // el último pisa: Tránsito > Excel Miguel > Base diaria
   kinds.forEach(function(kd){ var p=EMB.parsed[kd]; if(!p) return; for(k in p) L[k]=Object.assign({src:kd},p[k]); });
   EMB.log=L;
 }
@@ -8840,7 +8946,7 @@ async function embActualizar(){
   EMB.busyDrive=true; _embBtn(true);
   try{
     _embMsg('⏳ Consultando la carpeta de Drive…','#92400e'); var lst=await embDriveLista(), pick=_embElegir(lst), nuevos=0, igual=0, faltan=[];
-    var orden=['conf','trans','data','base'];
+    var orden=['conf','trans','data','base','espe'];
     for(var i=0;i<orden.length;i++){ var kd=orden[i], f=pick[kd];
       if(!f){ faltan.push(_EMB_LBL[kd]); continue; }
       var prev=EMB.src[kd]; if(prev&&prev.id===f.id&&prev.mod===f.modifiedTime&&EMB.parsed[kd]){ igual++; continue; }
@@ -8858,7 +8964,8 @@ function _embBtn(b){ var x=document.getElementById('emb-btn'); if(x){x.disabled=
 async function embProbar(){
   if(!EMB.cfg.key){ _embMsg('Pega primero la clave de API.','#b91c1c'); return; }
   try{ _embMsg('⏳ Probando…','#92400e'); var l=await embDriveLista(), pk=_embElegir(l);
-    _embMsg('✅ Conexión correcta. Archivos en la carpeta: '+(l.length?l.map(function(f){return _preE(f.name)+(_embKind(f.name)?' ('+_EMB_LBL[_embKind(f.name)]+')':' (se ignora)');}).join(' · '):'ninguno')+'.','#15803d');
+    _embMsg('✅ Conexión correcta. Archivos en la carpeta: '+(l.length?l.map(function(f){return _preE(f.name)+(_embKind(f.name)?' ('+_EMB_LBL[_embKind(f.name)]+')':' (se ignora)');}).join(' · '):'ninguno')+'.'+(EMB.conf?'':' <b>Ahora cargando los archivos para el embudo…</b>'),'#15803d');
+    if(!EMB.conf) setTimeout(function(){ if(!EMB.busyDrive) embActualizar(); },400);
   }catch(e){ _embMsg('❌ '+_preE(e.message||e),'#b91c1c'); }
 }
 // ---------- carga manual (respaldo) ----------
@@ -8939,20 +9046,57 @@ function embCfgGuardar(){
   var k=document.getElementById('emb-key').value.trim(), f=_embFolderId(document.getElementById('emb-folder').value), sh=document.getElementById('emb-share').checked;
   if(!k||!f){ _embMsg('Completa la clave de API y la carpeta.','#b91c1c'); return; }
   EMB.cfg={key:k,folder:f,shared:sh,ts:new Date().toISOString()}; EMB.dirty=true; _embSaveLocal(); embCfgToggle(false);
-  _embMsg('✅ Configuración guardada'+(sh?' y compartida con los demás usuarios.':' solo en este equipo.'),'#15803d'); embSync(true);
+  _embMsg('✅ Configuración guardada'+(sh?' y compartida con los demás usuarios.':' solo en este equipo.'),'#15803d'); embSync(true); setTimeout(function(){ if(!EMB.conf) embActualizar(); },600);
 }
 // ---------- análisis ----------
 function embPedFalta(){
   var s={}; try{ if(typeof PRE==='undefined'||!PRE.cortes||!PRE.cortes.some(function(c){return !c.del;})||!pkHayStock()) return s;
     preAnalisis().sku.forEach(function(x){ if(x.falta>0) x.lines.forEach(function(l){ if(l.falta>0) s[String(l.ped)]=1; }); }); }catch(e){} return s;
 }
+function _embFalta(){ var t=Date.now(); if(EMB._fs&&t-EMB._fs.t<4000) return EMB._fs.v; var v=embPedFalta(); EMB._fs={t:t,v:v}; return v; }
+// v38: motivo AUTOMÁTICO. Orden: (1) Observados: estado OBSERVADO del SIG o SKU sin stock en Pre-Observados, (2) estado del SIG (ESPE), (3) estado de Gestión Confirmaciones.
+function embMotAuto(r,fs){
+  var o=r.o, sg=r.sg, hoy=_preHoy(), e=_embN(o.e), mk=function(c,src,d){ return {c:c,t:EMB_MA[c],src:src,d:d||'',m:false}; };
+  if(sg){ if(sg.st==='OBSERVADO'){ if(/STOCK/.test(_embN(sg.ob))) return mk('A_STOCK','Observados (SIG)',sg.ob); return mk('A_OBS','Observados (SIG)',sg.ob); } }
+  if(fs&&fs[o.ped]) return mk('A_STOCK','Pre-Observados: algún SKU sin stock');
+  if(sg){ var s=sg.st;
+    if(s==='SERVPEND') return mk('A_SERV','SIG (ESPE)',sg.ob);
+    if(s==='APROBADO') return mk('A_APR','SIG (ESPE)',sg.ob);
+    if(s==='FACTURADO') return mk('A_FAC','SIG (ESPE)',sg.ob);
+    if(s==='ENTRANSITO') return mk('A_TRA','SIG (ESPE)',sg.ob);
+    if(s==='ENTREGADO') return mk('A_ENT','SIG (ESPE) — falta reflejarlo en el reporte logístico',sg.ob);
+    if(s==='ANULADO') return mk('A_ANU','SIG (ESPE)',sg.ob);
+    if(s==='RECHAZOTEL'||s==='RECHAZADO') return mk('A_REC','SIG (ESPE)',sg.ob);
+    if(s==='REGULARIZACION') return mk('A_OBS','SIG (ESPE) — en regularización',sg.ob);
+    if(s==='NOCONTACTADO') return mk('A_NC','SIG (ESPE)',sg.ob);
+  }
+  if(e==='RECHAZO') return mk('A_CRE','Confirmaciones',o.m||o.d);
+  if(e==='NO CONTACTADO') return mk('A_NC','Confirmaciones',o.d);
+  if(e==='PROGRAMADO'){ var f=/^\d{4}-/.test(o.d)?o.d:''; return (f&&f<hoy)?mk('A_REP','Confirmaciones','era para '+_embDM(f)):mk('A_PRG','Confirmaciones',f?('para '+_embDM(f)):o.d); }
+  if(e==='CONFIRMADO') return mk('A_CONF','Confirmaciones',/^\d{4}-/.test(o.d)?'':o.d);
+  return mk('A_SIN','—');
+}
 function embAnalisis(d1,d2,canal){
-  var hoy=_preHoy(), conf=EMB.conf||{}, L=EMB.log||{}, filas=[], k, o, l, b, vd, imp;
+  var hoy=_preHoy(), conf=EMB.conf||{}, L=EMB.log||{}, E=EMB.espe||null, fs=_embFalta(), filas=[], k, o, l, b, vd, imp, src, sg, r, es;
   var mapB={'CONFIRMADO':'CCF','PROGRAMADO':'CPG','NO CONTACTADO':'CNC','RECHAZO':'CRE'};
   for(k in conf){ o=conf[k]; if(o.f<d1||o.f>d2) continue; if(canal&&o.canal!==canal) continue;
-    l=L[k]; b=l?l.b:(mapB[o.e]||'CCF'); vd=EMB.vend[o.ped]; imp=vd?vd.i:((l&&l.costo>0)?l.costo:null);
-    filas.push({k:k,o:o,l:l,b:b,imp:imp,age:_preDifDias(hoy,o.f)}); }
+    l=L[k]; b=l?l.b:(mapB[o.e]||'CCF'); vd=EMB.vend[o.ped];
+    sg=(E&&o.ped.length>=8)?(E[String(o.ped).replace(/^0+/,'')]||null):null;
+    if(sg&&sg.i>0){ imp=sg.i; src='Reporte ESPE (SIG)'; } else if(vd){ imp=vd.i; src='Ventas validadas (Validador IA)'; } else if(l&&l.costo>0){ imp=l.costo; src='Reporte de tránsito / Excel Miguel'; } else { imp=null; src=''; }
+    r={k:k,o:o,l:l,b:b,imp:imp,impSrc:src,sg:sg,age:_preDifDias(hoy,o.f)}; r.auto=embMotAuto(r,fs);
+    es=EMB.est[k]; r.mot=(es&&es.m)?{c:es.m,t:EMB_MOT[es.m],src:'Manual',d:'',m:true}:r.auto;
+    filas.push(r); }
   return filas;
+}
+// v38: cobertura de importes y vigencia del ESPE
+function embCobertura(filas,d1,d2){
+  var e=document.getElementById('emb-cov'); if(!e) return;
+  var n=filas.length, ci=0, nes=0, mx=EMB.espeMax||'';
+  filas.forEach(function(r){ if(r.imp!=null) ci++; if(r.sg) nes++; });
+  if(!EMB.espe){ e.innerHTML='<span style="color:#b45309;">⚠ Falta el <b>Reporte ESPE (SIG)</b> en la carpeta de Drive: sin él solo hay importe en pedidos validados o con costo en tránsito ('+ci+' de '+n+' pedidos).</span>'; return; }
+  var post=filas.filter(function(r){return !r.sg&&mx&&r.o.f>mx;}).length, corto=filas.filter(function(r){return !r.sg&&r.o.ped.length<8;}).length;
+  e.innerHTML='💰 Importe conocido en <b>'+ci.toLocaleString('es-PE')+'</b> de <b>'+n.toLocaleString('es-PE')+'</b> pedidos ('+(n?Math.round(ci/n*100):0)+'%) · el ESPE cruza <b>'+nes.toLocaleString('es-PE')+'</b> · corte del ESPE: <b>'+_embDM(mx)+'</b>'+
+    (post?' · <span style="color:#b45309;">'+post+' pedido(s) son posteriores al corte → baja un ESPE más reciente</span>':'')+(corto?' · '+corto+' con número corto (p. ej. PayJoy) que no se pueden cruzar':'');
 }
 function _embAgg(filas,keyFn){
   var m={}; filas.forEach(function(r){ var kk=keyFn(r); var a=m[kk]||(m[kk]={k:kk,n:0,imp:0,nImp:0,b:{},bi:{}});
@@ -8960,12 +9104,12 @@ function _embAgg(filas,keyFn){
   return Object.keys(m).map(function(x){return m[x];});
 }
 function _embCel(a,bs){ var n=0,i=0; bs.forEach(function(x){n+=(a.b[x]||0);i+=(a.bi[x]||0);}); if(!n) return '<td style="text-align:right;color:#cbd5e1;">·</td>';
-  return '<td style="text-align:right;"><b>'+n+'</b>'+(i>0?'<br><span style="color:#64748b;font-size:9px;">'+_embS(i)+'</span>':'')+'</td>'; }
+  return '<td style="text-align:right;"><b>'+n+'</b>'+(i>0?'<br>'+_embM(i):'')+'</td>'; }
 function _embFila(a,lbl,tot){
   var sin=a.b.CPG||0, conSG=['CPG','CCF','CNC'].reduce(function(t,x){return t+(a.b[x]||0);},0), conGuia=['ENT','RUTA','OTL'].reduce(function(t,x){return t+(a.b[x]||0);},0);
   var pct=a.n?Math.round(conGuia/a.n*100):0, col=pct>=85?'#15803d':pct>=60?'#b45309':'#b91c1c';
   return '<tr'+(tot?' style="background:#f1f5f9;font-weight:700;"':'')+'><td>'+lbl+'</td>'+
-    '<td style="text-align:right;"><b>'+a.n+'</b>'+(a.imp>0?'<br><span style="color:#64748b;font-size:9px;" title="Importe conocido en '+a.nImp+' de '+a.n+' pedidos">'+_embS(a.imp)+(a.nImp<a.n?'*':'')+'</span>':'')+'</td>'+
+    '<td style="text-align:right;"><b>'+a.n+'</b>'+(a.imp>0?'<br>'+_embM(a.imp,'Importe conocido en '+a.nImp+' de '+a.n+' pedidos')+(a.nImp<a.n?'<span style="color:#94a3b8;font-size:10px;">*</span>':''):'')+'</td>'+
     _embCel(a,['ENT'])+_embCel(a,['RUTA','OTL'])+_embCel(a,['CPG'])+_embCel(a,['CCF'])+_embCel(a,['CNC'])+_embCel(a,['CRE','REC','ANU'])+
     '<td style="text-align:right;font-weight:800;color:'+col+';">'+pct+'%</td></tr>';
 }
@@ -8974,14 +9118,15 @@ function embRango(n){ var h=_preHoy(); var a=document.getElementById('emb-d1'), 
   b.value=h; a.value=(n==='mes')?h.slice(0,8)+'01':_preSumDias(h,-(n-1)); embRender(); }
 function embRenderEstado(){
   var e=document.getElementById('emb-sync'); if(e) e.textContent=EMB.err?('🔴 Sin conexión con GitHub — motivos guardados en este equipo'+(EMB.dirty?' y se enviarán al reconectar':'')):(EMB.lastOk?('🟢 Motivos sincronizados '+EMB.lastOk.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit'})):'⚫ …');
-  var f=document.getElementById('emb-src'); if(f){ var kinds=['conf','trans','data','base'];
+  var f=document.getElementById('emb-src'); if(f){ var kinds=['conf','trans','data','base','espe'];
     f.innerHTML=kinds.map(function(kd){ var s=EMB.src[kd]; return '<span class="chip '+(s?'c-verde':'c-gris')+'" title="'+(s?_preE(s.name)+' · '+s.n.toLocaleString('es-PE')+' pedidos':'Aún no cargado')+'">'+_EMB_LBL[kd]+(s?' · '+new Date(s.mod).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):' · —')+'</span>'; }).join(' '); }
 }
 function embRender(){
   var tb=document.getElementById('emb-dia'); if(!tb) return; embCapturar(); embRenderEstado();
   var d1=document.getElementById('emb-d1').value, d2=document.getElementById('emb-d2').value;
   if(!d1||!d2){ embRango(7); return; }
-  if(!EMB.conf){ document.getElementById('emb-kpis').innerHTML=''; tb.innerHTML='<tr><td colspan="9" style="color:#64748b;padding:14px;">Pulsa <b>☁️ Actualizar desde Drive</b> (o sube los archivos a mano) para ver el embudo.</td></tr>';
+  ['ed-dia','ed-can'].forEach(function(id){ var cv=document.getElementById(id), w=cv&&cv.parentNode; if(w){ if(EMB.conf) w.removeAttribute('data-vacio'); else w.setAttribute('data-vacio','Sin datos todavía — pulsa ☁️ Actualizar desde Drive'); } });
+  if(!EMB.conf){ document.getElementById('emb-kpis').innerHTML=''; tb.innerHTML='<tr><td colspan="9" style="color:#64748b;padding:14px;">'+(EMB.busyDrive?'⏳ Leyendo los archivos de Drive…':'Aún no hay datos cargados. Pulsa <b>☁️ Actualizar desde Drive</b> (o sube los archivos a mano) para ver el embudo.')+'</td></tr>';
     document.getElementById('emb-can').innerHTML=''; document.getElementById('emb-pend').innerHTML=''; document.getElementById('emb-desp').innerHTML=''; return; }
   var sel=document.getElementById('emb-canal'), cv=sel.value, cans={};
   Object.keys(EMB.conf).forEach(function(k){ var o=EMB.conf[k]; if(o.f>=d1&&o.f<=d2) cans[o.canal]=1; });
@@ -9005,41 +9150,57 @@ function embRender(){
   for(kk in (EMB.log||{})){ l=EMB.log[kk]; if(!l.fd||l.fd<d1||l.fd>d2) continue; if(sel.value&&l.canal!==sel.value) continue;
     var x=DS[l.canal]||(DS[l.canal]={k:l.canal,n:0,ent:0,entI:0,ruta:0,rutaI:0,rec:0,recI:0,anu:0,anuI:0});
     [x,dT].forEach(function(t){ t.n++; if(l.b==='ENT'){t.ent++;t.entI+=l.costo;} else if(l.b==='ANU'){t.anu++;t.anuI+=l.costo;} else if(l.b==='REC'){t.rec++;t.recI+=l.costo;} else {t.ruta++;t.rutaI+=l.costo;} }); }
-  var dc=function(n,i){return n?'<td style="text-align:right;"><b>'+n+'</b>'+(i>0?'<br><span style="color:#64748b;font-size:9px;">'+_embS(i)+'</span>':'')+'</td>':'<td style="text-align:right;color:#cbd5e1;">·</td>';};
+  var dc=function(n,i){return n?'<td style="text-align:right;"><b>'+n+'</b>'+(i>0?'<br>'+_embM(i):'')+'</td>':'<td style="text-align:right;color:#cbd5e1;">·</td>';};
   var dr=function(t,lbl,tot){ var ef=(t.ent+t.rec)?Math.round(t.ent/(t.ent+t.rec)*100):0; return '<tr'+(tot?' style="background:#f1f5f9;font-weight:700;"':'')+'><td>'+lbl+'</td><td style="text-align:right;"><b>'+t.n+'</b></td>'+dc(t.ent,t.entI)+dc(t.ruta,t.rutaI)+dc(t.rec,t.recI)+dc(t.anu,t.anuI)+'<td style="text-align:right;font-weight:800;">'+ef+'%</td></tr>'; };
   var dl=Object.keys(DS).map(function(c){return DS[c];}).sort(function(a,b){return b.n-a.n;});
   document.getElementById('emb-desp').innerHTML=dl.length?dl.map(function(t){return dr(t,_preE(t.k));}).join('')+dr(dT,'TOTAL',true):'<tr><td colspan="7" style="color:#64748b;padding:10px;">Sin despachos en el rango.</td></tr>';
-  // pendientes
-  var pf=document.getElementById('emb-pf').value, pm=document.getElementById('emb-pm').value, faltaS=embPedFalta(), hoy=_preHoy();
-  var lst=filas.filter(function(r){ var okb=(pf==='PEND')?(r.b==='CPG'||r.b==='CCF'||r.b==='CNC'):(r.b!=='ENT'&&r.b!=='ANU'&&r.b!=='CRE');
-    if(!okb) return false; var m=(EMB.est[r.k]||{}).m||''; if(pm==='SIN') return !m; if(pm&&pm!=='TODOS') return m===pm; return true; })
-    .sort(function(a,b){return b.age-a.age;});
+  // pendientes (v38: todo pedido lleva motivo — manual > Observados/ESPE > Confirmaciones)
+  var pf=document.getElementById('emb-pf').value, hoy=_preHoy(), faltaS=_embFalta();
+  try{ embCobertura(filas,d1,d2); }catch(e){}
+  var baseL=filas.filter(function(r){ return (pf==='PEND')?(r.b==='CPG'||r.b==='CCF'||r.b==='CNC'):(r.b!=='ENT'&&r.b!=='ANU'&&r.b!=='CRE'); });
+  var pmE=document.getElementById('emb-pm'), pm=pmE.value||'TODOS', cnt={}, cl={};
+  baseL.forEach(function(r){ cnt[r.mot.c]=(cnt[r.mot.c]||0)+1; cl[r.mot.c]=r.mot.t; });
+  var mkeys=Object.keys(cnt).sort(function(x,y){return cnt[y]-cnt[x];});
+  if(pm!=='TODOS'&&!cnt[pm]) pm='TODOS';
+  pmE.innerHTML='<option value="TODOS">Todos los motivos ('+baseL.length+')</option>'+mkeys.map(function(c){return '<option value="'+c+'"'+(c===pm?' selected':'')+'>'+_preE(cl[c])+' ('+cnt[c]+')</option>';}).join('');
+  pmE.value=pm;
+  var lst=baseL.filter(function(r){ return pm==='TODOS'||r.mot.c===pm; }).sort(function(x,y){return y.age-x.age;});
   EMB.vista=lst;
   document.getElementById('emb-pn').textContent=lst.length+' pedido(s)'+(lst.length>400?' · mostrando 400':'');
   document.getElementById('emb-pend').innerHTML=lst.length?lst.slice(0,400).map(function(r){
-    var o=r.o, es=EMB.est[r.k]||{}, vence=(o.e==='PROGRAMADO'&&/^\d{4}-/.test(o.d)&&o.d<hoy), flags=[];
+    var o=r.o, es=EMB.est[r.k]||{}, mt=r.mot, sg=r.sg, vence=(o.e==='PROGRAMADO'&&/^\d{4}-/.test(o.d)&&o.d<hoy), flags=[];
     if(faltaS[o.ped]) flags.push('<span class="chip c-rojo" title="Algún SKU de este pedido no tiene stock según Pre-Observados">sin stock</span>');
     if(vence) flags.push('<span class="chip c-amber" title="La fecha programada ya pasó">reprogramar</span>');
     if(r.age>=3&&r.b!=='RUTA') flags.push('<span class="chip c-rojo">'+r.age+' días</span>');
-    var opts=Object.keys(EMB_MOT).map(function(m){return '<option value="'+m+'"'+(m===(es.m||'')?' selected':'')+'>'+EMB_MOT[m]+'</option>';}).join('');
+    var opts='<option value=""'+(es.m?'':' selected')+'>⚙ Automático: '+_preE(r.auto.t)+'</option>'+Object.keys(EMB_MOT).filter(function(m){return m;}).map(function(m){return '<option value="'+m+'"'+(m===(es.m||'')?' selected':'')+'>'+EMB_MOT[m]+'</option>';}).join('');
     var ek=_preE(r.k).replace(/'/g,'&#39;');
+    var sgc=sg?'<span class="chip '+(sg.st==='OBSERVADO'?'c-rojo':sg.st==='ENTREGADO'||sg.st==='ENTRANSITO'?'c-verde':'c-gris')+'">'+_preE(sg.st)+'</span>'+(sg.ob?'<div style="font-size:9px;color:#64748b;max-width:140px;">'+_preE(sg.ob).slice(0,48)+'</div>':''):'<span style="color:#cbd5e1;">—</span>';
     return '<tr><td>'+_embDM(o.f)+'</td><td>'+_preE(o.canal)+'</td><td class="mono">'+_preE(o.ped)+'</td><td>'+_preE(o.cli).slice(0,28)+'</td>'+
       '<td><span class="chip '+(r.b==='CPG'?'c-amber':r.b==='CCF'?'c-gris':r.b==='CNC'?'c-rojo':'c-gris')+'">'+EMB_B[r.b]+'</span>'+(o.e==='PROGRAMADO'&&/^\d{4}-/.test(o.d)?' <span style="font-size:9px;color:#64748b;">p/ '+_embDM(o.d)+'</span>':'')+'</td>'+
-      '<td style="text-align:right;">'+(r.imp!=null?_embS(r.imp):'<span style="color:#cbd5e1;">—</span>')+'</td><td>'+flags.join(' ')+'</td>'+
-      '<td><select class="sel" style="font-size:10px;max-width:190px;" onchange="embSetMot(\''+ek+'\',this.value)">'+opts+'</select></td>'+
+      '<td>'+sgc+'</td>'+
+      '<td style="text-align:right;">'+(r.imp!=null?_embM(r.imp,'Fuente del importe: '+r.impSrc):'<span style="color:#cbd5e1;" title="Sin importe: no está en el ESPE, ni validado, ni en tránsito">—</span>')+'</td><td>'+flags.join(' ')+'</td>'+
+      '<td><select class="sel" style="font-size:10px;max-width:200px;" onchange="embSetMot(\''+ek+'\',this.value)">'+opts+'</select>'+
+        '<div style="font-size:9px;margin-top:2px;color:'+(mt.m?'#7c3aed':'#64748b')+';" title="'+_preE(mt.src+(mt.d?' · '+mt.d:''))+'"><b>'+_preE(mt.t)+'</b> · '+_preE(mt.src.split(' — ')[0])+(mt.d?' · '+_preE(String(mt.d).slice(0,40)):'')+'</div></td>'+
       '<td><input class="si" style="font-size:10px;width:150px;" value="'+_preE(es.n||'')+'" placeholder="nota…" onchange="embSetNota(\''+ek+'\',this.value)"></td>'+
       '<td style="font-size:9px;color:#64748b;" title="'+_preE((es.h||[]).map(function(h){return new Date(h[0]).toLocaleString('es-PE')+' · '+h[1]+' · '+(EMB_MOT[h[2]]||'')+(h[3]?' · '+h[3]:'');}).join('\n'))+'">'+(es.ts?_preE(es.por||'')+' '+new Date(es.ts).toLocaleDateString('es-PE',{day:'2-digit',month:'2-digit'}):'')+'</td></tr>'; }).join('')
-    :'<tr><td colspan="10" style="color:#64748b;padding:12px;">Sin pedidos con ese criterio en el rango.</td></tr>';
+    :'<tr><td colspan="11" style="color:#64748b;padding:12px;">Sin pedidos con ese criterio en el rango.</td></tr>';
 }
 function embExportar(){
   var l=EMB.vista||[]; if(!l.length){alert('No hay pedidos en la lista.');return;}
-  var rows=l.map(function(r){ var es=EMB.est[r.k]||{}; return [r.o.f,r.o.canal,r.o.ped,r.o.cli,EMB_B[r.b],r.o.d||'',r.imp!=null?r.imp:'',r.age,EMB_MOT[es.m||''],es.n||'',es.por||'',r.o.dis,r.o.pr]; });
-  exportarExcelMerpes({datos:rows,cabeceras:['Fecha venta','Canal','N° Pedido','Cliente','Estado','Detalle / fecha programada','Importe (S/)','Días desde venta','Motivo','Nota','Actualizó','Distrito','Producto'],
+  var rows=l.map(function(r){ var es=EMB.est[r.k]||{}; return [r.o.f,r.o.canal,r.o.ped,r.o.cli,EMB_B[r.b],r.o.d||'',r.sg?r.sg.st:'',r.sg?r.sg.ob:'',r.imp!=null?r.imp:'',r.impSrc||'',r.age,r.mot.t,r.mot.src+(r.mot.d?' · '+r.mot.d:''),es.n||'',es.por||'',r.o.dis,r.o.pr]; });
+  exportarExcelMerpes({datos:rows,cabeceras:['Fecha venta','Canal','N° Pedido','Cliente','Estado','Detalle / fecha programada','Estado SIG (ESPE)','Observación SIG','Importe (S/)','Fuente del importe','Días desde venta','Motivo','Fuente del motivo','Nota','Actualizó','Distrito','Producto'],
     titulo:'EMBUDO DE DESPACHO — PEDIDOS PENDIENTES',subtitulo:'Cargado vs. despachado · '+document.getElementById('emb-d1').value+' al '+document.getElementById('emb-d2').value,
     filtros:'',archivo:'Embudo_Pendientes_'+_preHoy(),sheetName:'Pendientes',
     kpis:[{val:l.length,lbl:'Pedidos listados',color:'amber'}]});
 }
-function embOnOpen(){ embRender(); embSync(false); }
+function _embAuto(){
+  if(!EMB.cfg.key||EMB.busyDrive) return;
+  var viejo=!EMB.loadedAt||(Date.now()-EMB.loadedAt.getTime())>600000;
+  if(EMB.conf&&!viejo) return;
+  if(EMB.autoT&&Date.now()-EMB.autoT<45000) return; EMB.autoT=Date.now();
+  embActualizar();
+}
+function embOnOpen(){ embRender(); var a=function(){ try{ _embAuto(); }catch(e){} }; try{ Promise.resolve(embSync(false)).then(a,a); }catch(e){ a(); } }
 function embIniciar(){
   if(EMB.started) return; EMB.started=true; _embLoadLocal();
   var a=document.getElementById('emb-d1'), b=document.getElementById('emb-d2'); if(a&&b&&!a.value){ b.value=_preHoy(); a.value=_preSumDias(_preHoy(),-6); }
@@ -9048,6 +9209,24 @@ function embIniciar(){
   setInterval(function(){ var p=document.getElementById('pane-emb'); if(!document.hidden&&((p&&p.classList.contains('on'))||EMB.dirty)) embSync(false); },180000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',embIniciar); else embIniciar();
+// v38 — todo monto "S/ …" dentro de una TABLA se ve más grande, azul y en negrita (clase .mny). No toca KPIs, gráficos, botones ni los Excel exportados.
+(function(){
+  var RXT=/S\/\s?-?\d/, pend=[], T=null;
+  function deco(td){
+    if(!td||td.nodeType!==1) return;
+    var w=document.createTreeWalker(td,NodeFilter.SHOW_TEXT,null), nodes=[], n;
+    while((n=w.nextNode())){ if(!RXT.test(n.nodeValue)) continue; var p=n.parentNode; if(p&&p.closest&&p.closest('.mny,.chip,select,option,textarea,script,style,.kpi')) continue; nodes.push(n); }
+    nodes.forEach(function(n){ var s=n.nodeValue, f=document.createDocumentFragment(), i=0, m, rx=/S\/\s?-?\d[\d.,]*/g;
+      while((m=rx.exec(s))){ if(m.index>i) f.appendChild(document.createTextNode(s.slice(i,m.index))); var sp=document.createElement('span'); sp.className='mny'; sp.textContent=m[0]; f.appendChild(sp); i=m.index+m[0].length; }
+      if(i<s.length) f.appendChild(document.createTextNode(s.slice(i))); if(n.parentNode) n.parentNode.replaceChild(f,n); });
+  }
+  function run(){ T=null; var l=pend; pend=[]; var seen=[];
+    l.forEach(function(x){ var tb=(x.closest)?x.closest('table'):null; var roots=tb?[tb]:(x.querySelectorAll?[].slice.call(x.querySelectorAll('table')):[]);
+      roots.forEach(function(t){ if(seen.indexOf(t)>=0) return; seen.push(t); [].slice.call(t.querySelectorAll('td')).forEach(deco); }); }); }
+  try{ new MutationObserver(function(ms){ ms.forEach(function(m){ [].slice.call(m.addedNodes).forEach(function(n){ if(n.nodeType!==1) return; if(n.classList&&n.classList.contains('mny')) return; pend.push(n); }); });
+      if(pend.length&&!T) T=setTimeout(run,250); }).observe(document.body,{childList:true,subtree:true}); }catch(e){}
+  setTimeout(function(){ pend.push(document.body); run(); },1500);
+})();
 // ===================================================
 // DASHBOARDS v32 (v33: el Embudo ahora lleva sus gráficos en paralelo a cada tabla) — gráficos al pie de ✅ Validador IA, ⚡ Pre-Observados y 📦 Embudo Despacho
 // (el dashboard del Validador recupera el estilo del MERPES AI Validator Demo_v2: estados, monto por archivo,
@@ -9060,12 +9239,14 @@ var DV={ch:{},C:{navy:'#1A2B4A',or:'#E8630A',ok:'#16A34A',bl:'#0369A1',am:'#D977
   '.dv-box{background:#fff;border:1.5px solid var(--line,#e2e8f0);border-radius:var(--r,10px);padding:12px 14px;min-width:0;}'+
   '.dv-box h4{margin:0 0 8px;font-size:12px;color:var(--text2,#334155);}'+
   '.dv-box .cw{position:relative;height:230px;}.dv-box .cw.tall{height:290px;}'+
+  '.dv-box .cw[data-vacio]::after{content:attr(data-vacio);position:absolute;left:0;right:0;top:42%;text-align:center;color:#64748b;font-size:12px;font-weight:700;}'+
   '.emb-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin:12px 0 18px;align-items:stretch;}'+
   '.emb-grid>.tbox{margin:0;display:flex;flex-direction:column;}.emb-grid>.tbox .tw{flex:1;max-height:none;overflow-y:visible;}'+
   '.emb-grid>.dv-box{display:flex;flex-direction:column;}.emb-grid>.dv-box .cw{flex:1 1 auto;height:auto;min-height:330px;}.emb-grid>.dv-box .cw canvas{position:absolute;left:0;top:0;}'+
   '.emb-grid .dv-box h4{font-size:13px;margin-bottom:10px;}.emb-grid .tbox-h h3{font-size:14px;}'+
   '.emb-grid .dt{font-size:12.5px!important;}.emb-grid .dt th{font-size:10.5px!important;padding:8px 7px!important;}.emb-grid .dt td{padding:8px 7px!important;}'+
   '.emb-grid .dt td b{font-size:15px;}.emb-grid .dt td span[style*="font-size:9px"]{font-size:10.5px!important;}.emb-grid .pk-mini{font-size:10.5px;}'+
+  '.mny{color:#1d4ed8!important;font-weight:800!important;font-size:1.18em!important;white-space:nowrap;}'+
   '@media(max-width:1100px){.emb-grid{grid-template-columns:minmax(0,1fr);}}'+
   '.dv-empty{color:#64748b;font-size:11px;padding:14px;background:#f8fafc;border:1px dashed var(--line,#e2e8f0);border-radius:8px;margin:12px 0;}';
   document.head.appendChild(st); }catch(e){} })();
@@ -9167,10 +9348,10 @@ function embDash(){
   dvChart('ed-can',{type:'bar',data:{labels:cl.map(function(c){return _dvCut(c,20)+' ('+cn[c].n+')';}),datasets:[{data:cl.map(function(c){return Math.round(cn[c].g/cn[c].n*100);}),backgroundColor:cl.map(function(c){var p=cn[c].g/cn[c].n; return p>=.85?C.ok:p>=.6?C.am:C.rd;}),borderRadius:3}]},
     options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,max:110,ticks:{font:{size:11},callback:function(v){return v<=100?v+'%':'';}}},y:{ticks:{font:{size:11}}}},layout:{padding:{right:34}}}},[_dvBar()]);
   var pe=filas.filter(function(r){return r.b==='CPG'||r.b==='CCF'||r.b==='CNC';}), mo={}, an={'0-1 días':{n:0,i:0},'2-3 días':{n:0,i:0},'4-7 días':{n:0,i:0},'8-15 días':{n:0,i:0},'16+ días':{n:0,i:0}};
-  pe.forEach(function(r){ var m=(EMB.est[r.k]||{}).m||'', l=EMB_MOT[m], x=mo[l]||(mo[l]={n:0,i:0,a:0,g:0}); x.n++; x.a+=r.age; if(r.age>=3) x.g++; if(r.imp!=null) x.i+=r.imp;
+  pe.forEach(function(r){ var l=r.mot.t, x=mo[l]||(mo[l]={n:0,i:0,a:0,g:0,c:r.mot.c}); x.n++; x.a+=r.age; if(r.age>=3) x.g++; if(r.imp!=null) x.i+=r.imp;
     var k=r.age<=1?'0-1 días':r.age<=3?'2-3 días':r.age<=7?'4-7 días':r.age<=15?'8-15 días':'16+ días'; an[k].n++; if(r.imp!=null) an[k].i+=r.imp; });
   var mk=Object.keys(mo).sort(function(a,b){return mo[b].n-mo[a].n;}), mc=[C.gy,C.rd,C.or,C.am,C.bl,C.pu];
-  dvChart('ed-mot',{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k].n;}),backgroundColor:mk.map(function(k,i){return k===EMB_MOT['']?C.gy:mc[(i+1)%mc.length];}),borderWidth:0}]},options:{plugins:{legend:LR}}},[_dvPie()]);
+  dvChart('ed-mot',{type:'doughnut',data:{labels:mk,datasets:[{data:mk.map(function(k){return mo[k].n;}),backgroundColor:mk.map(function(k,i){return EMB_MCOL[mo[k].c]||mc[(i+1)%mc.length];}),borderWidth:0}]},options:{plugins:{legend:LR}}},[_dvPie()]);
   var ak=Object.keys(an);
   dvChart('ed-ant',{type:'bar',data:{labels:ak,datasets:[{data:ak.map(function(k){return an[k].n;}),backgroundColor:[C.ok,C.ok,C.am,C.or,C.rd],borderRadius:3}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{font:{size:11}}},x:{ticks:{font:{size:11}}}},layout:{padding:{top:20}}}},[_dvBar()]);
   var dd={}, L=EMB.log||{}; Object.keys(L).forEach(function(k){ var l=L[k]; if(!l.fd||l.fd<d1||l.fd>d2||(sel&&sel.value&&l.canal!==sel.value)) return; var o=dd[l.fd]||(dd[l.fd]={e:0,r:0}); if(l.b==='ENT') o.e+=l.costo; else if(l.b!=='ANU'&&l.b!=='REC') o.r+=l.costo; });
@@ -9178,7 +9359,7 @@ function embDash(){
   dvChart('ed-desp',{type:'bar',data:{labels:fk.map(function(d){return d.slice(8,10)+'/'+d.slice(5,7);}),datasets:[{label:'Entregado',data:fk.map(function(d){return Math.round(dd[d].e);}),backgroundColor:C.ok,stack:'s',noLbl:true},{label:'En ruta / otros',data:fk.map(function(d){return Math.round(dd[d].r);}),backgroundColor:C.bl,stack:'s',noLbl:true}]},
     options:{plugins:{legend:LG},scales:{x:{stacked:true,ticks:{font:{size:11}}},y:{stacked:true,beginAtZero:true,ticks:{font:{size:11},callback:function(v){return 'S/'+_dvN(v);}}}}}},[]);
   // ---- tablas resumen (acompañan a los gráficos) ----
-  var TOT='background:#f1f5f9;font-weight:700;', RT='text-align:right;', mut='<span style="color:#cbd5e1;">—</span>', sv=function(v){return v>0?_embS(v):mut;};
+  var TOT='background:#f1f5f9;font-weight:700;', RT='text-align:right;', mut='<span style="color:#cbd5e1;">—</span>', sv=function(v){return v>0?_embM(v):mut;};
   if(T1){ var iT=0; ob.forEach(function(b){iT+=(impB[b]||0);});
     T1.innerHTML=ob.map(function(b){ return '<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+G[b]+';margin-right:7px;"></span>'+EMB_B[b]+'</td><td style="'+RT+'"><b>'+tot[b]+'</b></td><td style="'+RT+'">'+Math.round(tot[b]/n*100)+'%</td><td style="'+RT+'">'+sv(impB[b])+'</td></tr>'; }).join('')+
       '<tr style="'+TOT+'"><td>TOTAL</td><td style="'+RT+'"><b>'+n+'</b></td><td style="'+RT+'">100%</td><td style="'+RT+'">'+sv(iT)+'</td></tr>'; }
@@ -9485,7 +9666,7 @@ function valOnOpen(){ valRender(); }
 // Salida: Excel SIG con el formato de "IMPORTE DE PEDIDO BACKUS" (DOC BK, CODIGO BACKUS, vendedor 43772228).
 // Códigos Bees→SIG: tabla base embebida + mapeos que agregues (se comparten en pre_estado.json).
 // ===================================================
-var VAL_BEES_BASE={"M0000001":["11000639","AIRPODS (4TA GEN) USB-C APPLE"],"B0000157":["10000781","BATIDORA ELECTRICA DOU DOU MM-133"],"B0000074":["15000121","CAJA CHINA MEAT MASTER SP + PARRILLA DE "],"B0000009":["13000005","DETECTOR DE BILLETES OPALUX"],"32000308":["32000308","Dron E99pro"],"15000148":["15000148","Estante De 4 Pisos Con Puerta"],"B0000183":["35000025","Juego De Ollas De Metal + Set de Utensil"],"12000288":["12000288","Mesa Plegable de 95*55cm"],"B0000185":["19001124","Mini Taladro Portátil Con Accesorios 46 "],"B0000227":["15000145","Set de Ollas de 12 pzas marca Facusa Inc"],"B0000167":["12000242","Silla Gamer Progear Zone con inclinación"],"B0000223":["10000866","TELEVISOR CAIXUN 43\" SMART TV FHD GOOGLE"],"14000035":["14000035","Tina Masajeadora de Pies"],"B0000111":["17000080","VALES DE CONSUMO FALABELLA S/200"],"B0000290":["15000154","Wok Record Nro26 cm Con Tapa"],"B0000014":["10000793","Alexa Echo Dot 5ta Gen Negro"],"10000714":["10000714","Cámara Interior De Seguridad 360° Tp-Lin"],"35000049":["35000049","Balanza Comercial Digital Ventus B-40 + "],"35000050":["35000050","Olla A Presión Facusa 7 Litros + Regalo "],"12000340":["12000340","Frazada De 2plazas De Piel De Durazno Co"],"15000159":["15000159","Tetera De 2.5 Litros De Metal"],"15000161":["15000161","Set De Jarra Con Vasos De Vidrios 6pzs"],"B0000266":["10000918","Refrigeradora Miray RM-184H Euro Frío 17"],"10000148":["10000148","Congeladora Indurama 198lt Blanco"],"B0000256":["10000913","Cocina A Gas Miray 4 Hornillas A Glp"],"B0000270":["10000940","Freidora Oster De 7.5 Litros Digital "],"B0000267":["10000885","Hervidor Electrico 2.3 Litros Dou Dou Co"],"B0000173":["10000792","HORNO ELECTRICO DOU DOU COD. MY-001"],"B0000154":["10000715","Horno Microondas Miray HMM-205N 20L "],"B0000269":["10000943","Lavadora Indurama Lri-16dgr 16 Kilos"],"10000941":["10000941","Olla Freidora Miray 5.5 Litros"],"10000948":["10000948","Plancha A Vapor Base Cerámica Imaco"],"10000501":["10000501","SANDWICHERA GRILL MERTEC MT-020S"],"B0000291":["11011467","Smartwatch T900 Pro Max Evo Serie10"],"10000955":["10000955","Lavadora Miray 10 Kilos Silver"],"10000958":["10000958","Aspiradora Robot"],"10000956":["10000956","Arrocera Dou Dou Blanca 3litros"],"B0000138":["10000772","Licuadora Gdy 300w Vaso De Vidrio Pequeñ"],"B0000224":["12000305","BANCO PILSEN"],"12000230":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"12000228":["12000228","MESA CUADRADA KINA LOGO PILSEN"],"12000231":["12000231","SILLAS ZEN - LOGO CRISTAL"],"MUNDIAL05":["16000063","Maletín Deportivo"],"MUNDIAL06":["35000041","Maletín Deportivo + Pelota Del Mundial 2"],"MUNDIAL04":["10000933","Parlante Bluethoo En Forma De Pelota"],"MUNDIAL07":["32000306","Pelota Del Mundial 2026 Desinflada"],"MUNDIAL01":["35000045","Pelota Del Mundial 2026 Desinflada + Cha"],"MUNDIAL03":["35000040","Proyector Portátil + Pelota Del Mundial "],"MUNDIAL02":["35000044","Televisor Caixun 32\" Smart Tv Hd Google "],"PACK06":["35000014","PACK CUSQUEÑA: 10 VASOS + 3 DESTAPADORES"],"B0000077":["15000089 (2 UNIDADES)","PACK 2 MANDILES (PILSEN O CRISTAL A ELEC"],"B0000079":["15000090 (6 UNIDADES)","VASO CERVECERO CRISTAL X6 UNIDADES"],"COMBO30":["35000017","6 VASOS + MANDIL CRISTAL"],"B0000222":["10000865","TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE "],"B0000193":["11011315","Celular Motorola Moto G06 4gb 128gb"],"B0000212":["10000847","Máquina De Coser Con Mesita"],"10000504":["10000504","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"B0000276":["10000920","Parlante Recargable 40cm de alto con Luc"],"B0000127":["12000232","ZAPATERA DE 9 PISOS"],"10000961":["10000961","Congelador Horizontal Igloo 99 Litros"],"CLUB000078":["10000899","PARLANTE BLUETOOTH AIWA AWS544BT 110W.RM"],"CLUB000028":["11000888","CELULAR APPLE IPHONE 17 6.3\" 8GB 256GB N"],"CLUB000077":["11000547","CELULAR SAMSUNG GALAXY S24 5G 6.2\" 8GB 2"],"CLUB000030":["10000515","COCINA INDURAMA MONTECARLO ZAFIRO CROMA "],"CLUB000080":["10000582","COCINA MABE 6H CMP7630FX0 GN"],"CLUB000055":["12000298","COLCHON PARAISO ROYAL PRINCE 2.0 PL+2ALM"],"CLUB000082":["10000956","ARROCERA DOU DOU BLANCA 3LITROS MI-029"],"CLUB000001":["10000792","HORNO ELECTRICO DOU DOU MY-001"],"CLUB000002":["13000005","DETECTOR DE BILLETES OPALUX"],"CLUB000051":["10000504","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"CLUB000005":["10000696","BALANZA COMERCIAL DIGITAL VENTUS B-40"],"CLUB000016":["10000304","CONSOLA NINTENDO SWITCH OLED 64GB BLANCO"],"CLUB000039":["11000927","LAPTOP LENOVO 15.6\" 82XM00S6LM AMD R7-58"],"CLUB000043":["11001146","LAPTOP ASUS X1504VA-BQ4454W VIVOBOOK15 C"],"CLUB000068":["10000497","LAVADORA SAMSUNG 19KG WA19CG6441BDPE GRI"],"CLUB000069":["10000471","LAVASECA LG 11KG/7KG WD11WVC3S6 BLANCA"],"CLUB000006":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"CLUB000007":["12000231","SILLAS ZEN - LOGO CRISTAL"],"CLUB000008":["35000017","6 VASOS + MANDIL CRISTAL"],"CLUB000009":["15000089 (2 UNIDADES)","PACK 2 MANDILES CRISTAL"],"CLUB000010":["15000090 (6 UNIDADES)","VASO CERVECERO CRISTAL X6 UNIDADES"],"CLUB000045":["35000048","PACK 1 MESA CRISTAL + 2 SILLAS CRISTAL"],"CLUB000046":["35000047","PACK 1 MESA PILSEN + 2 BANCOS PILSEN"],"CLUB000064":["10000470","REFRIGERADORA SAMSUNG SILVER 384LT RT38D"],"CLUB000047":["33001081","SCOOTER ELECTRICO XIAOMI 6 LITE"],"CLUB000019":["11000814","TABLET LENOVO TAB ONE 8.7\" 4GB 128GB FOL"],"CLUB000022":["10000733","TELEVISOR SAMSUNG UN75U8000FGXPE 75\" UHD"],"CLUB000059":["10000843","TELEVISOR SAMSUNG QLED QN65Q6FAAGXPE 65\""],"CLUB000082-PROV":["10000956","ARROCERA DOU DOU BLANCA 3LITROS MI-029"],"CLUB000001-PROV":["10000792","HORNO ELECTRICO DOU DOU MY-001"],"CLUB000002-PROV":["13000005","DETECTOR DE BILLETES OPALUX"],"CLUB000051-PROV":["0","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"CLUB000005-PROV":["10000696","BALANZA COMERCIAL DIGITAL VENTUS B-40"],"CLUB000006-PROV":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"CLUB000007-PROV":["12000231","SILLAS ZEN - LOGO CRISTAL"],"CLUB000008-PROV":["35000017","6 VASOS + MANDIL CRISTAL"],"CLUB000009-PROV":["15000089 (2 UNIDADES)","PACK 2 MANDILES CRISTAL"],"CLUB000010-PROV":["15000090 (6unidades)","VASO CERVECERO CRISTAL X6 UNIDADES"],"VD000001":["0","Secadora De Cabello Miray [Unidad]"],"VD000003":["0","Combo: 01  Unid Cubrecama Azul 2 Plazas "],"VD000004":["0","Edredón 2 Plazas [Unidad]"],"VD000059":["0","Full Day Lunahuana [Unidad]"],"VD000058":["0","Ica 2 Dias 1 Noche Hotel + City Tour + T"],"VD000010":["10000680","Hervidor Practika Napoles Blacká2.5l [Un"],"VD000011":["10000501","Sandwichera Grill Mertec [Unidad]"],"10000601":["10000601","Plancha Practika A Vapor Mod. Nova [Unid"],"VD000009":["10000679","Cafetera 1.25lt 12 Tazas Negra Daewoo [U"],"VD000014":["0","Batidora De Mano Miray [Unidad]"],"VD000039":["0","Aspiradora Miray [Unidad]"],"VD000012":["0","Olla Arrocera Blackline 2.8l [Unidad]"],"VD000007":["0","Extractor Mod Liquafruits Pro Compact [U"],"10000182":["0","Licuadora Oster 550w Botones Rojo [Unida"],"VD000041":["0","Horno Microondas Miray 20L [Unidad]"],"VD000013":["0","Frigobar Bord 50lt Silver [Unidad]"],"10000447":["0","Refrigeradora Electrolux 2 Puertas 138lt"],"VD000054":["0","Sartén Frying Pan Tau. Best Moments 26(K"],"VD000048":["0","Juego De Ollas 11 Piezas Acero Inoxidabl"],"VD000018":["0","Caja De Herramientas Mertec [Unidad]"],"VD000038":["0","Estante Plástico 4 Niveles 128x60x30cm ["],"VD000047":["0","Lámpara De Emergencia Slim Opalux 9101-2"],"VD000055":["0","Mini Cilindro Ahumador Mr. Grill Fierro "],"12000011":["0","Colchon Paraiso Premium Medallon Ergosof"],"VD000050":["0","Exprimidor Mod Citrus Force Practika [Un"],"VD000006":["0","Horno Electrico Miray [Unidad]"],"VD000005":["10000504","Freidora De Aire Digital Mertec 6.5 Litr"],"VD000044":["15000106","Set De Utensilios Facusa X 6 Piezas Mang"],"VD000049":["0","Juego De Olla Facusa Valencia X 10 Pieza"],"VD000017":["13000005","Detector De Billetes Opalux [Unidad]"],"VD000019":["10000696","Balanza Comercial Digital Ventus [Unidad"],"10000499":["10000499","Parlante Bluetooth Jbl Flip6 30w [Unidad"],"VD000021":["10000502","Audifonos Bluetooth Mertec [Unidad]"],"VD000022":["0","Barra De Sonido Mertec [Unidad]"],"VD000061":["15000121","Caja China Meat Master Sp + Parrilla De "],"VD000066":["0","Televisor Innos 40\" S4001ku[Unidad]"],"VD000067":["0","Televisor Innos 32inch Smart Tv A14 S320"],"VD000070":["0","Audifonos Panasonic True Wireless Rz-B11"],"VD000071":["0","Tablet Tcl Tab 10l Gen 3 Lte 64gb 4gb Ra"],"VD000072":["0","Wok Record 30 Cm Con Tapa[Unidad]"],"VD000075":["0","Plancha De Cabello[Unidad]"],"VD000076":["35000018","Combo Colchón Inflable 2 Plazas + 2 Almo"],"12000012":["12000012","Set Cama Paraiso Su Majestad Chocolate 2"],"12000009":["12000009","Colchon Paraiso Premium Medallon Ergosof"],"12000015":["12000015","Colchon Paraiso Pocket Star King+2alm+1p"],"VD000077":["15000126","Olla A Presión Facusa 7 Litros[Unidad]"],"VD000078":["15000125","Set De Cubiertos Facusa X 16 Piezas[Unid"],"VD000079":["10000745","Frigobar Indurama Ri-101 Blanco 90litros"],"VD000080":["10000742","Licuadora Practika 1.5lt Blw-600 Mod. Pe"],"VD000081":["11000763","Celular Zte Blade A35 6.75\" 2gb 64gb[Uni"],"VD000036":["15000100","Set X5 Bowls Acero Inoxidable [Unidad]"],"MUNDIAL08":["35000035","Pack Mesa Cristal 1pz + Silla Cristal 4p"]};
+var VAL_BEES_BASE={"M0000001":["11000639","AIRPODS (4TA GEN) USB-C APPLE"],"B0000157":["10000781","BATIDORA ELECTRICA DOU DOU MM-133"],"B0000074":["15000121","CAJA CHINA MEAT MASTER SP + PARRILLA DE "],"B0000009":["13000005","DETECTOR DE BILLETES OPALUX"],"32000308":["32000308","Dron E99pro"],"15000148":["15000148","Estante De 4 Pisos Con Puerta"],"B0000183":["35000025","Juego De Ollas De Metal + Set de Utensil"],"12000288":["12000288","Mesa Plegable de 95*55cm"],"B0000185":["19001124","Mini Taladro Portátil Con Accesorios 46 "],"B0000227":["15000145","Set de Ollas de 12 pzas marca Facusa Inc"],"B0000167":["12000242","Silla Gamer Progear Zone con inclinación"],"B0000223":["10000866","TELEVISOR CAIXUN 43\" SMART TV FHD GOOGLE"],"14000035":["14000035","Tina Masajeadora de Pies"],"B0000111":["17000080","VALES DE CONSUMO FALABELLA S/200"],"B0000290":["15000154","Wok Record Nro26 cm Con Tapa"],"B0000014":["10000793","Alexa Echo Dot 5ta Gen Negro"],"10000714":["10000714","Cámara Interior De Seguridad 360° Tp-Lin"],"35000049":["35000049","Balanza Comercial Digital Ventus B-40 + "],"35000050":["35000050","Olla A Presión Facusa 7 Litros + Regalo "],"12000340":["12000340","Frazada De 2plazas De Piel De Durazno Co"],"15000159":["15000159","Tetera De 2.5 Litros De Metal"],"15000161":["15000161","Set De Jarra Con Vasos De Vidrios 6pzs"],"B0000266":["10000918","Refrigeradora Miray RM-184H Euro Frío 17"],"10000148":["10000148","Congeladora Indurama 198lt Blanco"],"B0000256":["10000913","Cocina A Gas Miray 4 Hornillas A Glp"],"B0000270":["10000940","Freidora Oster De 7.5 Litros Digital "],"B0000267":["10000885","Hervidor Electrico 2.3 Litros Dou Dou Co"],"B0000173":["10000792","HORNO ELECTRICO DOU DOU COD. MY-001"],"B0000154":["10000715","Horno Microondas Miray HMM-205N 20L "],"B0000269":["10000943","Lavadora Indurama Lri-16dgr 16 Kilos"],"10000941":["10000941","Olla Freidora Miray 5.5 Litros"],"10000948":["10000948","Plancha A Vapor Base Cerámica Imaco"],"10000501":["10000501","SANDWICHERA GRILL MERTEC MT-020S"],"B0000291":["11011467","Smartwatch T900 Pro Max Evo Serie10"],"10000955":["10000955","Lavadora Miray 10 Kilos Silver"],"10000958":["10000958","Aspiradora Robot"],"10000956":["10000956","Arrocera Dou Dou Blanca 3litros"],"B0000138":["10000772","Licuadora Gdy 300w Vaso De Vidrio Pequeñ"],"B0000224":["12000305","BANCO PILSEN"],"12000230":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"12000228":["12000228","MESA CUADRADA KINA LOGO PILSEN"],"12000231":["12000231","SILLAS ZEN - LOGO CRISTAL"],"MUNDIAL05":["16000063","Maletín Deportivo"],"MUNDIAL06":["35000041","Maletín Deportivo + Pelota Del Mundial 2"],"MUNDIAL04":["10000933","Parlante Bluethoo En Forma De Pelota"],"MUNDIAL07":["32000306","Pelota Del Mundial 2026 Desinflada"],"MUNDIAL01":["35000045","Pelota Del Mundial 2026 Desinflada + Cha"],"MUNDIAL03":["35000040","Proyector Portátil + Pelota Del Mundial "],"MUNDIAL02":["35000044","Televisor Caixun 32\" Smart Tv Hd Google "],"PACK06":["35000014","PACK CUSQUEÑA: 10 VASOS + 3 DESTAPADORES"],"B0000077":["15000089 (2 UNIDADES)","PACK 2 MANDILES (PILSEN O CRISTAL A ELEC"],"B0000079":["15000090 (6 UNIDADES)","VASO CERVECERO CRISTAL X6 UNIDADES"],"COMBO30":["35000017","6 VASOS + MANDIL CRISTAL"],"B0000222":["10000865","TELEVISOR CAIXUN 32\" SMART TV HD GOOGLE "],"B0000193":["11011315","Celular Motorola Moto G06 4gb 128gb"],"B0000212":["10000847","Máquina De Coser Con Mesita"],"10000504":["10000504","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"B0000276":["10000920","Parlante Recargable 40cm de alto con Luc"],"B0000127":["12000232","ZAPATERA DE 9 PISOS"],"10000961":["10000961","Congelador Horizontal Igloo 99 Litros"],"CLUB000078":["10000899","PARLANTE BLUETOOTH AIWA AWS544BT 110W.RM"],"CLUB000028":["11000888","CELULAR APPLE IPHONE 17 6.3\" 8GB 256GB N"],"CLUB000077":["11000547","CELULAR SAMSUNG GALAXY S24 5G 6.2\" 8GB 2"],"CLUB000030":["10000515","COCINA INDURAMA MONTECARLO ZAFIRO CROMA "],"CLUB000080":["10000658","COCINA MABE 6H CMP3020FN1 GN"],"CLUB000055":["12000298","COLCHON PARAISO ROYAL PRINCE 2.0 PL+2ALM"],"CLUB000082":["10000956","ARROCERA DOU DOU BLANCA 3LITROS MI-029"],"CLUB000001":["10000792","HORNO ELECTRICO DOU DOU MY-001"],"CLUB000002":["13000005","DETECTOR DE BILLETES OPALUX"],"CLUB000051":["10000504","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"CLUB000005":["10000696","BALANZA COMERCIAL DIGITAL VENTUS B-40"],"CLUB000016":["10000304","CONSOLA NINTENDO SWITCH OLED 64GB BLANCO"],"CLUB000039":["11000927","LAPTOP LENOVO 15.6\" 82XM00S6LM AMD R7-58"],"CLUB000043":["11001146","LAPTOP ASUS X1504VA-BQ4454W VIVOBOOK15 C"],"CLUB000068":["10000497","LAVADORA SAMSUNG 19KG WA19CG6441BDPE GRI"],"CLUB000069":["10000471","LAVASECA LG 11KG/7KG WD11WVC3S6 BLANCA"],"CLUB000006":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"CLUB000007":["12000231","SILLAS ZEN - LOGO CRISTAL"],"CLUB000008":["35000017","6 VASOS + MANDIL CRISTAL"],"CLUB000009":["15000089 (2 UNIDADES)","PACK 2 MANDILES CRISTAL"],"CLUB000010":["15000090 (6 UNIDADES)","VASO CERVECERO CRISTAL X6 UNIDADES"],"CLUB000045":["35000048","PACK 1 MESA CRISTAL + 2 SILLAS CRISTAL"],"CLUB000046":["35000047","PACK 1 MESA PILSEN + 2 BANCOS PILSEN"],"CLUB000064":["10000470","REFRIGERADORA SAMSUNG SILVER 384LT RT38D"],"CLUB000047":["33001081","SCOOTER ELECTRICO XIAOMI 6 LITE"],"CLUB000019":["11000814","TABLET LENOVO TAB ONE 8.7\" 4GB 128GB FOL"],"CLUB000022":["10000733","TELEVISOR SAMSUNG UN75U8000FGXPE 75\" UHD"],"CLUB000059":["10000843","TELEVISOR SAMSUNG QLED QN65Q6FAAGXPE 65\""],"CLUB000082-PROV":["10000956","ARROCERA DOU DOU BLANCA 3LITROS MI-029"],"CLUB000001-PROV":["10000792","HORNO ELECTRICO DOU DOU MY-001"],"CLUB000002-PROV":["13000005","DETECTOR DE BILLETES OPALUX"],"CLUB000051-PROV":["0","FREIDORA DE AIRE DIGITAL MERTEC 6.5 LITR"],"CLUB000005-PROV":["10000696","BALANZA COMERCIAL DIGITAL VENTUS B-40"],"CLUB000006-PROV":["12000230","MESA CUADRADA KINA LOGO CRISTAL"],"CLUB000007-PROV":["12000231","SILLAS ZEN - LOGO CRISTAL"],"CLUB000008-PROV":["35000017","6 VASOS + MANDIL CRISTAL"],"CLUB000009-PROV":["15000089 (2 UNIDADES)","PACK 2 MANDILES CRISTAL"],"CLUB000010-PROV":["15000090 (6unidades)","VASO CERVECERO CRISTAL X6 UNIDADES"],"VD000001":["0","Secadora De Cabello Miray [Unidad]"],"VD000003":["0","Combo: 01  Unid Cubrecama Azul 2 Plazas "],"VD000004":["0","Edredón 2 Plazas [Unidad]"],"VD000059":["0","Full Day Lunahuana [Unidad]"],"VD000058":["0","Ica 2 Dias 1 Noche Hotel + City Tour + T"],"VD000010":["10000680","Hervidor Practika Napoles Blacká2.5l [Un"],"VD000011":["10000501","Sandwichera Grill Mertec [Unidad]"],"10000601":["10000601","Plancha Practika A Vapor Mod. Nova [Unid"],"VD000009":["10000679","Cafetera 1.25lt 12 Tazas Negra Daewoo [U"],"VD000014":["0","Batidora De Mano Miray [Unidad]"],"VD000039":["0","Aspiradora Miray [Unidad]"],"VD000012":["0","Olla Arrocera Blackline 2.8l [Unidad]"],"VD000007":["0","Extractor Mod Liquafruits Pro Compact [U"],"10000182":["0","Licuadora Oster 550w Botones Rojo [Unida"],"VD000041":["0","Horno Microondas Miray 20L [Unidad]"],"VD000013":["0","Frigobar Bord 50lt Silver [Unidad]"],"10000447":["0","Refrigeradora Electrolux 2 Puertas 138lt"],"VD000054":["0","Sartén Frying Pan Tau. Best Moments 26(K"],"VD000048":["0","Juego De Ollas 11 Piezas Acero Inoxidabl"],"VD000018":["0","Caja De Herramientas Mertec [Unidad]"],"VD000038":["0","Estante Plástico 4 Niveles 128x60x30cm ["],"VD000047":["0","Lámpara De Emergencia Slim Opalux 9101-2"],"VD000055":["0","Mini Cilindro Ahumador Mr. Grill Fierro "],"12000011":["0","Colchon Paraiso Premium Medallon Ergosof"],"VD000050":["0","Exprimidor Mod Citrus Force Practika [Un"],"VD000006":["0","Horno Electrico Miray [Unidad]"],"VD000005":["10000504","Freidora De Aire Digital Mertec 6.5 Litr"],"VD000044":["15000106","Set De Utensilios Facusa X 6 Piezas Mang"],"VD000049":["0","Juego De Olla Facusa Valencia X 10 Pieza"],"VD000017":["13000005","Detector De Billetes Opalux [Unidad]"],"VD000019":["10000696","Balanza Comercial Digital Ventus [Unidad"],"10000499":["10000499","Parlante Bluetooth Jbl Flip6 30w [Unidad"],"VD000021":["10000502","Audifonos Bluetooth Mertec [Unidad]"],"VD000022":["0","Barra De Sonido Mertec [Unidad]"],"VD000061":["15000121","Caja China Meat Master Sp + Parrilla De "],"VD000066":["0","Televisor Innos 40\" S4001ku[Unidad]"],"VD000067":["0","Televisor Innos 32inch Smart Tv A14 S320"],"VD000070":["0","Audifonos Panasonic True Wireless Rz-B11"],"VD000071":["0","Tablet Tcl Tab 10l Gen 3 Lte 64gb 4gb Ra"],"VD000072":["0","Wok Record 30 Cm Con Tapa[Unidad]"],"VD000075":["0","Plancha De Cabello[Unidad]"],"VD000076":["35000018","Combo Colchón Inflable 2 Plazas + 2 Almo"],"12000012":["12000012","Set Cama Paraiso Su Majestad Chocolate 2"],"12000009":["12000009","Colchon Paraiso Premium Medallon Ergosof"],"12000015":["12000015","Colchon Paraiso Pocket Star King+2alm+1p"],"VD000077":["15000126","Olla A Presión Facusa 7 Litros[Unidad]"],"VD000078":["15000125","Set De Cubiertos Facusa X 16 Piezas[Unid"],"VD000079":["10000745","Frigobar Indurama Ri-101 Blanco 90litros"],"VD000080":["10000742","Licuadora Practika 1.5lt Blw-600 Mod. Pe"],"VD000081":["11000763","Celular Zte Blade A35 6.75\" 2gb 64gb[Uni"],"VD000036":["15000100","Set X5 Bowls Acero Inoxidable [Unidad]"],"MUNDIAL08":["35000035","Pack Mesa Cristal 1pz + Silla Cristal 4p"],"10000739":["10000739","Televisor Samsung Smart Tv 32\" Led Hd"],"35000056":["35000056","Pack 1 Mesa + Sillas Pilsen 4pzas"],"35000055":["35000055","Pelota del Mundial 2026 + Chaleco Crista"],"10001221":["10001221","Extractor De Jugo Miray"],"B0000307":["10001224","Parlante Inalámbrico Jbl Bluetooth Go 5 "],"35000057":["35000057","Pack 1 Mesa Pilsen + Sillas Pilsen 2pzas"],"35000048":["35000048","Pack 1 Mesa Cristal + Sillas Cristal 2pz"],"35000067":["35000067","Juego de Ollas Acero Inoxidable Incluye "],"35000061":["35000061","Olla A Presión Facusa 7 Litros + Regalo "],"10000981":["10000981","Freidora De Aire Taurus 5 Litros"],"10000980":["10000980","Olla Arrocera Thomas Th-36p 2.2 L"],"B0000317":["10001237","Máquina De Algodón De Azúcar"],"B0000268":["10000915","LICUADORA RAF 1000W CON VASO DE VIDRIO C"],"12000227":["12000229","Silla Zen - Logo Pilsen"],"B0000042":["10000601","Plancha Practika A Vapor Mod. Nova"],"19001161":["19001161","Caja De Seguridad Para Dinero Con Clave "],"11011958":["11011958","Smartwacht Colores Sutidos"],"B0000332":["11001270","Celular Poco C71 4gb 128gb Con Cargador "],"B0000334":["10001243","Cocina A Gas Miray 4 Hornillas A Glp"],"B0000345":["10001248","Combo De Electrodomésticos Practika"],"B0000346":["10001249","Freidora de Aire Taurus 10.5l"],"B0000347":["15000170","Set De Tabla De Picar De Madera 3pzs"],"B0000348":["15000171","Juego De Sartén Facusa Coquette 18/20/24"],"B0000350":["15000172","Asadera De Acero Para Hornear Pavo De Ha"],"B0000250":["10000891","Televisor Caixun 55” Smart Tv Uhd"],"11011541":["11011541","Consola De Video Juego"],"B0000116":["17000019","Vale De Pavo De San Fernando De 6 Kilos"],"B0000166":["32000296","Cuatrimoto A Batería Con Luces Baby King"],"B0000121":["35000020","Combo Árbol De Navidad 210cm con Esfera "],"CLUB000081":["11000407","CONSOLA PLAYSTATION 5 SLIM EDICION ESTAN"],"CLUB000057":["11000866","COMPUTADORA ALL IN ONE ASUS 23.8\" A3402W"],"CLUB000060":["10000932","TELEVISOR HYUNDAI QLED HYLED8502QW4KM 85"],"CLUB000066":["10000261","REFRIGERADORA LG 314 LT GT31WPP"],"CLUB000088":["12000228","MESA CUADRADA KINA LOGO PILSEN"],"CLUB000089":["12000229","SILLAS ZEN - LOGO PILSEN"],"CLUB000088-PROV":["12000228","MESA CUADRADA KINA LOGO PILSEN"],"CLUB000089-PROV":["12000229","SILLAS ZEN - LOGO PILSEN"]};
 VAL.incNC=true; // todos los pedidos del reporte (contactados o no) se cargan al SIG
 function valMapaBees(cod){
   var c=String(cod==null?'':cod).trim().toUpperCase();
@@ -9498,12 +9679,13 @@ function valEsBees(arr){
   return h.indexOf('F CANJE')>=0&&h.indexOf('COD DE CLIENTE')>=0;
 }
 function valBeesLinea(rec,item,idx,fileName,hist){
-  var skuIn=String(item.cod==null?'':item.cod).trim().toUpperCase(), sig=valMapaBees(skuIn);
+  var skuIn=String(item.cod==null?'':item.cod).trim().toUpperCase(), sig=valMapaBees(skuIn), packMult=1;
+  (function(){ var pm=String(sig).match(/^(\d{8})\s*(?:\(\s*X?\s*(\d+)\s*UNIDADES?\s*\)|X\s*(\d+)\s*UNIDADES?)\s*$/i); if(pm){ sig=pm[1]; packMult=parseInt(pm[2]||pm[3],10)||1; } })();
   var dni=String(rec.ruc==null?'':rec.ruc).replace(/\.0$/,'').replace(/\s/g,''), padded=false;
   if(/^\d{7}$/.test(dni)){ dni='0'+dni; padded=true; }
   var dniOk=/^\d{8}$/.test(dni)||/^\d{11}$/.test(dni);
   var fv=valFecha(rec.fCanje)||valFecha(new Date()), em=valFecha(rec.fContacto)||fv;
-  var cant=parseFloat(item.cant)||0, precio=parseFloat(item.precio)||0, ped=String(rec.pedido==null?'':rec.pedido).replace(/\.0$/,'').trim();
+  var cant=(parseFloat(item.cant)||0)*packMult, precio=Math.round((parseFloat(item.precio)||0)/packMult*10000)/10000, ped=String(rec.pedido==null?'':rec.pedido).replace(/\.0$/,'').trim();
   var cliente=String(rec.cliente||'').replace(/\s+/g,' ').trim();
   var fFmt=fv.replace(/\//g,'-').replace(/(\d{2})-(\d{2})-(\d{4})/,'$3$2$1').replace(/-/g,'');
   var cu=sig&&ped?(sig+'|'+ped+'|'+fFmt):'';
@@ -9517,14 +9699,15 @@ function valBeesLinea(rec,item,idx,fileName,hist){
   else if(!contactado&&!VAL.incNC){ st='PEND'; skip=true; motivo='Pendiente: '+(rec.estLog||'sin estado')+' / '+(rec.obs||'sin validar')+' — no se carga al SIG todavía'; }
   else {
     if(sig!==skuIn) parts.push('Código Bees '+skuIn+' → SIG '+sig); else parts.push('Código ya SIG');
+    if(packMult>1) parts.push('Pack ×'+packMult+': '+(parseFloat(item.cant)||0)+' pack = '+cant+' u. del SIG (importe igual)');
     if(padded) parts.push('DNI de 7 dígitos → se completó con 0');
     var sum=0; (rec.items||[]).forEach(function(it){sum+=(parseFloat(it.precio)||0)*(parseFloat(it.cant)||0);});
     var tot=parseFloat(rec.total)||0, warn=false;
     if(tot>0&&Math.abs(tot-sum)>0.5){ warn=true; parts.push('⚠ Total del pedido S/'+tot+' ≠ suma de líneas S/'+sum); }
-    st=warn?'WARN':((sig!==skuIn||padded)?'FIX':'OK'); motivo=parts.join(' | ');
+    st=warn?'WARN':((sig!==skuIn||padded||packMult>1)?'FIX':'OK'); motivo=parts.join(' | ');
   }
   var isDup=false;
-  if(cu&&!skip){ var ex=hist.find(function(x){return x.cu===cu;}); if(ex){ isDup=true; if(st!=='ERR'){ st='WARN'; motivo='⚠ DUPLICADO — ya validado'+(ex.archivo?' en '+ex.archivo:''); } } }
+  if(cu&&!skip){ var ex=hist.find(function(x){return x.cu===cu;}); if(ex){ isDup=true; if(st!=='ERR'){ st='WARN'; motivo='⚠ DUPLICADO — ya validado'+(ex.archivo?' en '+ex.archivo:'')+' · si fue un error: 🗑 Borrar lo cargado…'; } } }
   return {idx:idx,fileName:fileName,ch:'BEES',estado:st,skip:skip,isDup:isDup,faltaMapa:faltaMapa,cliente:cliente,raw_dni:dni,raw_addr:rec.dir||'',norm_addr:'',issues:[],
     raw_sku:sig||skuIn,raw_sku_orig:skuIn,skuOk:!!sig,isReacond:false,producto:String(item.prod||'').slice(0,60),asesor:'',canal:'MYBEES',cantidad:cant,
     fechaEntrega:em,emision:em,nroPedido:ped,nroContrato:'',fechaVenta:fv,esProvisional:false,provCorrelativo:'',importe:Math.round(precio*cant*100)/100,credito:Math.round(precio*cant*100)/100,precio:precio,
