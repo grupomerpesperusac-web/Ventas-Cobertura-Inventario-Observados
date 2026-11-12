@@ -325,6 +325,8 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
   <button class="tab"     onclick="gTab('val');valOnOpen()"  id="t-val">✅ Validador IA</button>
   <button class="tab"     onclick="gTab('pre');preOnOpen()"  id="t-pre">⚡ Pre-Observados</button>
   <button class="tab"     onclick="gTab('emb');embOnOpen()"  id="t-emb">📦 Embudo Despacho</button>
+  <button class="tab"     onclick="gTab('est');epOnOpen()"  id="t-est">🔎 Estatus Pedidos</button>
+  <button class="tab"     onclick="gTab('ahp');apOnOpen()"  id="t-ahp">💰 Ahorros por Precio</button>
   <button class="tab"     onclick="gTab('compartir')"  id="t-compartir">🌐 Publicar / Ver</button>
 </div>
 <!-- ═══ TAB: CARGA ═══ -->
@@ -1721,6 +1723,89 @@ tr.pk-r-riesgo{background:#fffbeb;box-shadow:inset 4px 0 0 #d97706;}
     <tbody id="emb-pend"></tbody></table></div></div>
 
 
+</div>
+
+<div class="pane" id="pane-est">
+<div class="tip">
+  <b>🔎 Estatus de pedidos (Comercial y Compras):</b> consulta de <b>en qué estado está cada pedido</b>. El estatus que se muestra es siempre el del <b>reporte ESPE (SIG)</b>; si el pedido no figura en el ESPE, se usa el del <b>reporte de Tránsito</b> (Drive de logística).
+  Si tampoco está ahí, se muestra el de Gestión Confirmaciones solo como referencia. Busca por <b>N° de pedido, cliente, DNI/RUC, vendedor, distrito o producto/SKU</b>. Haz clic en un cuadro de color para filtrar por ese grupo de estatus.
+  <span style="color:#64748b;">Solo lee los archivos de Drive ya cargados (los mismos del Embudo); no cambia nada del SIG.</span>
+</div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+  <button class="btn btn-p" id="ep-btn" onclick="embActualizar()">☁️ Actualizar desde Drive</button>
+  <button class="btn btn-g" onclick="epExportar()">⬇ Excel (lo que ves)</button>
+  <span class="chip c-gris" id="ep-ver">Estatus v43</span>
+</div>
+<div id="ep-msg" style="font-size:11px;font-weight:700;margin-bottom:6px;"></div>
+<div id="ep-src" style="margin-bottom:6px;display:flex;gap:6px;flex-wrap:wrap;"></div>
+<div id="ep-cov" style="font-size:11px;color:#334155;margin-bottom:10px;"></div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+  <input class="si" id="ep-q" placeholder="🔍 Pedido, cliente, DNI/RUC, vendedor, distrito, producto o SKU…" style="width:340px;" oninput="epBuscar()">
+  <label style="font-size:11px;font-weight:700;color:var(--text2);">Fecha de venta:</label>
+  <input type="date" class="si" id="ep-d1" onchange="epRender(true)"> <span>→</span> <input type="date" class="si" id="ep-d2" onchange="epRender(true)">
+  <button class="btn btn-o" onclick="epRango(1)">Hoy</button><button class="btn btn-o" onclick="epRango(7)">7 días</button><button class="btn btn-o" onclick="epRango(15)">15 días</button><button class="btn btn-o" onclick="epRango(30)">30 días</button><button class="btn btn-o" onclick="epRango(0)">Todo</button>
+  <select class="sel" id="ep-canal" onchange="epRender(true)"><option value="">Todos los canales</option></select>
+  <select class="sel" id="ep-est" onchange="epRender(true)"><option value="">Todos los estatus</option></select>
+  <label style="font-size:11px;"><input type="checkbox" id="ep-dif" onchange="epRender(true)"> Solo donde Tránsito discrepa del ESPE</label>
+</div>
+<div class="krow" id="ep-kpis"></div>
+<div class="tbox"><div class="tbox-h"><h3>📋 Pedidos</h3><span class="pk-mini" id="ep-n"></span></div>
+  <div class="tw" style="max-height:620px;overflow:auto;"><table class="dt" style="font-size:10.5px;width:100%;"><thead><tr>
+    <th>F. venta</th><th>Canal</th><th>N° pedido</th><th>Cliente</th><th>Vendedor</th><th>Distrito</th><th>Estatus</th><th>Detalle del estatus</th><th style="text-align:right">Importe</th><th>Producto / SKU</th><th>Tránsito / guía</th><th>Confirmación</th>
+  </tr></thead><tbody id="ep-tb"></tbody></table></div>
+  <div id="ep-mas" style="padding:8px 12px;"></div></div>
+<div class="tbox"><div class="tbox-h"><h3>📊 Resumen por canal</h3><span class="pk-mini">Pedidos por grupo de estatus (con los filtros de arriba, sin el filtro de grupo)</span></div>
+  <div class="tw"><table class="dt" style="font-size:10.5px;width:100%;"><thead><tr><th>Canal</th><th style="text-align:right">Pedidos</th><th style="text-align:right">Entregado</th><th style="text-align:right">En tránsito /<br>programado</th><th style="text-align:right">En proceso</th><th style="text-align:right">Observado</th><th style="text-align:right">Rechazo</th><th style="text-align:right">Anulado</th></tr></thead><tbody id="ep-can"></tbody></table></div></div>
+</div>
+
+<div class="pane" id="pane-ahp">
+<div class="tip">
+  <b>💰 Ahorros por negociación de precio (Compras):</b> detecta, <b>SKU por SKU</b>, cada vez que el equipo de compras logra comprar un mismo producto a un <b>precio menor</b> que el que venía pagando, y mide el ahorro generado.
+  <b>Criterio:</b> cada mejora de precio (un «escalón») genera ahorro por unidad comprada durante <b>1 año</b> contado desde la fecha en que se consigue (ej.: 150 → 140 el 1-abr = S/10 por unidad hasta el 31-mar del año siguiente; si el 1-ago baja a 130, desde esa fecha el ahorro es S/20 por unidad hasta el 31-mar y S/10 hasta el 31-jul del año siguiente).
+  <span style="color:#64748b;">Usa las compras del Kardex ya cargadas (precios con IGV, igual que «Últimas Compras»). El precio de partida de cada SKU es su primera compra en el Kardex cargado. No modifica la plataforma de Ahorros (Pieza 2): sirve como evidencia objetiva para cruzar lo que se registra allí.</span>
+</div>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+  <button class="btn btn-g" onclick="apExportar()">⬇ Excel (lo que ves)</button>
+  <span class="chip c-gris">Ahorros por precio v44</span>
+  <span id="ap-msg" style="font-size:11px;font-weight:700;"></span>
+</div>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+  <label style="font-size:11px;font-weight:700;color:var(--text2);">Período:</label>
+  <input type="date" class="si" id="ap-d1" onchange="apRender()"> <span>→</span> <input type="date" class="si" id="ap-d2" onchange="apRender()">
+  <button class="btn btn-o" onclick="apRango('anio')">Año</button><button class="btn btn-o" onclick="apRango('mes')">Mes actual</button><button class="btn btn-o" onclick="apRango(90)">90 días</button><button class="btn btn-o" onclick="apRango(0)">Todo</button>
+  <select class="sel" id="ap-comp" onchange="apRender()"><option value="">Todos los compradores</option></select>
+  <select class="sel" id="ap-cat" onchange="apRender()"><option value="">Todas las categorías</option></select>
+  <select class="sel" id="ap-prov" onchange="apRender()"><option value="">Todos los proveedores</option></select>
+  <input class="si" id="ap-q" placeholder="🔍 SKU o producto…" style="width:200px;" oninput="apRender()">
+</div>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;font-size:11px;color:var(--text2);">
+  <span><b>Reglas de detección:</b></span>
+  <label>Mejora mínima <input type="number" class="si" id="ap-tol" value="1" min="0" max="50" step="0.5" style="width:56px;" onchange="apRender()">% <span class="pk-mini">(evita contar redondeos)</span></label>
+  <label>Revisar si la mejora supera <input type="number" class="si" id="ap-tope" value="30" min="5" max="95" step="5" style="width:56px;" onchange="apRender()">%</label>
+  <label><input type="checkbox" id="ap-excl" checked onchange="apRender()"> Excluir del indicador las mejoras a revisar <span class="pk-mini">(posible compra puntual o error de precio)</span></label>
+</div>
+<div class="krow" id="ap-kpis"></div>
+<div id="ap-sem" style="font-size:11px;margin:-4px 0 12px;"></div>
+<div class="cgrid">
+  <div class="cbox"><h4>📊 Ahorro por precio por mes (S/)</h4><canvas id="ap-ch1" height="220"></canvas></div>
+  <div class="cbox"><h4>📊 Ahorro por comprador en el período (S/)</h4><canvas id="ap-ch2" height="220"></canvas></div>
+</div>
+<div class="tbox"><div class="tbox-h"><h3>👥 Indicador por comprador</h3><span class="pk-mini">% de ahorro = ahorro ÷ valor referencial (lo que se habría pagado sin la mejora) · semáforo C01: ≥5% verde · 3–5% amarillo · &lt;3% rojo</span></div>
+  <div class="tw"><table class="dt" style="font-size:10.5px;width:100%;"><thead><tr><th>Comprador</th><th style="text-align:right">Ahorro (S/)</th><th style="text-align:right">Compras reales (S/)</th><th style="text-align:right">Valor referencial (S/)</th><th style="text-align:right">% ahorro</th><th>Semáforo C01</th><th style="text-align:right">SKUs con ahorro</th><th style="text-align:right">Mejoras logradas<br>en el período</th><th style="text-align:right">Ahorro/und vigente<br>(promedio ponderado)</th></tr></thead><tbody id="ap-tb-comp"></tbody></table></div></div>
+<div class="tbox"><div class="tbox-h"><h3>📅 Mes a mes y avance frente a las metas C01</h3><span class="pk-mini">Metas fijas Ago–Dic 2026 de la plataforma de Ahorros (solo lectura). El real es el ahorro por precio detectado en el Kardex, no el validado en la plataforma.</span></div>
+  <div class="tw"><table class="dt" style="font-size:10.5px;width:100%;"><thead><tr><th>Mes</th><th style="text-align:right">Compras reales (S/)</th><th style="text-align:right">Ahorro por precio (S/)</th><th style="text-align:right">% sobre referencial</th><th style="text-align:right">Meta umbral (3%)</th><th style="text-align:right">Meta objetivo (5%)</th><th style="text-align:right">Meta sobresaliente (7%)</th><th>Avance vs objetivo</th></tr></thead><tbody id="ap-tb-mes"></tbody></table></div></div>
+<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0;">
+  <b style="font-size:11px;">Detalle:</b>
+  <button class="btn-ms active" id="ap-v-esc" onclick="apVista('esc')">📈 Mejoras de precio (escalones)</button>
+  <button class="btn-ms" id="ap-v-ven" onclick="apVista('ven')">⏳ Por vencer (≤ 60 días)</button>
+  <button class="btn-ms" id="ap-v-sku" onclick="apVista('sku')">📦 Por producto (SKU)</button>
+  <button class="btn-ms" id="ap-v-cat" onclick="apVista('cat')">🗂 Por categoría</button>
+  <button class="btn-ms" id="ap-v-prv" onclick="apVista('prv')">🏭 Por proveedor</button>
+  <button class="btn-ms" id="ap-v-lin" onclick="apVista('lin')">🧾 Compras con ahorro</button>
+</div>
+<div class="tbox"><div class="tbox-h"><h3 id="ap-dt">Detalle</h3><span class="pk-mini" id="ap-dn"></span></div>
+  <div class="tw" style="max-height:620px;overflow:auto;"><table class="dt" style="font-size:10.5px;width:100%;"><thead id="ap-th"></thead><tbody id="ap-tb"></tbody></table></div>
+  <div id="ap-mas" style="padding:8px 12px;"></div></div>
 </div>
 
 <div class="pane" id="pane-compartir" style="width:100%;box-sizing:border-box;min-height:100px;">
@@ -8881,7 +8966,7 @@ function embParseEspe(rows){
   for(i=0;i<Math.min(rows.length,25);i++){ u=(rows[i]||[]).map(_embN); if(u.indexOf('NUMERO')>=0&&u.indexOf('MONTO')>=0&&u.indexOf('ESTADO')>=0){ h=i; break; } }
   if(h<0) return null;
   u=rows[h].map(_embN);
-  c={n:_embCol(u,/^NUMERO$/),m:_embCol(u,/^MONTO$/),e:_embCol(u,/^ESTADO$/),o:_embCol(u,/^OBSERVACION$/),s:_embCol(u,/^SUB ESTADO$/),fd:_embCol(u,/^F\.DOCUM$/),fe:_embCol(u,/^F\.ESTADO$/),en:_embCol(u,/^ENTIDAD$/)};
+  c={n:_embCol(u,/^NUMERO$/),m:_embCol(u,/^MONTO$/),e:_embCol(u,/^ESTADO$/),o:_embCol(u,/^OBSERVACION$/),s:_embCol(u,/^SUB ESTADO$/),fd:_embCol(u,/^F\.DOCUM$/),fe:_embCol(u,/^F\.ESTADO$/),en:_embCol(u,/^ENTIDAD$/),ru:_embCol(u,/^RUC$/),rs:_embCol(u,/^RAZON SOCIAL$/),ve:_embCol(u,/^VENDEDOR$/),di:_embCol(u,/^DISTRITO$/),cc:_embCol(u,/^DSC\. ?COS2$/),fv:_embCol(u,/^F\.VENTA$/)};   // v43: + datos para la pestaña Estatus de Pedidos
   if(c.n<0||c.m<0||c.e<0) return null;
   var acc={}, mx='', r, row, p, d, st, ob, imp, fe, fd, a;
   for(r=h+1;r<rows.length;r++){
@@ -8889,17 +8974,35 @@ function embParseEspe(rows){
     st=_embStE(row[c.e]); ob=c.o>=0?String(row[c.o]==null?'':row[c.o]).replace(/_x000D_/g,' ').replace(/\s+/g,' ').trim():'';
     imp=parseFloat(row[c.m]); if(!isFinite(imp)) imp=0;
     fe=c.fe>=0?_embF(row[c.fe]):''; fd=c.fd>=0?_embF(row[c.fd]):''; if(fd&&fd>mx) mx=fd;
-    d={st:st,ob:ob,i:imp,k:(fe||fd||''),sb:c.s>=0?String(row[c.s]==null?'':row[c.s]).trim():'',en:c.en>=0?String(row[c.en]==null?'':row[c.en]).trim():''};
+    d={st:st,ob:ob,i:imp,k:(fe||fd||''),sb:c.s>=0?String(row[c.s]==null?'':row[c.s]).trim():'',en:c.en>=0?String(row[c.en]==null?'':row[c.en]).trim():'',
+    fe:fe,fd:fd,ru:c.ru>=0?String(row[c.ru]==null?'':row[c.ru]).trim():'',cli:c.rs>=0?String(row[c.rs]==null?'':row[c.rs]).trim():'',ve:c.ve>=0?String(row[c.ve]==null?'':row[c.ve]).trim():'',
+    di:c.di>=0?String(row[c.di]==null?'':row[c.di]).trim():'',cc:c.cc>=0?String(row[c.cc]==null?'':row[c.cc]).trim():'',fv:c.fv>=0?String(row[c.fv]==null?'':row[c.fv]).trim():''};
     (acc[p]||(acc[p]=[])).push(d);
   }
   var out={}, n=0;
   Object.keys(acc).forEach(function(p){
     var L=acc[p], vivos=L.filter(function(x){return x.st!=='ANULADO';}), U=vivos.length?vivos:L, best=U[0], i2, tot=0;
     for(i2=0;i2<U.length;i2++){ tot+=U[i2].i; if(U[i2].k>=best.k) best=U[i2]; }
-    out[p]={p:p,i:Math.round(tot*100)/100,st:best.st,ob:best.ob,sb:best.sb,en:best.en,nd:L.length}; n++;
+    out[p]={p:p,i:Math.round(tot*100)/100,st:best.st,ob:best.ob,sb:best.sb,en:best.en,nd:L.length,fe:best.fe,fd:best.fd,ru:best.ru,cli:best.cli,ve:best.ve,di:best.di,cc:best.cc,fv:best.fv}; n++;
   });
   if(!n) return null;
   out.__max=mx; return out;
+}
+// v43 — REPORTE RPTR (SIG): una fila por línea de pedido → productos, guía, placa y chofer por N° de pedido (sin ceros a la izquierda)
+function embParseRptr(rows){
+  var h=_embHdr(rows,['NUMERO','CODIGO','UNIDADES']); if(h<0) return null;
+  var u=rows[h].map(_embN), c={n:_embCol(u,/^NUMERO$/),c:_embCol(u,/^CODIGO$/),d:_embCol(u,/^DESCRIPCION$/),u:_embCol(u,/^UNIDADES$/),sg:_embCol(u,/^SERIE GUIA$/),ng:_embCol(u,/^N. ?GUIA$/),fg:_embCol(u,/^FECHA GUIA$/),pl:_embCol(u,/^PLACA$/),ch:_embCol(u,/^CHOFER$/)};
+  if(c.n<0||c.c<0) return null;
+  var out={}, r, row, p, o, cod, n=0, g;
+  for(r=h+1;r<rows.length;r++){
+    row=rows[r]; if(!row) continue; p=_embPed(row[c.n]).replace(/^0+/,''); if(!p) continue;
+    o=out[p]||(out[p]={p:p,lines:[],guia:'',fg:'',placa:'',chofer:''}); if(!o.lines.length) n++;
+    cod=String(row[c.c]==null?'':row[c.c]).trim(); if(cod&&o.lines.length<12) o.lines.push({c:cod,d:c.d>=0?String(row[c.d]==null?'':row[c.d]).trim():'',u:c.u>=0?(parseFloat(row[c.u])||0):0});
+    g=(c.sg>=0&&row[c.sg]!=null&&row[c.ng]!=null)?(String(row[c.sg]).trim()+'-'+_embPed(row[c.ng])):''; if(g&&g!=='-') o.guia=g;
+    var fg=c.fg>=0?_embF(row[c.fg]):''; if(fg&&fg>o.fg) o.fg=fg;
+    if(c.pl>=0&&row[c.pl]) o.placa=String(row[c.pl]).trim(); if(c.ch>=0&&row[c.ch]) o.chofer=String(row[c.ch]).trim();
+  }
+  return n?out:null;
 }
 function _embKind(name){
   var t=_embN(name);
@@ -8908,22 +9011,23 @@ function _embKind(name){
   if(/MY ?BEES|MIGUEL/.test(t)) return 'data';
   if(/BASE DIARIA/.test(t)) return 'base';
   if(/(^|[^A-Z])ESPE([^A-Z]|$)/.test(t)) return 'espe';
+  if(/(^|[^A-Z])RPTR([^A-Z]|$)/.test(t)) return 'rptr';   // v43
   return '';
 }
-var _EMB_SHEET={conf:'BASE DIARIA',trans:'TRANSITO',data:'DATA',base:'BASE DIARIA',espe:'Reporte'};
-var _EMB_LBL={conf:'Gestión Confirmaciones',trans:'Reporte Tránsito',data:'Excel Miguel (Mybees)',base:'Base diaria logística',espe:'Reporte ESPE (SIG)'};
+var _EMB_SHEET={conf:'BASE DIARIA',trans:'TRANSITO',data:'DATA',base:'BASE DIARIA',espe:'Reporte',rptr:'Reporte'};
+var _EMB_LBL={conf:'Gestión Confirmaciones',trans:'Reporte Tránsito',data:'Excel Miguel (Mybees)',base:'Base diaria logística',espe:'Reporte ESPE (SIG)',rptr:'Reporte RPTR (SIG)'};
 function embIngesta(kind,buf,meta){
   var sh=_EMB_SHEET[kind];
-  var wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false,sheets:(kind==='espe'?0:[sh])}); var ws=(kind==='espe')?wb.Sheets[wb.SheetNames[0]]:wb.Sheets[sh];
+  var _f1=(kind==='espe'||kind==='rptr'); var wb=XLSX.read(new Uint8Array(buf),{type:'array',cellDates:false,sheets:(_f1?0:[sh])}); var ws=_f1?wb.Sheets[wb.SheetNames[0]]:wb.Sheets[sh];
   if(!ws) throw new Error('No encontré la hoja "'+sh+'" en '+meta.name);
-  if(kind==='espe'&&ws['!ref']){ var rg=XLSX.utils.decode_range(ws['!ref']); if(rg.e.c>40){ rg.e.c=40; ws['!ref']=XLSX.utils.encode_range(rg); } }   // el ESPE trae 230 columnas casi vacías: leemos solo las primeras
+  if(_f1&&ws['!ref']){ var rg=XLSX.utils.decode_range(ws['!ref']); if(rg.e.c>40){ rg.e.c=40; ws['!ref']=XLSX.utils.encode_range(rg); } }   // el ESPE trae 230 columnas casi vacías: leemos solo las primeras
   var rows=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:null});
-  var p=(kind==='conf')?embParseConf(rows):(kind==='espe')?embParseEspe(rows):embParseLog(rows,kind);
+  var p=(kind==='conf')?embParseConf(rows):(kind==='espe')?embParseEspe(rows):(kind==='rptr')?embParseRptr(rows):embParseLog(rows,kind);
   if(!p) throw new Error('No reconocí las columnas de la hoja "'+sh+'" en '+meta.name);
   EMB.parsed[kind]=p; EMB.src[kind]={id:meta.id,name:meta.name,mod:meta.modifiedTime,n:Object.keys(p).filter(function(x){return x!=='__max';}).length,ts:new Date().toISOString()};
 }
 function embMerge(){
-  EMB.conf=EMB.parsed.conf||null; EMB.espe=EMB.parsed.espe||null; EMB.espeMax=(EMB.espe&&EMB.espe.__max)||''; var L={}, k, kinds=['base','data','trans'];   // el último pisa: Tránsito > Excel Miguel > Base diaria
+  EMB.conf=EMB.parsed.conf||null; EMB.espe=EMB.parsed.espe||null; EMB.rptr=EMB.parsed.rptr||null; EMB.espeMax=(EMB.espe&&EMB.espe.__max)||''; var L={}, k, kinds=['base','data','trans'];   // el último pisa: Tránsito > Excel Miguel > Base diaria
   kinds.forEach(function(kd){ var p=EMB.parsed[kd]; if(!p) return; for(k in p) L[k]=Object.assign({src:kd},p[k]); });
   EMB.log=L;
 }
@@ -8957,7 +9061,7 @@ async function embActualizar(){
   EMB.busyDrive=true; _embBtn(true);
   try{
     _embMsg('⏳ Consultando la carpeta de Drive…','#92400e'); var lst=await embDriveLista(), pick=_embElegir(lst), nuevos=0, igual=0, faltan=[];
-    var orden=['conf','trans','data','base','espe'];
+    var orden=['conf','trans','data','base','espe','rptr'];
     for(var i=0;i<orden.length;i++){ var kd=orden[i], f=pick[kd];
       if(!f){ faltan.push(_EMB_LBL[kd]); continue; }
       var prev=EMB.src[kd]; if(prev&&prev.id===f.id&&prev.mod===f.modifiedTime&&EMB.parsed[kd]){ igual++; continue; }
@@ -9071,7 +9175,7 @@ function embMotAuto(r,fs){
   if(sg){ if(sg.st==='OBSERVADO'){ if(/STOCK/.test(_embN(sg.ob))) return mk('A_STOCK','Observados (SIG)',sg.ob); return mk('A_OBS','Observados (SIG)',sg.ob); } }
   if(fs&&fs[o.ped]) return mk('A_STOCK','Pre-Observados: algún SKU sin stock');
   if(sg){ var s=sg.st;
-    if(s==='SERVPEND') return mk('A_SERV','SIG (ESPE)',sg.ob);
+    if(s==='SERVPEND'||s==='SERV-PEND') return mk('A_SERV','SIG (ESPE)',sg.ob);   // v43: el SIG escribe SERV-PEND con guion
     if(s==='APROBADO') return mk('A_APR','SIG (ESPE)',sg.ob);
     if(s==='FACTURADO') return mk('A_FAC','SIG (ESPE)',sg.ob);
     if(s==='ENTRANSITO') return mk('A_TRA','SIG (ESPE)',sg.ob);
@@ -9220,6 +9324,354 @@ function embIniciar(){
   setInterval(function(){ var p=document.getElementById('pane-emb'); if(!document.hidden&&((p&&p.classList.contains('on'))||EMB.dirty)) embSync(false); },180000);
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',embIniciar); else embIniciar();
+// ===================================================
+// v43 — 🔎 ESTATUS DE PEDIDOS (consulta para Comercial y Compras). Pestaña nueva.
+// Estatus prioritario = Reporte ESPE (SIG). Si el pedido NO está en el ESPE → estatus del reporte de Tránsito (Drive de logística, incl. MBR/Mybees).
+// Último recurso (referencial): Gestión Confirmaciones. Solo LEE EMB.espe / EMB.log / EMB.conf / EMB.vend / D.obsProductos; no modifica otras pestañas.
+// ===================================================
+var EP={sig:'',rows:[],vista:[],lim:300,g:'',T:null};
+var EP_G={ENT:'Entregado',RUTA:'En tránsito / programado',PEND:'En proceso',OBS:'Observado',REC:'Rechazo',ANU:'Anulado',SIN:'Sin estatus'};
+var EP_GC={ENT:'c-verde',RUTA:'c-azul',PEND:'c-amber',OBS:'c-rojo',REC:'c-morado',ANU:'c-gris',SIN:'c-gris'};
+var EP_GK={ENT:'k-green',RUTA:'k-blue',PEND:'k-amber',OBS:'k-red',REC:'k-purple',ANU:'',SIN:''};
+var EP_E={ENTREGADO:['Entregado','ENT'],ENTRANSITO:['En tránsito','RUTA'],PROGRAMADO:['Programado','RUTA'],FACTURADO:['Facturado, falta despachar','PEND'],APROBADO:['Aprobado, falta facturar','PEND'],
+  SERVPEND:['Servicio pendiente (p. ej. gas)','PEND'],CONFIRMADO:['Confirmado','PEND'],NOCONTACTADO:['No contactado','PEND'],CONSTOCK:['Con stock (por despachar)','PEND'],
+  OBSERVADO:['Observado','OBS'],REGULARIZACION:['En regularización','OBS'],RECHAZOTEL:['Rechazo telefónico','REC'],RECHAZADO:['Rechazado','REC'],ANULADO:['Anulado','ANU']};
+function _epN(s){ return _embN(s).replace(/[ _\-]/g,''); }
+function _epTit(s){ s=String(s||'').toLowerCase(); return s.charAt(0).toUpperCase()+s.slice(1); }
+function _epD(v){ v=String(v==null?'':v).trim(); var m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m) return m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2); m=v.match(/^(\d{4}-\d{2}-\d{2})/); return m?m[1]:''; }
+function _epDM(iso){ return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'—'; }
+// Producto por pedido: 1º Reporte RPTR (Drive), 2º "Observados — Productos" (pestaña Carga de Datos), 3º Gestión Confirmaciones
+function epProd(){
+  var m={}; try{ (D.obsProductos||[]).forEach(function(x){ var p=String(x.numero||'').replace(/^0+/,''); if(!p) return; (m[p]||(m[p]=[])).push(x); }); }catch(e){}
+  return m;
+}
+function epBuild(){
+  var E=EMB.espe||null, conf=EMB.conf||{}, L=EMB.log||{}, rows=[], uC={}, uL={}, cI={}, lI={}, P=epProd(), hoy=_preHoy();
+  Object.keys(conf).forEach(function(k){ var p=conf[k].ped; if(p.length>=8) cI[p.replace(/^0+/,'')]=k; });
+  Object.keys(L).forEach(function(k){ var p=L[k].ped; if(p.length>=8) lI[p.replace(/^0+/,'')]=k; });
+  function mk(p,sg,ck,lk){
+    var o=ck?conf[ck]:null, l=lk?L[lk]:null, r={ped:(sg?p:(o?o.ped:l.ped)),sg:sg,o:o,l:l,k:(ck||lk||p)}, g, lbl, src, obs='', cc, vd;
+    r.f=(sg&&_epD(sg.fv))||(o&&o.f)||(l&&l.fb)||(sg&&sg.fd)||'';
+    cc=(sg&&String(sg.cc||'').trim())||(sg&&String(sg.en||'').trim())||(o&&o.canal)||(l&&l.canal)||'';
+    r.canal=_embN(cc)||'(SIN CANAL)';
+    r.cli=(sg&&sg.cli)||(o&&o.cli)||''; r.ven=(sg&&sg.ve)||''; r.dis=(sg&&sg.di)||(o&&o.dis)||'';
+    if(sg&&sg.st){ var e=EP_E[_epN(sg.st)]; lbl=e?e[0]:_epTit(sg.st); g=e?e[1]:'PEND'; src='ESPE'; obs=sg.ob||''; }
+    else if(l){ g=(l.b==='ENT'?'ENT':l.b==='RUTA'?'RUTA':l.b==='REC'?'REC':l.b==='ANU'?'ANU':'PEND'); lbl=({ENT:'Entregado',RUTA:(l.e&&/PROGR/.test(l.e)?'Programado':'En tránsito'),REC:'Rechazo en entrega',ANU:'Anulado'})[l.b]||(_epTit(l.e)||'En gestión logística'); src='TRANS'; obs=l.rj||''; }
+    else if(o){ g=(o.e==='RECHAZO'?'REC':'PEND'); lbl={CONFIRMADO:'Confirmado (sin SIG ni tránsito)',PROGRAMADO:'Programado (sin SIG ni tránsito)','NO CONTACTADO':'No contactado (sin SIG ni tránsito)',RECHAZO:'Rechazo en confirmación'}[o.e]||_epTit(o.e); src='CONF'; obs=(o.m||'')||(/^\d{4}-/.test(o.d)?('para '+_epDM(o.d)):(o.d||'')); }
+    else { g='SIN'; lbl='Sin estatus'; src=''; }
+    r.g=g; r.lbl=lbl; r.src=src; r.obs=String(obs||'').trim();
+    r.fe=(sg&&sg.fe)||''; r.age=r.fe?_preDifDias(hoy,r.fe):null;
+    vd=EMB.vend&&EMB.vend[r.ped];
+    r.imp=(sg&&sg.i>0)?sg.i:(l&&l.costo>0)?l.costo:(vd?vd.i:null);
+    // logística (tránsito)
+    r.tg=l?(l.b==='ENT'?'ENT':l.b==='RUTA'?'RUTA':l.b==='REC'?'REC':l.b==='ANU'?'ANU':'PEND'):'';
+    r.tTxt=l?(({ENT:'Entregado',RUTA:'En ruta',OTL:'En gestión logística',REC:'Rechazo',ANU:'Anulado'})[l.b]+(l.fd?' · desp. '+_epDM(l.fd):'')+(l.tr?' · '+l.tr:'')+(l.pl?' · '+l.pl:'')):'';
+    r.dif=!!(sg&&sg.st&&l&&r.tg&&r.tg!==g&&!(g==='RUTA'&&r.tg==='RUTA'));
+    r.cTxt=o?(_epTit(o.e)+(o.m?' · '+o.m:'')):'';
+    var pk=String(r.ped).replace(/^0+/,''), pr=P[pk], pt='', rp=(EMB.rptr&&EMB.rptr[pk])||null;
+    if(rp){ r.guia=rp.guia||''; r.fg=rp.fg||''; r.placa=rp.placa||''; r.chofer=rp.chofer||''; if(r.guia) r.tTxt=(r.tTxt?r.tTxt+' · ':'')+'Guía '+r.guia+(r.fg?' ('+_epDM(r.fg)+')':'')+(!l&&rp.placa?' · '+rp.placa:''); }
+    if(rp&&rp.lines&&rp.lines.length){ pt=rp.lines.slice(0,3).map(function(x){ return x.c+' '+String(x.d||'').slice(0,38)+(x.u?' ×'+x.u:''); }).join(' | ')+(rp.lines.length>3?' (+'+(rp.lines.length-3)+' más)':''); r.prodSrc='rptr'; }
+    else if(pr&&pr.length){ pt=pr.slice(0,3).map(function(x){ return x.cod+' '+String(x.descrip||'').slice(0,38)+(x.unid?' ×'+x.unid:''); }).join(' | ')+(pr.length>3?' (+'+(pr.length-3)+' más)':''); r.prodSrc='obs'; }
+    else if(o&&o.pr){ pt=o.pr; }
+    r.prod=pt;
+    r.blob=_embN([r.ped,r.cli,r.ven,r.dis,r.canal,r.canal.replace(/ /g,''),r.lbl,r.obs,pt,(sg&&sg.ru)||'',(sg&&sg.en)||'',(r.guia||''),(rp&&rp.lines?rp.lines.map(function(x){return x.c+' '+x.d;}).join(' '):''),(pr||[]).map(function(x){return x.cod+' '+x.descrip;}).join(' ')].join(' '));
+    return r;
+  }
+  if(E) Object.keys(E).forEach(function(p){ if(p==='__max') return; var sg=E[p]; if(!sg.st) return; var ck=cI[p]||null, lk=lI[p]||null; if(ck) uC[ck]=1; if(lk) uL[lk]=1; rows.push(mk(p,sg,ck,lk)); });
+  Object.keys(conf).forEach(function(k){ if(uC[k]) return; var o=conf[k], lk=L[k]?k:(o.ped.length>=8?(lI[o.ped.replace(/^0+/,'')]||null):null); if(lk) uL[lk]=1; rows.push(mk(o.ped,null,k,lk)); });
+  Object.keys(L).forEach(function(k){ if(uL[k]) return; rows.push(mk(L[k].ped,null,null,k)); });
+  return rows;
+}
+function epSig(){ return [EMB.loadedAt?EMB.loadedAt.getTime():0,(D.obsProductos||[]).length,Object.keys(EMB.vend||{}).length].join('|'); }
+function epRango(n){ var h=_preHoy(), a=document.getElementById('ep-d1'), b=document.getElementById('ep-d2'); if(!a||!b) return; if(n===0){ a.value=''; b.value=''; } else { b.value=h; a.value=_preSumDias(h,-(n-1)); } epRender(true); }
+var _epT=null; function epBuscar(){ clearTimeout(_epT); _epT=setTimeout(function(){ epRender(true); },180); }
+function epGrupo(g){ EP.g=(EP.g===g)?'':g; epRender(true); }
+function epMas(){ EP.lim+=300; epRender(false); }
+function epVisible(){ var p=document.getElementById('pane-est'); return !!(p&&p.classList.contains('on')); }
+function epEstadoSrc(){
+  var f=document.getElementById('ep-src'); if(!f) return;
+  f.innerHTML=['espe','trans','data','base','conf','rptr'].map(function(kd){ var s=EMB.src[kd]; return '<span class="chip '+(s?'c-verde':'c-gris')+'" title="'+(s?_preE(s.name)+' · '+s.n.toLocaleString('es-PE')+' pedidos':'Aún no cargado')+'">'+_EMB_LBL[kd]+(s?' · '+new Date(s.mod).toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):' · —')+'</span>'; }).join(' ');
+}
+function epRender(reset){
+  if(!epVisible()) return; var tb=document.getElementById('ep-tb'); if(!tb) return;
+  if(reset) EP.lim=300;
+  epEstadoSrc();
+  var s=epSig(); if(s!==EP.sig||!EP.rows){ EP.rows=epBuild(); EP.sig=s; }
+  var rows=EP.rows;
+  if(!rows.length){
+    document.getElementById('ep-kpis').innerHTML=''; document.getElementById('ep-can').innerHTML=''; document.getElementById('ep-mas').innerHTML=''; document.getElementById('ep-n').textContent='';
+    document.getElementById('ep-cov').innerHTML='';
+    tb.innerHTML='<tr><td colspan="12" style="color:#64748b;padding:14px;">'+(EMB.busyDrive?'⏳ Leyendo los archivos de Drive…':'Aún no hay datos cargados. Pulsa <b>☁️ Actualizar desde Drive</b> (si es la primera vez en este equipo, abre antes la pestaña 📦 Embudo Despacho → ⚙ Configurar Drive).')+'</td></tr>'; return; }
+  var d1=document.getElementById('ep-d1').value, d2=document.getElementById('ep-d2').value;
+  var q=_embN(document.getElementById('ep-q').value), qs=q?q.split(' ').filter(Boolean):[], canal=document.getElementById('ep-canal').value, estSel=document.getElementById('ep-est').value, dif=document.getElementById('ep-dif').checked;
+  // 1) filtros sin grupo (para KPIs y resumen)
+  var base=rows.filter(function(r){
+    if(d1&&(!r.f||r.f<d1)) return false; if(d2&&(!r.f||r.f>d2)) return false;
+    if(canal&&r.canal!==canal) return false; if(estSel&&r.lbl!==estSel) return false; if(dif&&!r.dif) return false;
+    for(var i=0;i<qs.length;i++) if(r.blob.indexOf(qs[i])<0) return false; return true; });
+  // listas de canal y estatus (sobre el rango de fechas y búsqueda, para no perder opciones)
+  var cans={}, ests={}; rows.forEach(function(r){ if(d1&&(!r.f||r.f<d1)) return; if(d2&&(!r.f||r.f>d2)) return; cans[r.canal]=(cans[r.canal]||0)+1; ests[r.lbl]=(ests[r.lbl]||0)+1; });
+  var cs=document.getElementById('ep-canal'), cv=cs.value; cs.innerHTML='<option value="">Todos los canales</option>'+Object.keys(cans).sort().map(function(c){return '<option value="'+_preE(c)+'"'+(c===cv?' selected':'')+'>'+_preE(c)+' ('+cans[c]+')</option>';}).join('');
+  var es=document.getElementById('ep-est'), ev=es.value; es.innerHTML='<option value="">Todos los estatus</option>'+Object.keys(ests).sort(function(a,b){return ests[b]-ests[a];}).map(function(c){return '<option value="'+_preE(c)+'"'+(c===ev?' selected':'')+'>'+_preE(c)+' ('+ests[c]+')</option>';}).join('');
+  // 2) KPIs por grupo
+  var T={n:base.length}, TI={}; Object.keys(EP_G).forEach(function(g){ T[g]=0; TI[g]=0; });
+  base.forEach(function(r){ T[r.g]++; if(r.g!=='ANU'&&r.imp!=null) TI[r.g]+=r.imp; });
+  var kp='<div class="kpi k-blue" style="cursor:pointer;" onclick="epGrupo(\'\')" title="Quitar filtro de grupo"><div class="kl">Pedidos</div><div class="kv">'+T.n.toLocaleString('es-PE')+'</div></div>';
+  ['ENT','RUTA','PEND','OBS','REC','ANU'].forEach(function(g){ kp+='<div class="kpi '+EP_GK[g]+'" style="cursor:pointer;'+(EP.g===g?'outline:3px solid #1d4ed8;':'')+'" onclick="epGrupo(\''+g+'\')" title="Filtrar: '+EP_G[g]+'"><div class="kl">'+EP_G[g]+'</div><div class="kv">'+T[g].toLocaleString('es-PE')+'</div>'+(TI[g]>0?'<div class="kl" style="text-transform:none;font-weight:500;">'+_embS(TI[g])+'</div>':'')+'</div>'; });
+  if(T.SIN) kp+='<div class="kpi" style="cursor:pointer;'+(EP.g==='SIN'?'outline:3px solid #1d4ed8;':'')+'" onclick="epGrupo(\'SIN\')"><div class="kl">Sin estatus</div><div class="kv">'+T.SIN+'</div></div>';
+  document.getElementById('ep-kpis').innerHTML=kp;
+  // 3) lista
+  var lst=EP.g?base.filter(function(r){return r.g===EP.g;}):base;
+  lst=lst.slice().sort(function(a,b){ return a.f<b.f?1:a.f>b.f?-1:(a.ped<b.ped?1:-1); });
+  EP.vista=lst;
+  var nEsp=0,nTr=0,nCf=0; lst.forEach(function(r){ if(r.src==='ESPE')nEsp++; else if(r.src==='TRANS')nTr++; else if(r.src==='CONF')nCf++; });
+  document.getElementById('ep-n').textContent=lst.length.toLocaleString('es-PE')+' pedido(s)'+(EP.g?' · grupo: '+EP_G[EP.g]:'')+' · estatus del ESPE: '+nEsp.toLocaleString('es-PE')+' · del Tránsito: '+nTr.toLocaleString('es-PE')+(nCf?' · de Confirmaciones (referencial): '+nCf.toLocaleString('es-PE'):'')+(lst.length>EP.lim?' · mostrando '+EP.lim:'');
+  var srcChip={ESPE:'<span class="chip c-verde" title="Estatus tomado del Reporte ESPE (SIG)">ESPE</span>',TRANS:'<span class="chip c-azul" title="El pedido no está en el ESPE: estatus del reporte de Tránsito">Tránsito</span>',CONF:'<span class="chip c-gris" title="Solo Gestión Confirmaciones: referencial, aún sin SIG ni tránsito">Confirm.*</span>'};
+  tb.innerHTML=lst.length?lst.slice(0,EP.lim).map(function(r){
+    var ob=r.obs?_preE(r.obs):'', ed=(r.age!=null&&r.g!=='ENT'&&r.g!=='ANU')?'<div style="color:#94a3b8;font-size:9.5px;">desde '+_epDM(r.fe)+' ('+r.age+' d)</div>':(r.fe&&r.src==='ESPE'?'<div style="color:#94a3b8;font-size:9.5px;">el '+_epDM(r.fe)+'</div>':'');
+    return '<tr><td style="white-space:nowrap;">'+_epDM(r.f)+'</td><td>'+_preE(r.canal)+'</td><td style="white-space:nowrap;"><b>'+_preE(r.ped)+'</b></td><td>'+_preE(r.cli||'—')+'</td><td>'+_preE(r.ven||'—')+'</td><td>'+_preE(r.dis||'—')+'</td>'+
+      '<td><span class="chip '+EP_GC[r.g]+'">'+_preE(r.lbl)+'</span> '+(srcChip[r.src]||'')+'</td><td style="max-width:200px;">'+ob+ed+'</td>'+
+      '<td style="text-align:right;">'+(r.imp!=null?(r.g==='ANU'?'<span style="color:#9ca3af;">'+_embS(r.imp)+'</span>':_embM(r.imp)):'<span style="color:#cbd5e1;">—</span>')+'</td>'+
+      '<td style="max-width:230px;" title="'+_preE(r.prod||'')+'">'+_preE((r.prod||'—').slice(0,110))+'</td>'+
+      '<td style="max-width:190px;">'+(r.tTxt?_preE(r.tTxt)+(r.dif?' <span class="chip c-rojo" title="El Tránsito dice «'+_preE(EP_G[r.tg]||r.tg)+'» pero el ESPE dice «'+_preE(r.lbl)+'». Manda el ESPE.">⚠ difiere</span>':''):'<span style="color:#cbd5e1;">—</span>')+'</td>'+
+      '<td style="max-width:160px;">'+(r.cTxt?_preE(r.cTxt):'<span style="color:#cbd5e1;">—</span>')+'</td></tr>'; }).join('')
+    :'<tr><td colspan="12" style="color:#64748b;padding:14px;">Ningún pedido coincide con los filtros.</td></tr>';
+  document.getElementById('ep-mas').innerHTML=lst.length>EP.lim?'<button class="btn btn-o" onclick="epMas()">Ver 300 más ('+(lst.length-EP.lim).toLocaleString('es-PE')+' restantes)</button>':'';
+  // 4) resumen por canal
+  var CN={}; base.forEach(function(r){ var a=CN[r.canal]||(CN[r.canal]={k:r.canal,n:0,ENT:0,RUTA:0,PEND:0,OBS:0,REC:0,ANU:0,SIN:0}); a.n++; a[r.g]++; });
+  var ccel=function(n){ return n?'<td style="text-align:right;"><b>'+n+'</b></td>':'<td style="text-align:right;color:#cbd5e1;">·</td>'; };
+  var cr=Object.keys(CN).map(function(k){return CN[k];}).sort(function(a,b){return b.n-a.n;});
+  document.getElementById('ep-can').innerHTML=cr.map(function(a){ return '<tr><td>'+_preE(a.k)+'</td><td style="text-align:right;"><b>'+a.n+'</b></td>'+ccel(a.ENT)+ccel(a.RUTA)+ccel(a.PEND)+ccel(a.OBS)+ccel(a.REC)+ccel(a.ANU)+'</tr>'; }).join('')+
+    '<tr style="background:#f1f5f9;font-weight:700;"><td>TOTAL</td><td style="text-align:right;">'+T.n+'</td>'+ccel(T.ENT)+ccel(T.RUTA)+ccel(T.PEND)+ccel(T.OBS)+ccel(T.REC)+ccel(T.ANU)+'</tr>';
+  // 5) cobertura
+  var mx=EMB.espeMax||'', sinE=EMB.espe?0:1, post=base.filter(function(r){return r.src!=='ESPE'&&mx&&r.f>mx;}).length, dd=base.filter(function(r){return r.dif;}).length;
+  document.getElementById('ep-cov').innerHTML=EMB.espe?('Reporte ESPE al corte <b>'+_epDM(mx)+'</b>'+(post?' · <span style="color:#b45309;">'+post+' pedido(s) son posteriores al corte (su estatus sale de Tránsito/Confirmaciones) → baja un ESPE más reciente</span>':'')+(dd?' · <span style="color:#b91c1c;">'+dd+' pedido(s) donde el Tránsito discrepa del ESPE</span> (manda el ESPE)':'')):
+    '<span style="color:#b45309;">⚠ Falta el <b>Reporte ESPE (SIG)</b> en la carpeta de Drive: mientras tanto el estatus sale del reporte de Tránsito.</span>';
+}
+function epExportar(){
+  var l=EP.vista||[]; if(!l.length){ alert('No hay pedidos en la lista.'); return; }
+  var rows=l.map(function(r){ return [r.f,r.canal,r.ped,r.cli,r.ven,r.dis,r.lbl,EP_G[r.g],({ESPE:'ESPE (SIG)',TRANS:'Tránsito',CONF:'Confirmaciones (ref.)'})[r.src]||'',r.obs,r.fe||'',r.age!=null?r.age:'',r.imp!=null?r.imp:'',r.prod||'',r.tTxt,r.dif?'SÍ':'',r.cTxt]; });
+  var f=[]; var q=document.getElementById('ep-q').value.trim(); if(q) f.push('Búsqueda: «'+q+'»'); var d1=document.getElementById('ep-d1').value, d2=document.getElementById('ep-d2').value; if(d1||d2) f.push('Fecha de venta '+(d1||'…')+' → '+(d2||'…'));
+  var c=document.getElementById('ep-canal').value; if(c) f.push('Canal: '+c); var e=document.getElementById('ep-est').value; if(e) f.push('Estatus: '+e); if(EP.g) f.push('Grupo: '+EP_G[EP.g]); if(document.getElementById('ep-dif').checked) f.push('Solo donde Tránsito discrepa del ESPE');
+  exportarExcelMerpes({datos:rows,cabeceras:['Fecha venta','Canal','N° Pedido','Cliente','Vendedor','Distrito','Estatus','Grupo','Fuente del estatus','Detalle del estatus','Fecha del estatus','Días en este estatus','Importe (S/)','Producto / SKU','Tránsito / guía (logística)','Tránsito discrepa del ESPE','Confirmación'],
+    titulo:'ESTATUS DE PEDIDOS',subtitulo:'Prioridad: ESPE (SIG) › Tránsito › Confirmaciones · ESPE al corte '+(EMB.espeMax||'—')+' · generado '+new Date().toLocaleString('es-PE'),
+    filtros:f.length?f.join(' · '):'Sin filtros',archivo:'Estatus_Pedidos_'+_preHoy(),sheetName:'Estatus',kpis:[{val:l.length,lbl:'Pedidos listados',color:'blue'}]});
+}
+var _epInit=false;
+function epOnOpen(){
+  if(!_epInit){ _epInit=true; var a=document.getElementById('ep-d1'), b=document.getElementById('ep-d2'); if(a&&b&&!a.value){ b.value=_preHoy(); a.value=_preSumDias(_preHoy(),-14); } }
+  epRender(true);
+  var go=function(){ try{ _embAuto(); }catch(e){} }; try{ Promise.resolve(embSync(false)).then(go,go); }catch(e){ go(); }
+}
+// engancha: cuando el Embudo termina de leer Drive (embRender) se refresca esta pestaña; los mensajes de Drive se reflejan aquí
+(function(){
+  var oR=embRender; embRender=function(){ var r=oR.apply(this,arguments); try{ epRender(false); }catch(e){} return r; };
+  var oM=_embMsg; _embMsg=function(h,c){ oM(h,c); var e=document.getElementById('ep-msg'); if(e){ e.innerHTML=h||''; e.style.color=c||''; } };
+  var oB=_embBtn; _embBtn=function(b){ oB(b); var x=document.getElementById('ep-btn'); if(x){ x.disabled=!!b; x.textContent=b?'⏳ Leyendo Drive…':'☁️ Actualizar desde Drive'; } };
+})();
+// =====================================================================
+// v44 — 💰 AHORROS POR NEGOCIACIÓN DE PRECIO (pestaña nueva, aditiva)
+// Fuente: D.compras (compras del Kardex, precio unitario con IGV). Nada de esto toca otras pestañas.
+// Criterio: cada mejora de precio de un SKU (un «escalón») genera ahorro por unidad durante 1 año
+// desde la fecha en que se consigue. Ahorro/u de una compra = suma de los escalones vigentes ese día
+// (tope: precio de partida − precio realmente pagado). Cada escalón vence por separado.
+// =====================================================================
+var AP={cfg:{tol:1,tope:30,excl:true},R:null,vista:'esc',lim:{},V:null,K:null};
+// Metas fijas Ago–Dic 2026 de la plataforma de Ahorros (Pieza 2) — SOLO LECTURA, no modificar sin indicación de Dante
+var AP_META={'2026-08':[42000,70000,98000],'2026-09':[52000,87000,122000],'2026-10':[65000,108000,151000],'2026-11':[72000,120000,168000],'2026-12':[78000,130000,182000]};
+var AP_MESN=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Set','Oct','Nov','Dic'];
+function _apAdd1y(d){ var p=d.split('-'), x=new Date(Date.UTC(+p[0]+1,+p[1]-1,+p[2])); x.setUTCDate(x.getUTCDate()-1); return x.toISOString().slice(0,10); }  // 1-abr → 31-mar del año siguiente
+function _apDias(a,b){ return Math.round((Date.parse(b)-Date.parse(a))/864e5); }
+function _apS(n){ return Math.round(n||0).toLocaleString('es-PE'); }
+function _apM(n){ return (n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function _apP(n){ return (n||0).toLocaleString('es-PE',{minimumFractionDigits:1,maximumFractionDigits:1})+'%'; }
+function _apMes(k){ return AP_MESN[+k.slice(5,7)-1]+'-'+k.slice(2,4); }
+function _apComp(it){ try{ return inferirComprador(it.cat,it.cod,it.desc)||'Sin asignar'; }catch(e){ return 'Sin asignar'; } }
+function _apSem(p){ return p>=5?['🟢','Verde · meta cumplida (≥ 5%)','c-verde']:p>=3?['🟡','Amarillo · sobre el umbral, bajo el objetivo (3–5%)','c-amber']:['🔴','Rojo · bajo el umbral (< 3%)','c-rojo']; }
+
+// ---- Motor puro (se puede probar con datos sintéticos): compras → escalones + líneas con ahorro ----
+function apCalcData(src,cfg){
+  var tol=cfg.tol/100, tope=cfg.tope/100, excl=!!cfg.excl;
+  var porSku={}; src.forEach(function(c){ if(c.fechaStr&&c.costoUnit>0&&c.cant>0) (porSku[c.cod]||(porSku[c.cod]=[])).push(c); });
+  var tiers=[], lines=[], sku={}, max='';
+  Object.keys(porSku).forEach(function(cod){
+    var L=porSku[cod].slice().sort(function(a,b){ return a.fechaStr<b.fechaStr?-1:a.fechaStr>b.fechaStr?1:b.costoUnit-a.costoUnit; });  // mismo día: de mayor a menor precio
+    var base=L[0].costoUnit, best=base, act=[], comp=_apComp(L[0]);
+    var S=sku[cod]={cod:cod,desc:L[0].desc,cat:L[0].cat,comp:comp,base:base,last:base,lastF:L[0].fechaStr,tiers:[]};
+    L.forEach(function(c){
+      var p=c.costoUnit, t=c.fechaStr, q=c.cant; if(t>max) max=t;
+      if(p<best*(1-tol)&&best-p>=0.01){            // nuevo escalón: precio menor al mejor logrado hasta ahora
+        var inc=best-p, T={id:tiers.length,cod:cod,desc:c.desc,cat:c.cat,comp:comp,prov:c.prov,d:t,hasta:_apAdd1y(t),pPrev:best,pNew:p,inc:inc,pct:inc/best,rev:(inc/best)>tope};
+        tiers.push(T); act.push(T); S.tiers.push(T.id); best=p;
+      }
+      var sumC=0, sumR=0, vig=[];
+      act.forEach(function(T){ if(T.d<=t&&t<=T.hasta){ if(T.rev&&excl) sumR+=T.inc; else { sumC+=T.inc; vig.push(T); } if(T.rev&&!excl) sumR+=T.inc; } });
+      var cap=Math.max(0,base-p), sAll=Math.min(sumC+(excl?sumR:0),cap), sC=Math.min(sumC,cap);
+      var s=sC, ar=excl?(sAll-sC)*q:((sumC>0)?sC*(sumR/sumC)*q:0);   // ar = ahorro de mejoras «a revisar» (excluido o incluido)
+      var al=[]; if(s>0&&sumC>0){ var fct=s/sumC; vig.forEach(function(T){ al.push([T.id,T.inc*fct*q,q]); }); }
+      lines.push({f:t,cod:cod,desc:c.desc,cat:c.cat,comp:comp,prov:c.prov,p:p,q:q,s:s,a:s*q,c:p*q,ar:ar,al:al});
+      S.last=p; S.lastF=t; S.desc=c.desc||S.desc;
+    });
+    S.best=best;
+  });
+  return {tiers:tiers,lines:lines,sku:sku,max:max};
+}
+function apCalc(){
+  var cfg={tol:Math.max(0,parseFloat((document.getElementById('ap-tol')||{}).value)||0),tope:Math.max(5,parseFloat((document.getElementById('ap-tope')||{}).value)||30),excl:(document.getElementById('ap-excl')||{checked:true}).checked};
+  AP.cfg=cfg; AP.R=apCalcData(D.compras||[],cfg); return AP.R;
+}
+function _apFil(){
+  var g=function(i){ var e=document.getElementById(i); return e?e.value:''; };
+  return {d1:g('ap-d1'),d2:g('ap-d2'),comp:g('ap-comp'),cat:g('ap-cat'),prov:g('ap-prov'),q:g('ap-q').trim().toLowerCase()};
+}
+function _apPasa(o,f,prov){   // filtros que no son de fecha; o = línea, escalón o SKU
+  if(f.comp&&o.comp!==f.comp) return false; if(f.cat&&o.cat!==f.cat) return false; if(prov&&f.prov&&o.prov!==f.prov) return false;
+  if(f.q&&(o.cod+' '+(o.desc||'')).toLowerCase().indexOf(f.q)<0) return false; return true;
+}
+// ---- Agregación según filtros ----
+function apAgg(){
+  var R=AP.R, f=_apFil(), corte=f.d2||R.max, d1=f.d1||'0000-00-00', d2=f.d2||'9999-12-31';
+  var A={f:f,corte:corte,tot:{a:0,c:0,r:0,q:0,aq:0,ar:0},comp:{},cat:{},prov:{},sku:{},mes:{},tier:{},lin:[],und90:{}};
+  var bump=function(m,k,L){ var o=m[k]||(m[k]={k:k,a:0,c:0,r:0,q:0,aq:0,skus:{}}); o.a+=L.a; o.c+=L.c; o.r+=L.c+L.a; o.q+=L.q; if(L.a>0){ o.aq+=L.q; o.skus[L.cod]=1; } return o; };
+  var c90=_apAddD(corte,-90);
+  R.lines.forEach(function(L){
+    if(!_apPasa(L,f,true)) return;
+    var M=A.mes[L.f.slice(0,7)]||(A.mes[L.f.slice(0,7)]={a:0,c:0,r:0}); M.a+=L.a; M.c+=L.c; M.r+=L.c+L.a;
+    if(L.f>c90&&L.f<=corte) A.und90[L.cod]=(A.und90[L.cod]||0)+L.q;
+    if(L.f<d1||L.f>d2) return;
+    A.tot.a+=L.a; A.tot.c+=L.c; A.tot.r+=L.c+L.a; A.tot.q+=L.q; A.tot.ar+=L.ar; if(L.a>0) A.tot.aq+=L.q;
+    bump(A.comp,L.comp,L); bump(A.cat,L.cat||'S/C',L); bump(A.prov,L.prov||'—',L); var S=bump(A.sku,L.cod,L); S.desc=L.desc; S.cat=L.cat; S.comp=L.comp;
+    if(L.a>0){ A.lin.push(L); L.al.forEach(function(x){ var T=A.tier[x[0]]||(A.tier[x[0]]={a:0,q:0}); T.a+=x[1]; T.q+=x[2]; }); }
+  });
+  // mejoras (escalones) que pasan los filtros
+  A.esc=R.tiers.filter(function(T){ return _apPasa(T,f,false)&&(!f.prov||T.prov===f.prov); });
+  A.escPer=A.esc.filter(function(T){ return T.d>=d1&&T.d<=d2&&!(AP.cfg.excl&&T.rev); });
+  A.escPer.forEach(function(T){ var o=A.comp[T.comp]||(A.comp[T.comp]={k:T.comp,a:0,c:0,r:0,q:0,aq:0,skus:{}}); o.n=(o.n||0)+1; });
+  // vigentes a la fecha de corte, por vencer y proyección a 12 meses
+  A.vig=A.esc.filter(function(T){ return T.d<=corte&&corte<=T.hasta&&!(AP.cfg.excl&&T.rev); });
+  A.ven=A.vig.filter(function(T){ return _apDias(corte,T.hasta)<=60; });
+  var sv={}; A.vig.forEach(function(T){ sv[T.cod]=(sv[T.cod]||0)+T.inc; });
+  A.proy=0; Object.keys(sv).forEach(function(cod){ var S=R.sku[cod]; var u=(A.und90[cod]||0)*4; A.proy+=Math.min(sv[cod],Math.max(0,S.base-S.last))*u; });
+  A.nRev=R.tiers.filter(function(T){ return T.rev&&_apPasa(T,f,false)&&(!f.prov||T.prov===f.prov)&&T.d>=d1&&T.d<=d2; }).length;
+  A.pct=A.tot.r>0?A.tot.a/A.tot.r*100:0;
+  return A;
+}
+function _apAddD(iso,n){ var d=new Date(iso+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+// ---- Vistas de detalle: cada una devuelve {t, h:[[etiqueta,fmt,alineación]], r:[filas crudas]} ----
+function _apChipEst(T,corte){
+  if(AP.cfg.excl&&T.rev) return ['A revisar','<span class="chip c-rojo">⚠ A revisar (excluida)</span>'];
+  if(corte>T.hasta) return ['Vencido','<span class="chip c-gris">Vencido</span>'];
+  if(corte<T.d) return ['Futuro','<span class="chip c-gris">Futuro</span>'];
+  var d=_apDias(corte,T.hasta);
+  return d<=60?['Por vencer','<span class="chip c-amber">⏳ Vence en '+d+' d</span>']:['Vigente','<span class="chip c-verde">✔ Vigente</span>'];
+}
+function apVistaData(A){
+  var R=AP.R, v=AP.vista, corte=A.corte, d1=A.f.d1||'0000-00-00', d2=A.f.d2||'9999-12-31';
+  var pct=function(a,r){ return r>0?a/r*100:0; };
+  if(v==='esc'){
+    var rows=A.esc.filter(function(T){ return T.d<=d2&&T.hasta>=d1; }).map(function(T){ var x=A.tier[T.id]||{a:0,q:0}, e=_apChipEst(T,corte);
+      return [T.comp,T.cod,T.desc,T.cat,T.prov,T.d,T.pPrev,T.pNew,T.inc,T.pct*100,T.hasta,e,x.q,x.a]; }).sort(function(a,b){ return b[13]-a[13]; });
+    return {t:'📈 Mejoras de precio (escalones) — cada una vale 1 año desde su fecha',h:[['Comprador','t'],['SKU','c'],['Producto','t'],['Categoría','t'],['Proveedor','t'],['Fecha de la mejora','t'],['Precio anterior (S/)','m','r'],['Precio logrado (S/)','m','r'],['Ahorro por und (S/)','m','r'],['% mejora','p','r'],['Vigente hasta','t'],['Estado','e'],['Und. compradas con este ahorro','n','r'],['Ahorro generado en el período (S/)','m','r']],r:rows};
+  }
+  if(v==='ven'){
+    var rv=A.ven.map(function(T){ var u=(A.und90[T.cod]||0)*4; return [T.comp,T.cod,T.desc,T.prov,T.d,T.hasta,_apDias(corte,T.hasta),T.pPrev,T.pNew,T.inc,A.und90[T.cod]||0,T.inc*u]; }).sort(function(a,b){ return a[6]-b[6]; });
+    return {t:'⏳ Ahorros por vencer en 60 días o menos (a la fecha de corte '+corte+') — conviene renegociar antes',h:[['Comprador','t'],['SKU','c'],['Producto','t'],['Proveedor','t'],['Fecha de la mejora','t'],['Vence','t'],['Días restantes','n','r'],['Precio anterior (S/)','m','r'],['Precio logrado (S/)','m','r'],['Ahorro por und que se pierde (S/)','m','r'],['Und. compradas últimos 90 días','n','r'],['Ahorro anual en juego (S/)','s','r']],r:rv};
+  }
+  if(v==='sku'){
+    var rs=Object.keys(A.sku).map(function(k){ return A.sku[k]; }).filter(function(o){ return o.a>0; }).map(function(o){ var S=R.sku[o.k]||{}; var sv=0; A.vig.forEach(function(T){ if(T.cod===o.k) sv+=T.inc; });
+      return [o.comp,o.k,o.desc,o.cat,S.base,S.last,S.best,Math.min(sv,Math.max(0,(S.base||0)-(S.last||0))),o.aq,o.c,o.a,pct(o.a,o.r),R.tiers.filter(function(T){ return T.cod===o.k&&T.d>=d1&&T.d<=d2; }).length]; }).sort(function(a,b){ return b[10]-a[10]; });
+    return {t:'📦 Ahorro por producto (SKU) en el período',h:[['Comprador','t'],['SKU','c'],['Producto','t'],['Categoría','t'],['Precio de partida (S/)','m','r'],['Último precio pagado (S/)','m','r'],['Mejor precio logrado (S/)','m','r'],['Ahorro por und vigente hoy (S/)','m','r'],['Und. con ahorro','n','r'],['Compras reales (S/)','s','r'],['Ahorro (S/)','s','r'],['% ahorro','p','r'],['Mejoras en el período','n','r']],r:rs};
+  }
+  if(v==='cat'||v==='prv'){
+    var m=v==='cat'?A.cat:A.prov;
+    var rc=Object.keys(m).map(function(k){ return m[k]; }).filter(function(o){ return o.a>0; }).map(function(o){ return [o.k,o.c,o.r,o.a,pct(o.a,o.r),Object.keys(o.skus).length]; }).sort(function(a,b){ return b[3]-a[3]; });
+    return {t:v==='cat'?'🗂 Ahorro por categoría en el período':'🏭 Ahorro por proveedor en el período (proveedor de cada compra con ahorro)',h:[[v==='cat'?'Categoría':'Proveedor','t'],['Compras reales (S/)','s','r'],['Valor referencial (S/)','s','r'],['Ahorro (S/)','s','r'],['% ahorro','p','r'],['SKUs con ahorro','n','r']],r:rc};
+  }
+  var rl=A.lin.slice().sort(function(a,b){ return a.f<b.f?1:a.f>b.f?-1:b.a-a.a; }).map(function(L){ return [L.f,L.comp,L.cod,L.desc,L.prov,L.p,L.q,L.s,L.a,L.c]; });
+  return {t:'🧾 Compras que generaron ahorro (una fila por línea de compra del Kardex)',h:[['Fecha','t'],['Comprador','t'],['SKU','c'],['Producto','t'],['Proveedor','t'],['Precio pagado (S/)','m','r'],['Unidades','n','r'],['Ahorro por und (S/)','m','r'],['Ahorro (S/)','m','r'],['Compra (S/)','s','r']],r:rl};
+}
+function _apCel(v,fm){ if(fm==='m') return _apM(v); if(fm==='s') return _apS(v); if(fm==='n') return (v||0).toLocaleString('es-PE'); if(fm==='p') return _apP(v); if(fm==='e') return v[1]; if(fm==='c') return '<span class="mono blue" style="font-weight:700;">'+_preE(v)+'</span>'; return _preE(v); }
+function apVista(v){
+  AP.vista=v; ['esc','ven','sku','cat','prv','lin'].forEach(function(x){ var b=document.getElementById('ap-v-'+x); if(b) b.classList.toggle('active',x===v); });
+  AP.lim={}; apRenderDetalle();
+}
+function apRenderDetalle(){
+  var A=AP.A; if(!A) return; var V=apVistaData(A); AP.V=V;
+  var lim=AP.lim[AP.vista]||200, th=document.getElementById('ap-th'), tb=document.getElementById('ap-tb');
+  document.getElementById('ap-dt').textContent=V.t; document.getElementById('ap-dn').textContent=V.r.length.toLocaleString('es-PE')+' fila(s)';
+  th.innerHTML='<tr>'+V.h.map(function(h){ return '<th'+(h[2]==='r'?' style="text-align:right"':'')+'>'+_preE(h[0])+'</th>'; }).join('')+'</tr>';
+  if(!V.r.length){ tb.innerHTML='<tr><td colspan="'+V.h.length+'" style="color:#64748b;padding:14px;">Sin resultados con los filtros actuales.</td></tr>'; document.getElementById('ap-mas').innerHTML=''; return; }
+  tb.innerHTML=V.r.slice(0,lim).map(function(r){ return '<tr>'+r.map(function(v,i){ var h=V.h[i]; return '<td'+(h[2]==='r'?' style="text-align:right;font-family:var(--mono);"':(h[1]==='e'||/^(Fecha|Vigente|Vence)/.test(h[0])?' style="white-space:nowrap;"':''))+'>'+_apCel(v,h[1])+'</td>'; }).join('')+'</tr>'; }).join('');
+  document.getElementById('ap-mas').innerHTML=V.r.length>lim?'<button class="btn btn-o" onclick="AP.lim[AP.vista]='+(lim+300)+';apRenderDetalle()">Ver más ('+(V.r.length-lim).toLocaleString('es-PE')+' restantes)</button> <span class="pk-mini">El Excel exporta todas las filas.</span>':'';
+}
+function apRango(n){
+  var R=AP.R||apCalc(), mx=R.max||_preHoy(), a=document.getElementById('ap-d1'), b=document.getElementById('ap-d2');
+  if(n==='anio'){ a.value=mx.slice(0,4)+'-01-01'; b.value=mx; }
+  else if(n==='mes'){ a.value=mx.slice(0,7)+'-01'; b.value=mx; }
+  else if(n===0){ a.value=''; b.value=''; }
+  else { a.value=_apAddD(mx,-n+1); b.value=mx; }
+  apRender();
+}
+function _apOpts(id,vals,todas,cur){ var s=document.getElementById(id); if(!s) return; s.innerHTML='<option value="">'+todas+'</option>'+vals.map(function(v){ return '<option value="'+_preE(v)+'"'+(v===cur?' selected':'')+'>'+_preE(v)+'</option>'; }).join(''); }
+function apRender(){
+  var msg=document.getElementById('ap-msg');
+  if(!D.compras||!D.compras.length){
+    ['ap-kpis','ap-tb-comp','ap-tb-mes','ap-tb','ap-sem'].forEach(function(i){ var e=document.getElementById(i); if(e) e.innerHTML=''; });
+    if(msg){ msg.style.color='#b45309'; msg.textContent='Aún no hay compras cargadas: carga el Kardex en 📂 Carga de Datos o abre 🌐 Publicar / Ver para traer el estado del día.'; } return;
+  }
+  var R=apCalc(); if(msg){ msg.style.color='#059669'; msg.textContent='✔ '+R.lines.length.toLocaleString('es-PE')+' compras · '+Object.keys(R.sku).length.toLocaleString('es-PE')+' SKUs · '+R.tiers.length.toLocaleString('es-PE')+' mejoras de precio detectadas'; }
+  var a=document.getElementById('ap-d1'), b=document.getElementById('ap-d2');
+  if(!AP.init){ AP.init=true; a.value=R.max.slice(0,4)+'-01-01'; b.value=R.max; }
+  var cur=_apFil();
+  _apOpts('ap-comp',Object.keys(R.lines.reduce(function(o,L){ o[L.comp]=1; return o; },{})).sort(),'Todos los compradores',cur.comp);
+  _apOpts('ap-cat',Object.keys(R.lines.reduce(function(o,L){ o[L.cat||'S/C']=1; return o; },{})).sort(),'Todas las categorías',cur.cat);
+  _apOpts('ap-prov',Object.keys(R.lines.reduce(function(o,L){ o[L.prov||'—']=1; return o; },{})).sort(),'Todos los proveedores',cur.prov);
+  var A=AP.A=apAgg(), sm=_apSem(A.pct);
+  // KPIs
+  var K=[
+    ['k-green','Ahorro por precio (S/)',_apS(A.tot.a)],
+    ['k-blue','% ahorro sobre valor referencial',_apP(A.pct)+' '+sm[0]],
+    ['k-blue','Compras reales (S/)',_apS(A.tot.c)],
+    ['k-green','SKUs con ahorro',Object.keys(A.sku).filter(function(k){ return A.sku[k].a>0; }).length.toLocaleString('es-PE')],
+    ['k-blue','Mejoras de precio logradas en el período',A.escPer.length.toLocaleString('es-PE')],
+    ['k-green','Mejoras vigentes al '+A.corte,A.vig.length.toLocaleString('es-PE')],
+    ['k-amber','Por vencer en ≤ 60 días',A.ven.length.toLocaleString('es-PE')],
+    ['k-purple','Proyección 12 meses de lo vigente (S/)',_apS(A.proy)],
+    ['k-red',AP.cfg.excl?'Ahorro excluido (mejoras a revisar, S/)':'Ahorro en mejoras a revisar (S/)',_apS(A.tot.ar)]
+  ];
+  AP.K=K;
+  document.getElementById('ap-kpis').innerHTML=K.map(function(k){ return '<div class="kpi '+k[0]+'"><div class="kl">'+_preE(k[1])+'</div><div class="kv" style="font-size:18px;">'+k[2]+'</div></div>'; }).join('');
+  document.getElementById('ap-sem').innerHTML='<span class="chip '+sm[2]+'">'+sm[0]+' '+_preE(sm[1])+'</span> <span class="pk-mini">Valor referencial = lo que se habría pagado sin las mejoras = compras reales + ahorro. Proyección = ahorro por unidad vigente × unidades compradas en los últimos 90 días × 4 (estimado, no es dato registrado).'+(A.nRev?' Hay <b>'+A.nRev+'</b> mejora(s) con salto &gt; '+AP.cfg.tope+'% marcadas «a revisar».':'')+'</span>';
+  // por comprador
+  var cs=Object.keys(A.comp).map(function(k){ return A.comp[k]; }).sort(function(x,y){ return y.a-x.a; });
+  document.getElementById('ap-tb-comp').innerHTML=cs.map(function(o){ var p=o.r>0?o.a/o.r*100:0, s=_apSem(p);
+    return '<tr><td><b>'+_preE(o.k)+'</b></td><td style="text-align:right;font-family:var(--mono);">'+_apS(o.a)+'</td><td style="text-align:right;font-family:var(--mono);">'+_apS(o.c)+'</td><td style="text-align:right;font-family:var(--mono);">'+_apS(o.r)+'</td><td style="text-align:right;font-family:var(--mono);font-weight:700;">'+_apP(p)+'</td><td><span class="chip '+s[2]+'">'+s[0]+' '+s[1].split(' · ')[0]+'</span></td><td style="text-align:right">'+Object.keys(o.skus).length+'</td><td style="text-align:right">'+(o.n||0)+'</td><td style="text-align:right;font-family:var(--mono);">'+(o.aq>0?_apM(o.a/o.aq):'—')+'</td></tr>'; }).join('')||'<tr><td colspan="9" style="color:#64748b;padding:12px;">Sin datos en el período.</td></tr>';
+  // mes a mes + metas
+  var ms=Object.keys(A.mes).sort(), acA=0, acM=[0,0,0], hayMeta=false;
+  var rowsM=ms.map(function(k){ var o=A.mes[k], p=o.r>0?o.a/o.r*100:0, mt=AP_META[k], av='—';
+    if(mt){ hayMeta=true; acA+=o.a; acM[0]+=mt[0]; acM[1]+=mt[1]; acM[2]+=mt[2]; var q=o.a/mt[1]*100; av='<span class="chip '+(q>=100?'c-verde':q>=60?'c-amber':'c-rojo')+'">'+_apP(q)+' del objetivo</span>'; }
+    return '<tr><td><b>'+_apMes(k)+'</b></td><td style="text-align:right;font-family:var(--mono);">'+_apS(o.c)+'</td><td style="text-align:right;font-family:var(--mono);font-weight:700;">'+_apS(o.a)+'</td><td style="text-align:right;font-family:var(--mono);">'+_apP(p)+'</td>'+(mt?'<td style="text-align:right;font-family:var(--mono);">'+_apS(mt[0])+'</td><td style="text-align:right;font-family:var(--mono);">'+_apS(mt[1])+'</td><td style="text-align:right;font-family:var(--mono);">'+_apS(mt[2])+'</td>':'<td style="text-align:right;color:#94a3b8;">—</td><td style="text-align:right;color:#94a3b8;">—</td><td style="text-align:right;color:#94a3b8;">—</td>')+'<td>'+av+'</td></tr>'; });
+  if(hayMeta){ var q=acA/acM[1]*100; rowsM.push('<tr style="background:#f1f5f9;font-weight:800;"><td>Acumulado Ago→corte</td><td></td><td style="text-align:right;font-family:var(--mono);">'+_apS(acA)+'</td><td></td><td style="text-align:right;font-family:var(--mono);">'+_apS(acM[0])+'</td><td style="text-align:right;font-family:var(--mono);">'+_apS(acM[1])+'</td><td style="text-align:right;font-family:var(--mono);">'+_apS(acM[2])+'</td><td><span class="chip '+(acA>=acM[1]?'c-verde':acA>=acM[0]?'c-amber':'c-rojo')+'">'+_apP(q)+' del objetivo · '+(acA>=acM[2]?'sobresaliente':acA>=acM[1]?'objetivo':acA>=acM[0]?'umbral':'bajo umbral')+'</span></td></tr>'); }
+  document.getElementById('ap-tb-mes').innerHTML=rowsM.join('')||'<tr><td colspan="8" style="color:#64748b;padding:12px;">Sin datos.</td></tr>';
+  // gráficos
+  try{ if(typeof Chart!=='undefined'){
+    mkChart('ap-ch1','bar',ms.map(_apMes),ms.map(function(k){ return Math.round(A.mes[k].a); }),['#059669'],'Ahorro S/');
+    mkChart('ap-ch2','bar',cs.map(function(o){ return o.k; }),cs.map(function(o){ return Math.round(o.a); }),['#1d4ed8','#7c3aed','#d97706','#0891b2'],'Ahorro S/');
+  } }catch(e){}
+  apRenderDetalle();
+}
+function apExportar(){
+  var A=AP.A, V=AP.V; if(!A||!V||!V.r.length){ alert('No hay filas para exportar con los filtros actuales.'); return; }
+  var f=A.f, fl=[]; if(f.d1||f.d2) fl.push('Período '+(f.d1||'…')+' → '+(f.d2||'…')); if(f.comp) fl.push('Comprador: '+f.comp); if(f.cat) fl.push('Categoría: '+f.cat); if(f.prov) fl.push('Proveedor: '+f.prov); if(f.q) fl.push('Búsqueda: «'+f.q+'»');
+  fl.push('Mejora mínima '+AP.cfg.tol+'% · revisar si > '+AP.cfg.tope+'%'+(AP.cfg.excl?' (excluidas)':' (incluidas)'));
+  var rows=V.r.map(function(r){ return r.map(function(v,i){ return V.h[i][1]==='e'?v[0]:v; }); });
+  exportarExcelMerpes({datos:rows,cabeceras:V.h.map(function(h){ return h[0]; }),titulo:'AHORROS POR NEGOCIACIÓN DE PRECIO',
+    subtitulo:V.t.replace(/^[^A-Za-zÁÉÍÓÚ]+/,'')+' · criterio: cada mejora vale 1 año desde su fecha · precios con IGV · corte '+A.corte,filtros:fl.join(' · '),archivo:'Ahorros_Precio_'+AP.vista+'_'+_preHoy(),sheetName:'Ahorros',
+    kpis:[{val:'S/ '+_apS(A.tot.a),lbl:'Ahorro por precio',color:'green'},{val:_apP(A.pct),lbl:'% sobre referencial',color:A.pct>=5?'green':A.pct>=3?'amber':'red'},{val:'S/ '+_apS(A.tot.c),lbl:'Compras reales',color:'blue'},{val:A.ven.length,lbl:'Por vencer ≤ 60 días',color:'amber'}]});
+}
+function apOnOpen(){ apRender(); }
+
+
 // v38 — todo monto "S/ …" dentro de una TABLA se ve más grande, azul y en negrita (clase .mny). No toca KPIs, gráficos, botones ni los Excel exportados.
 (function(){
   var RXT=/S\/\s?-?\d/, pend=[], T=null;
